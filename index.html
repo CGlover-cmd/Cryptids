@@ -190,7 +190,6 @@
 
         /* Card Back Styles */
         .card-back {
-            /* IMPORTANT: Replace this URL with your hosted image URL or a relative path if in the same folder */
             background-image: url('https://placehold.co/120x180/000000/FFFFFF?text=Card+Back'); /* Placeholder for your image */
             background-size: cover;
             background-position: center;
@@ -539,6 +538,7 @@
             font-weight: bold;
             color: #f1c40f;
             text-align: center;
+            min-height: 1.2em; /* Reserve space to prevent layout shift */
             flex-shrink: 0; /* Prevent shrinking */
         }
 
@@ -592,7 +592,7 @@
         }
         .modal-content.victory h2 { color: var(--victory-color); }
         .modal-content.defeat h2 { color: var(--defeat-color); }
-        .modal-content.draw h2 { color: var(--f1c40f); } /* Yellow for draw */
+        .modal-content.draw h2 { color: #f1c40f; } /* Yellow for draw */
 
 
         .modal-content p {
@@ -610,6 +610,33 @@
         .modal-buttons .btn {
             width: 100%; /* Full width buttons */
         }
+        
+        /* New Global Message Style */
+        .global-message {
+            position: fixed;
+            top: -100px; /* Start off-screen */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(241, 196, 15, 0.95); /* Yellowish warning color */
+            color: #121212;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 2000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease;
+        }
+        .global-message.show {
+            opacity: 1;
+            visibility: visible;
+            top: 30px;
+        }
+        .global-message.error { background-color: rgba(220, 53, 69, 0.95); color: white; }
+        .global-message.success { background-color: rgba(40, 167, 69, 0.95); color: white; }
+        .global-message.warning { background-color: rgba(241, 196, 15, 0.95); color: #121212; }
 
 
         /* --- Desktop/Tablet Overrides (min-width for larger screens) --- */
@@ -735,20 +762,23 @@
     </style>
 </head>
 <body>
+    <!-- Global Message Container -->
+    <div id="globalMessage" class="global-message"></div>
+
     <div id="homeView" class="view active">
         <h1>Cryptid Card Game</h1>
-        <button class="btn" onclick="showPackView()">Start Game</button>
+        <button class="btn" onclick="showPackView()">Enter Game</button>
     </div>
 
     <div id="packView" class="view">
         <div class="main-menu-buttons">
-            <button class="btn" onclick="showPackView()">Open Pack</button>
+            <button class="btn" onclick="openPack()">Open Pack</button>
             <button class="btn" onclick="showCollectionView()">View Collection</button>
             <button class="btn" onclick="showDeckBuilderView()">Deck Builder</button>
             <button class="btn" onclick="tryStartGame()">Play Game</button>
         </div>
         <h1>Cryptid Pack Opening</h1>
-        <div class="pack" onclick="openPack()">Open Pack</div>
+        <div class="pack" onclick="openPack()">Click to Open a New Pack</div>
         <div class="cards-container" id="packCardContainer"></div>
     </div>
 
@@ -810,30 +840,31 @@
     </div>
 
     <script>
-        // Data for all possible cryptids
+        // --- DATA ---
+        // Data for all possible cryptids with corrected image paths
         const allCryptids = [
-            { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: 10, ability: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://via.placeholder.com/100x150/888888/FFFFFF?text=Mothman" },
-            { id: 'chupacabra', name: "Chupacabra", rarity: "rare", hp: 40, attack: 20, ability: "Blood Drain: Heals self for 10 HP after attacking.", img src="photos/chupacabra.png" },
-            { id: 'bigfoot', name: "Bigfoot", rarity: "common", hp: 50, attack: 15, ability: "Stomp: Deals 5 splash damage to all enemy cards.", img src="photos/bigfoot.png" },
-            { id: 'jerseydevil', name: "Jersey Devil", rarity: "rare", hp: 35, attack: 25, ability: "Flight: Dodges first attack each turn.", img src="photos/jersey_devil.PNG" },
-            { id: 'wendigo', name: "Wendigo", rarity: "legendary", hp: 60, attack: 30, ability: "Insatiable Hunger: Gains +5 Attack for each enemy card defeated.", image: "https://via.placeholder.com/100x150/gold/FFFFFF?text=Wendigo" },
-            { id: 'skinwalker', name: "Skinwalker", rarity: "legendary", hp: 55, attack: 28, ability: "Mimicry: Copies the ability of the last enemy card played.", image: "https://via.placeholder.com/100x150/gold/FFFFFF?text=Skinwalker" },
-            { id: 'flatwoodsmonster', name: "Flatwoods Monster", rarity: "common", hp: 30, attack: 12, ability: "Gaseous Form: Cannot be targeted by abilities for one turn.", image: "https://via.placeholder.com/100x150/888888/FFFFFF?text=Flatwoods" },
-            { id: 'kraken', name: "Kraken", rarity: "rare", hp: 70, attack: 18, ability: "Crushing Grip: Stuns enemy card for one turn.", image: "https://via.placeholder.com/100x150/1e90ff/FFFFFF?text=Kraken" },
-            { id: 'lochnessmonster', name: "Loch Ness Monster", rarity: "rare", hp: 65, attack: 15, ability: "Deep Dive: Becomes immune to damage for one turn.", image: "https://via.placeholder.com/100x150/1e90ff/FFFFFF?text=Nessie" }, /* Consolidated from _re */
-            { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: 18, ability: "Wail: Deals 5 damage to enemy player directly.", image: "https://via.placeholder.com/100x150/888888/FFFFFF?text=Banshee" },
-            { id: 'gnome', name: "Gnome", rarity: "common", hp: 30, attack: 10, ability: "Burrow: Hides underground, cannot be attacked for one turn.", image: "https://via.placeholder.com/100x150/888888/FFFFFF?text=Gnome" },
-            { id: 'brownie', name: "Brownie", rarity: "common", hp: 20, attack: 8, ability: "Helpful Spirit: Heals player for 10 HP.", image: "https://via.placeholder.com/100x150/888888/FFFFFF?text=Brownie" },
-            { id: 'bunyip', name: "Bunyip", rarity: "common", hp: 45, attack: 13, ability: "Swamp Ambush: Next attack deals double damage if played from hand.", image: "https://via.placeholder.com/100x150/888888/FFFFFF?text=Bunyip" },
-            { id: 'kappa', name: "Kappa", rarity: "rare", hp: 38, attack: 22, ability: "Cucumber Feast: Gains +5 HP and +5 Attack for one turn.", image: "https://via.placeholder.com/100x150/1e90ff/FFFFFF?text=Kappa" },
-            { id: 'siren', name: "Siren", rarity: "rare", hp: 32, attack: 28, ability: "Enchanting Song: Prevents enemy card from attacking next turn.", image: "https://via.placeholder.com/100x150/1e90ff/FFFFFF?text=Siren" },
-            { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: 23, ability: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://via.placeholder.com/100x150/1e90ff/FFFFFF?text=Basilisk" },
-            { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: 20, ability: "Sky Guardian: All friendly cards gain +5 HP.", image: "https://via.placeholder.com/100x150/1e90ff/FFFFFF?text=Griffin" },
-            { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: 10, ability: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "https://via.placeholder.com/100x150/888888/FFFFFF?text=Yeti" },
-            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: 35, ability: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image: "https://via.placeholder.com/100x150/gold/FFFFFF?text=Woods+Devil" }
+            { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: 10, ability: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Mothman" },
+            { id: 'chupacabra', name: "Chupacabra", rarity: "rare", hp: 40, attack: 20, ability: "Blood Drain: Heals self for 10 HP after attacking.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Chupacabra" },
+            { id: 'bigfoot', name: "Bigfoot", rarity: "common", hp: 50, attack: 15, ability: "Stomp: Deals 5 splash damage to all enemy cards.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Bigfoot" },
+            { id: 'jerseydevil', name: "Jersey Devil", rarity: "rare", hp: 35, attack: 25, ability: "Flight: Dodges first attack each turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Jersey+Devil" },
+            { id: 'wendigo', name: "Wendigo", rarity: "legendary", hp: 60, attack: 30, ability: "Insatiable Hunger: Gains +5 Attack for each enemy card defeated.", image: "https://placehold.co/120x180/ffd700/000000?text=Wendigo" },
+            { id: 'skinwalker', name: "Skinwalker", rarity: "legendary", hp: 55, attack: 28, ability: "Mimicry: Copies the ability of the last enemy card played.", image: "https://placehold.co/120x180/ffd700/000000?text=Skinwalker" },
+            { id: 'flatwoodsmonster', name: "Flatwoods Monster", rarity: "common", hp: 30, attack: 12, ability: "Gaseous Form: Cannot be targeted by abilities for one turn.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Flatwoods" },
+            { id: 'kraken', name: "Kraken", rarity: "rare", hp: 70, attack: 18, ability: "Crushing Grip: Stuns enemy card for one turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Kraken" },
+            { id: 'lochnessmonster', name: "Loch Ness Monster", rarity: "rare", hp: 65, attack: 15, ability: "Deep Dive: Becomes immune to damage for one turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Nessie" },
+            { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: 18, ability: "Wail: Deals 5 damage to enemy player directly.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Banshee" },
+            { id: 'gnome', name: "Gnome", rarity: "common", hp: 30, attack: 10, ability: "Burrow: Hides underground, cannot be attacked for one turn.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Gnome" },
+            { id: 'brownie', name: "Brownie", rarity: "common", hp: 20, attack: 8, ability: "Helpful Spirit: Heals player for 10 HP.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Brownie" },
+            { id: 'bunyip', name: "Bunyip", rarity: "common", hp: 45, attack: 13, ability: "Swamp Ambush: Next attack deals double damage if played from hand.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Bunyip" },
+            { id: 'kappa', name: "Kappa", rarity: "rare", hp: 38, attack: 22, ability: "Cucumber Feast: Gains +5 HP and +5 Attack for one turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Kappa" },
+            { id: 'siren', name: "Siren", rarity: "rare", hp: 32, attack: 28, ability: "Enchanting Song: Prevents enemy card from attacking next turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Siren" },
+            { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: 23, ability: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Basilisk" },
+            { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: 20, ability: "Sky Guardian: All friendly cards gain +5 HP.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Griffin" },
+            { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: 10, ability: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Yeti" },
+            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: 35, ability: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image: "https://placehold.co/120x180/ffd700/000000?text=Woods+Devil" }
         ];
 
-        // Array to store collected cryptids (will store their IDs)
+        // --- STATE MANAGEMENT ---
         let collectedCardIds;
         try {
             collectedCardIds = new Set(JSON.parse(localStorage.getItem('cryptidCollection') || '[]'));
@@ -842,7 +873,6 @@
             collectedCardIds = new Set(); // Fallback to empty set
         }
 
-        // Array to store the player's custom deck (stores cryptid IDs)
         let playerDeckIds;
         try {
             playerDeckIds = JSON.parse(localStorage.getItem('playerDeck') || '[]');
@@ -855,12 +885,19 @@
         const MAX_DECK_SIZE = 10;
         const MAX_TURNS = 20;
 
-        // --- Utility Functions ---
-        // Moved updateDeckSizeDisplay here to ensure it's defined before DOMContentLoaded uses it
+        // Game State Variables (declared globally)
+        let playerHP, botHP, currentTurn, playerCardInPlay, botCardInPlay;
+        let playerDeck, botDeck, playerHand, botHand;
+        let selectedPlayerCardData = null;
+        let selectedPlayerCardElement = null;
+        let messageTimeout, globalMessageTimeout;
+
+
+        // --- UTILITY & SETUP FUNCTIONS ---
         function updateDeckSizeDisplay() {
             const currentSizeElement = document.getElementById("currentDeckSize");
             const maxSizeElement = document.getElementById("maxDeckSize");
-            if (currentSizeElement && maxSizeElement) { // Check if elements exist before updating
+            if (currentSizeElement && maxSizeElement) {
                 currentSizeElement.innerText = playerDeckIds.length;
                 maxSizeElement.innerText = MAX_DECK_SIZE;
             }
@@ -868,12 +905,11 @@
 
         function getRarity() {
             const roll = Math.random();
-            if (roll < 0.02) return "legendary"; // 2% chance
-            if (roll < 0.20) return "rare";     // 18% chance (0.20 - 0.02)
-            return "common";                   // 80% chance
+            if (roll < 0.05) return "legendary"; // 5% chance
+            if (roll < 0.25) return "rare";      // 20% chance
+            return "common";                     // 75% chance
         }
 
-        // Returns a random cryptid of a specific rarity or a random one if rarity not found.
         function getRandomCryptid(desiredRarity) {
             const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
             if (availableCryptids.length === 0) {
@@ -883,10 +919,6 @@
             return availableCryptids[Math.floor(Math.random() * availableCryptids.length)];
         }
 
-        /**
-         * Shuffles an array in place.
-         * @param {Array} array The array to shuffle.
-         */
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -894,29 +926,22 @@
             }
         }
 
-        /**
-         * Creates a card DOM element (wrapper, inner, front/back).
-         * @param {object} cryptid - The cryptid object to display.
-         * @param {boolean} isCollected - True if this card is collected and should show its details, false for blank.
-         * @param {boolean} showFrontImmediately - True if the card should immediately show its front face (e.g., in hand, collection).
-         * @returns {HTMLElement} The card-wrapper DOM element.
-         */
         function createCardElement(cryptid, isCollected = true, showFrontImmediately = false) {
             const cardWrapper = document.createElement("div");
             cardWrapper.className = `card-wrapper`;
-            cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected'; // Store ID for reference
+            cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
 
             const cardInner = document.createElement("div");
             cardInner.className = `card-inner`;
 
-            if (isCollected && cryptid) { // Ensure cryptid data exists for collected cards
+            if (isCollected && cryptid) {
                 const cardFront = document.createElement("div");
                 cardFront.className = `card-face card-front ${cryptid.rarity}`;
-                cardFront.style.transform = 'rotateY(0deg)'; /* Front faces forward relative to cardInner */
 
                 const cardImage = document.createElement("img");
                 cardImage.src = cryptid.image;
                 cardImage.alt = cryptid.name;
+                cardImage.onerror = () => { cardImage.src = 'https://placehold.co/100x150/ff0000/FFFFFF?text=Error'; }; // Fallback
                 cardFront.appendChild(cardImage);
 
                 const cardName = document.createElement("div");
@@ -924,130 +949,133 @@
                 cardName.innerText = cryptid.name;
                 cardFront.appendChild(cardName);
 
-                // Add HP and Attack
                 const cardStats = document.createElement("div");
                 cardStats.className = "card-stats";
                 cardStats.innerHTML = `<span class="hp">HP: ${cryptid.hp}</span><span class="attack">ATK: ${cryptid.attack}</span>`;
                 cardFront.appendChild(cardStats);
 
-                // Add Ability
                 const cardAbility = document.createElement("div");
                 cardAbility.className = "card-ability";
                 cardAbility.innerText = cryptid.ability;
                 cardFront.appendChild(cardAbility);
-
 
                 const rarityBadge = document.createElement("div");
                 rarityBadge.className = `rarity-badge ${cryptid.rarity}`;
                 rarityBadge.innerText = cryptid.rarity;
                 cardFront.appendChild(rarityBadge);
 
-                cardInner.appendChild(cardFront);
-
-                // Always add a back face for collected cards
                 const cardBack = document.createElement("div");
                 cardBack.className = `card-face card-back`;
-                cardBack.style.transform = 'rotateY(180deg)'; /* Back faces away relative to cardInner */
-                cardInner.prepend(cardBack); // Add back to the beginning
 
-                // Control initial flip state of cardInner
+                cardInner.appendChild(cardBack);
+                cardInner.appendChild(cardFront);
+
                 if (showFrontImmediately) {
-                    cardInner.classList.add('flipped'); // Show front immediately by flipping cardInner
-                } else {
-                    cardInner.classList.remove('flipped'); // Ensure back is shown by default
+                    cardInner.style.transform = 'rotateY(180deg)';
                 }
 
             } else {
-                // Blank card for uncollected or if cryptid data is missing
                 cardWrapper.classList.add("uncollected-card");
-                // For uncollected cards, no front or back is generated,
-                // the '?' is handled by .uncollected-card .card-inner::after
             }
 
             cardWrapper.appendChild(cardInner);
             return cardWrapper;
         }
 
-        // --- Pack Opening Logic ---
+        // --- MESSAGE DISPLAY ---
+        function showMessage(message, type = "info", isGlobal = false) {
+            const messageEl = isGlobal ? document.getElementById('globalMessage') : document.getElementById('gameMessage');
+            if (!messageEl) return; 
+
+            messageEl.innerText = message;
+            const baseClass = isGlobal ? 'global-message' : 'game-message';
+            messageEl.className = `${baseClass} ${type}`;
+
+            if (isGlobal) {
+                messageEl.classList.add('show');
+                clearTimeout(globalMessageTimeout);
+                globalMessageTimeout = setTimeout(() => {
+                    messageEl.classList.remove('show');
+                }, 3500);
+            } else {
+                clearTimeout(messageTimeout);
+                if (type !== "game-end") { 
+                    messageTimeout = setTimeout(() => {
+                        messageEl.innerText = '';
+                        messageEl.className = 'game-message';
+                    }, 3000);
+                }
+            }
+        }
+
+        // --- VIEW SWITCHING ---
+        const homeView = document.getElementById('homeView');
+        const packView = document.getElementById('packView');
+        const collectionView = document.getElementById('collectionView');
+        const deckBuilderView = document.getElementById('deckBuilderView');
+        const gameView = document.getElementById('gameView');
+
+        function showView(viewElement) {
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            viewElement.classList.add('active');
+
+            if (viewElement === collectionView) showCollection();
+            else if (viewElement === deckBuilderView) renderDeckBuilderCards();
+        }
+
+        function showHomeView() { showView(homeView); }
+        function showPackView() { showView(packView); }
+        function showCollectionView() { showView(collectionView); }
+        function showDeckBuilderView() { showView(deckBuilderView); }
+
+        // --- PACK OPENING ---
         function openPack() {
             const container = document.getElementById("packCardContainer");
-            container.innerHTML = ""; // Clear previous cards
+            container.innerHTML = ""; 
 
             for (let i = 0; i < 5; i++) {
                 const rarity = getRarity();
                 const cryptid = getRandomCryptid(rarity);
-
-                // Create a card that starts with its back showing, then flips
-                const cardWrapper = createCardElement(cryptid, true, false); // showFrontImmediately = false
-                const cardInner = cardWrapper.querySelector('.card-inner');
-
+                const cardWrapper = createCardElement(cryptid, true, false);
                 container.appendChild(cardWrapper);
 
-                // Animate card appearance and flip
                 setTimeout(() => {
-                    cardWrapper.classList.add("show"); // Make card visible and slide up
+                    cardWrapper.classList.add("show");
                     setTimeout(() => {
-                        cardInner.classList.add("flipped"); // Flip the cardInner to show front
-                        // After flip, remove the card-back for cleanup and to ensure only front is active
-                        // A small delay to ensure flip transition finishes
-                        setTimeout(() => {
-                            const cardBackElement = cardInner.querySelector('.card-back');
-                            if (cardBackElement) cardBackElement.remove();
-                        }, 500); // Should be slightly less than cardInner transition time
-                    }, 500); // Delay before flipping (after showing)
-
-                    // Add to collection if new
-                    if (!collectedCardIds.has(cryptid.id)) {
-                        collectedCardIds.add(cryptid.id);
-                        localStorage.setItem('cryptidCollection', JSON.stringify(Array.from(collectedCardIds)));
-                        console.log(`Collected new cryptid: ${cryptid.name}`);
-                    }
-                }, 200 * i); // Stagger the appearance of each card
+                        cardWrapper.classList.add("flipped");
+                        if (!collectedCardIds.has(cryptid.id)) {
+                            collectedCardIds.add(cryptid.id);
+                            localStorage.setItem('cryptidCollection', JSON.stringify(Array.from(collectedCardIds)));
+                            console.log(`Collected new cryptid: ${cryptid.name}`);
+                        }
+                    }, 500);
+                }, 200 * i);
             }
         }
 
-        // --- Collection View Logic ---
+        // --- COLLECTION VIEW ---
         function showCollection() {
             const container = document.getElementById("collectionCardContainer");
-            container.innerHTML = ""; // Clear previous collection
-
+            container.innerHTML = "";
             const rarityOrder = ["legendary", "rare", "common"];
+            const cryptidsByRarity = { legendary: [], rare: [], common: [] };
 
-            // Group cryptids by rarity
-            const cryptidsByRarity = {
-                legendary: [],
-                rare: [],
-                common: []
-            };
+            allCryptids.forEach(c => cryptidsByRarity[c.rarity].push(c));
 
-            allCryptids.forEach(cryptid => {
-                cryptidsByRarity[cryptid.rarity].push(cryptid);
-            });
-
-            // Iterate through rarities in desired order
             rarityOrder.forEach(rarity => {
-                const cryptidsInThisRarity = cryptidsByRarity[rarity];
-
-                // Sort cryptids alphabetically within each rarity group
-                cryptidsInThisRarity.sort((a, b) => a.name.localeCompare(b.name));
-
+                const cryptidsInThisRarity = cryptidsByRarity[rarity].sort((a, b) => a.name.localeCompare(b.name));
                 if (cryptidsInThisRarity.length > 0) {
                     const rarityGroupDiv = document.createElement("div");
                     rarityGroupDiv.className = `collection-rarity-group ${rarity}`;
-
                     const heading = document.createElement("h2");
                     heading.innerText = `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Cryptids`;
                     rarityGroupDiv.appendChild(heading);
-
                     const cardsGrid = document.createElement("div");
                     cardsGrid.className = "cards-grid";
-
                     cryptidsInThisRarity.forEach(cryptid => {
                         const isCollected = collectedCardIds.has(cryptid.id);
-                        // For collection, cards are immediately shown front-side
-                        const cardWrapper = createCardElement(cryptid, isCollected, true); // showFrontImmediately = true
-
-                        cardWrapper.classList.add("show"); // Make visible instantly
+                        const cardWrapper = createCardElement(cryptid, isCollected, true);
+                        cardWrapper.classList.add("show");
                         cardsGrid.appendChild(cardWrapper);
                     });
                     rarityGroupDiv.appendChild(cardsGrid);
@@ -1056,27 +1084,14 @@
             });
         }
 
-        // --- Deck Builder Logic ---
-        function showDeckBuilderView() {
-            showView(deckBuilderView);
-            renderDeckBuilderCards();
-            updateDeckSizeDisplay();
-        }
-
+        // --- DECK BUILDER ---
         function renderDeckBuilderCards() {
             const container = document.getElementById("deckBuilderCardsContainer");
-            container.innerHTML = ""; // Clear previous cards
-
-            const collectedCryptids = allCryptids.filter(c => collectedCardIds.has(c.id));
-            const uncollectedCryptids = allCryptids.filter(c => !collectedCardIds.has(c.id));
-
-            // Sort collected and uncollected alphabetically
-            collectedCryptids.sort((a, b) => a.name.localeCompare(b.name));
-            uncollectedCryptids.sort((a, b) => a.name.localeCompare(b.name));
-
-            // Display collected cards first
+            container.innerHTML = "";
+            const collectedCryptids = allCryptids.filter(c => collectedCardIds.has(c.id)).sort((a,b) => a.name.localeCompare(b.name));
+            
             collectedCryptids.forEach(cryptid => {
-                const cardWrapper = createCardElement(cryptid, true, true); // showFrontImmediately = true
+                const cardWrapper = createCardElement(cryptid, true, true);
                 cardWrapper.classList.add("deck-builder-card");
                 if (playerDeckIds.includes(cryptid.id)) {
                     cardWrapper.classList.add("selected");
@@ -1084,51 +1099,37 @@
                 cardWrapper.onclick = () => toggleCardInDeck(cryptid.id);
                 container.appendChild(cardWrapper);
             });
-
-            // Display uncollected cards (greyed out and unselectable)
-            uncollectedCryptids.forEach(cryptid => {
-                const cardWrapper = createCardElement(cryptid, false, false); // Create as uncollected, showFrontImmediately = false (doesn't matter for uncollected)
-                cardWrapper.classList.add("deck-builder-card", "uncollected-card");
-                container.appendChild(cardWrapper);
-            });
+             updateDeckSizeDisplay();
         }
 
         function toggleCardInDeck(cryptidId) {
             const index = playerDeckIds.indexOf(cryptidId);
             if (index > -1) {
-                // Card is already in deck, remove it
                 playerDeckIds.splice(index, 1);
             } else {
-                // Card is not in deck, add it if not at max size
                 if (playerDeckIds.length < MAX_DECK_SIZE) {
                     playerDeckIds.push(cryptidId);
                 } else {
-                    showMessage("Deck is full! Max " + MAX_DECK_SIZE + " cards.", "warning");
+                    showMessage("Deck is full! Max " + MAX_DECK_SIZE + " cards.", "warning", true);
                 }
             }
-            // Update UI
-            document.querySelectorAll('.deck-builder-card').forEach(cardEl => {
-                if (cardEl.dataset.cryptidId === cryptidId) {
-                    cardEl.classList.toggle('selected', playerDeckIds.includes(cryptidId));
-                }
-            });
+            document.querySelector(`.deck-builder-card[data-cryptid-id="${cryptidId}"]`).classList.toggle('selected', playerDeckIds.includes(cryptidId));
             updateDeckSizeDisplay();
         }
-
 
         function saveDeck() {
             if (playerDeckIds.length === MAX_DECK_SIZE) {
                 localStorage.setItem('playerDeck', JSON.stringify(playerDeckIds));
-                showMessage("Deck saved successfully!", "success");
+                showMessage("Deck saved successfully!", "success", true);
             } else {
-                showMessage("Your deck must contain exactly " + MAX_DECK_SIZE + " cards to save.", "warning");
+                showMessage("Your deck must contain exactly " + MAX_DECK_SIZE + " cards.", "warning", true);
             }
         }
 
-        // --- Game Logic ---
+        // --- GAME LOGIC ---
         function tryStartGame() {
             if (playerDeckIds.length !== MAX_DECK_SIZE) {
-                showMessage("Please build a deck of " + MAX_DECK_SIZE + " cards in the Deck Builder first!", "error");
+                showMessage("Please build and save a deck of " + MAX_DECK_SIZE + " cards first!", "error", true);
                 return;
             }
             startGame();
@@ -1136,32 +1137,25 @@
 
         function startGame() {
             showView(gameView);
-            showMessage("Game Started!", "info");
+            showMessage("Game Started! Select a card to play.", "info");
 
-            // Reset game state
             playerHP = 100;
             botHP = 100;
             currentTurn = 1;
             playerCardInPlay = null;
             botCardInPlay = null;
+            selectedPlayerCardData = null;
+            selectedPlayerCardElement = null;
 
-            // Prepare player deck (full cryptid objects)
-            playerDeck = playerDeckIds.map(id => allCryptids.find(c => c.id === id));
+            playerDeck = playerDeckIds.map(id => ({...allCryptids.find(c => c.id === id)}));
             shuffleArray(playerDeck);
-
-            // Prepare bot deck (for simplicity, bot uses a random selection of all cryptids)
-            botDeck = [...allCryptids]; // Clone all cryptids for bot
+            
+            botDeck = [...allCryptids].map(c => ({...c}));
             shuffleArray(botDeck);
-            // Trim bot deck to MAX_DECK_SIZE if it's larger, or duplicate if smaller
-            while (botDeck.length < MAX_DECK_SIZE) {
-                botDeck = botDeck.concat([...allCryptids]); // Add more random cards if needed
-            }
-            botDeck = botDeck.slice(0, MAX_DECK_SIZE); // Ensure bot deck is also 10 cards
+            botDeck = botDeck.slice(0, MAX_DECK_SIZE);
 
             playerHand = [];
             botHand = [];
-
-            // Draw initial hands
             for (let i = 0; i < 3; i++) {
                 if (playerDeck.length > 0) playerHand.push(playerDeck.shift());
                 if (botDeck.length > 0) botHand.push(botDeck.shift());
@@ -1175,64 +1169,47 @@
         function updateGameUI() {
             document.getElementById('playerHP').innerText = playerHP;
             document.getElementById('botHP').innerText = botHP;
-            document.getElementById('turnCounter').innerText = currentTurn;
+            document.getElementById('turnCounter').innerText = `${currentTurn} / ${MAX_TURNS}`;
 
-            // Render player hand
             const playerHandContainer = document.getElementById('playerHand');
             playerHandContainer.innerHTML = '';
-            playerHand.forEach((card, index) => {
-                const cardEl = createCardElement(card, true, true); // showFrontImmediately = true
-                cardEl.onclick = () => selectPlayerCard(card, cardEl); // Enable selection for playing
+            playerHand.forEach(card => {
+                const cardEl = createCardElement(card, true, true);
+                cardEl.onclick = () => selectPlayerCard(card, cardEl);
+                if(selectedPlayerCardData && selectedPlayerCardData.id === card.id) {
+                    cardEl.classList.add('selected');
+                }
                 playerHandContainer.appendChild(cardEl);
             });
 
-            // Render bot hand (face down)
             const botHandContainer = document.getElementById('botHand');
             botHandContainer.innerHTML = '';
             botHand.forEach(card => {
-                const cardEl = createCardElement(card, true, false); // showFrontImmediately = false (show back)
+                const cardEl = createCardElement(card, true, false);
                 botHandContainer.appendChild(cardEl);
             });
 
-            // Render cards in play
             const battlefield = document.getElementById('battlefield');
             battlefield.innerHTML = '';
             if (playerCardInPlay) {
-                const playerCardEl = createCardElement(playerCardInPlay, true, true); // In play, show front
-                battlefield.appendChild(playerCardEl);
-            } else {
-                battlefield.innerHTML += '<div class="card-wrapper" style="opacity:0;"></div>'; // Placeholder for spacing
+                battlefield.appendChild(createCardElement(playerCardInPlay, true, true));
             }
 
             const botInPlayContainer = document.getElementById('botInPlay');
             botInPlayContainer.innerHTML = '';
             if (botCardInPlay) {
-                const botCardEl = createCardElement(botCardInPlay, true, true); // In play, show front
-                botInPlayContainer.appendChild(botCardEl);
-            } else {
-                botInPlayContainer.innerHTML += '<div class="card-wrapper" style="opacity:0;"></div>'; // Placeholder for spacing
+                botInPlayContainer.appendChild(createCardElement(botCardInPlay, true, true));
             }
         }
-
-        let selectedPlayerCardData = null;
-        let selectedPlayerCardElement = null;
 
         function selectPlayerCard(cardData, cardElement) {
-            // Deselect previously selected card
             if (selectedPlayerCardElement) {
-                selectedPlayerCardElement.style.border = ''; // Reset border
-                selectedPlayerCardElement.style.boxShadow = '';
+                selectedPlayerCardElement.classList.remove('selected');
             }
-
-            // Select new card
             selectedPlayerCardData = cardData;
             selectedPlayerCardElement = cardElement;
-            selectedPlayerCardElement.style.border = '3px solid var(--selected-card-border)';
-            selectedPlayerCardElement.style.boxShadow = '0 0 15px var(--selected-card-border)';
-
-            document.getElementById('playCardBtn').disabled = false;
+            selectedPlayerCardElement.classList.add('selected');
         }
-
 
         function playPlayerCard() {
             if (!selectedPlayerCardData) {
@@ -1240,215 +1217,91 @@
                 return;
             }
 
-            // Remove card from hand
-            playerHand = playerHand.filter(card => card.id !== selectedPlayerCardData.id);
             playerCardInPlay = selectedPlayerCardData;
-            selectedPlayerCardData = null; // Clear selection
+            playerHand = playerHand.filter(card => card.id !== selectedPlayerCardData.id);
+            selectedPlayerCardData = null;
             selectedPlayerCardElement = null;
 
-            // Bot plays a card (simple AI: plays first card in hand)
             if (botHand.length > 0) {
                 botCardInPlay = botHand.shift();
             } else {
-                botCardInPlay = null; // Bot has no cards to play
+                botCardInPlay = null;
             }
-
-            // Perform combat
+            
             performCombat();
-            updateGameUI(); // Update UI after combat
+            updateGameUI();
 
-            document.getElementById('playCardBtn').disabled = true; // Disable play card until next turn
-            document.getElementById('nextTurnBtn').disabled = false; // Enable next turn button
+            document.getElementById('playCardBtn').disabled = true;
+            document.getElementById('nextTurnBtn').disabled = false;
         }
 
         function performCombat() {
             let message = "";
             if (playerCardInPlay && botCardInPlay) {
-                // Player card attacks bot card
                 botHP -= playerCardInPlay.attack;
-                message += `${playerCardInPlay.name} attacks ${botCardInPlay.name} for ${playerCardInPlay.attack} damage! `;
-
-                // Bot card attacks player card
                 playerHP -= botCardInPlay.attack;
-                message += `${botCardInPlay.name} attacks ${playerCardInPlay.name} for ${botCardInPlay.attack} damage!`;
-
-                // For simplicity, cards don't have individual HP in play, they just deal damage to player HP.
-                // If you want individual card HP, that would be a more complex state management.
-
+                message = `${playerCardInPlay.name} deals ${playerCardInPlay.attack} damage! ${botCardInPlay.name} deals ${botCardInPlay.attack} damage!`;
             } else if (playerCardInPlay) {
-                // Player card attacks bot directly
                 botHP -= playerCardInPlay.attack;
-                message += `${playerCardInPlay.name} attacks Bot directly for ${playerCardInPlay.attack} damage!`;
-            } else if (botCardInPlay) {
-                // Bot card attacks player directly
-                playerHP -= botCardInPlay.attack;
-                message += `${botCardInPlay.name} attacks Player directly for ${botCardInPlay.attack} damage!`;
-            } else {
-                message = "No cards in play this turn.";
+                message = `${playerCardInPlay.name} attacks the Bot directly for ${playerCardInPlay.attack} damage!`;
             }
             showMessage(message, "info");
         }
 
         function endTurn() {
             currentTurn++;
-            playerCardInPlay = null; // Clear cards from play
+            playerCardInPlay = null;
             botCardInPlay = null;
 
-            // Draw new cards for next turn
-            if (playerDeck.length > 0 && playerHand.length < 5) { // Max hand size 5
-                playerHand.push(playerDeck.shift());
-            }
-            if (botDeck.length > 0 && botHand.length < 5) { // Max hand size 5
-                botHand.push(botDeck.shift());
-            }
+            if (playerDeck.length > 0 && playerHand.length < 5) playerHand.push(playerDeck.shift());
+            if (botDeck.length > 0 && botHand.length < 5) botHand.push(botDeck.shift());
+            
+            if(checkGameEnd()) return;
 
             updateGameUI();
-            checkGameEnd();
-
-            document.getElementById('playCardBtn').disabled = false; // Re-enable play card
-            document.getElementById('nextTurnBtn').disabled = true; // Disable next turn until card played
+            showMessage(`Turn ${currentTurn} begins!`, "info");
+            document.getElementById('playCardBtn').disabled = false;
+            document.getElementById('nextTurnBtn').disabled = true;
         }
 
         function checkGameEnd() {
             if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
                 let finalMessage = "";
                 let modalClass = "";
+                let title = "Game Over!";
 
-                if (playerHP <= 0 && botHP <= 0) {
-                    finalMessage = "It's a draw!";
-                    modalClass = "draw";
-                } else if (playerHP <= 0) {
-                    finalMessage = "You Lose! Bot wins!";
-                    modalClass = "defeat";
-                } else if (botHP <= 0) {
-                    finalMessage = "You Win! Bot defeated!";
-                    modalClass = "victory";
-                } else if (currentTurn > MAX_TURNS) {
-                    finalMessage = "Game Over! Max turns reached. ";
-                    if (playerHP > botHP) {
-                        finalMessage += "You win by HP advantage!";
-                        modalClass = "victory";
-                    } else if (botHP > playerHP) {
-                        finalMessage += "Bot wins by HP advantage!";
-                        modalClass = "defeat";
-                    } else {
-                        finalMessage += "It's a draw by HP!";
-                        modalClass = "draw";
-                    }
+                if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
+                else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
+                else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; } 
+                else if (currentTurn > MAX_TURNS) {
+                    finalMessage = "Max turns reached. ";
+                    if (playerHP > botHP) { finalMessage += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; } 
+                    else if (botHP > playerHP) { finalMessage += "Bot wins by HP advantage!"; modalClass = "defeat"; title = "Defeat!"; } 
+                    else { finalMessage += "It's a draw!"; modalClass = "draw"; }
                 }
-                showMessage(finalMessage, "game-end");
-                document.getElementById('playCardBtn').disabled = true;
-                document.getElementById('nextTurnBtn').disabled = true;
-
-                // Show the custom modal
-                const modal = document.getElementById('gameEndModal');
-                const modalContent = modal.querySelector('.modal-content');
-                const modalTitle = document.getElementById('modalTitle');
-                const modalMessage = document.getElementById('modalMessage');
-                const modalPlayAgainBtn = document.getElementById('modalPlayAgain');
-                const modalMainMenuBtn = document.getElementById('modalMainMenu');
-
-                modalTitle.innerText = finalMessage.includes("Win") ? "Victory!" : (finalMessage.includes("Lose") ? "Defeat!" : "Game Over!");
-                modalMessage.innerText = finalMessage;
-                modalContent.className = 'modal-content ' + modalClass; // Add outcome class for styling
-
-                modal.classList.add('show'); // Show the modal
-
-                modalPlayAgainBtn.onclick = () => {
-                    modal.classList.remove('show');
-                    startGame();
-                };
-
-                modalMainMenuBtn.onclick = () => {
-                    modal.classList.remove('show');
-                    showHomeView(); // Go back to home screen
-                };
-            } else {
-                showMessage("Turn " + currentTurn + " begins!", "info");
+                
+                showGameEndModal(title, finalMessage, modalClass);
+                return true; // Game has ended
             }
+            return false; // Game continues
         }
 
+        function showGameEndModal(title, message, outcomeClass) {
+            const modal = document.getElementById('gameEndModal');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            modal.querySelector('.modal-content').className = 'modal-content ' + outcomeClass;
+            
+            document.getElementById('modalPlayAgain').onclick = () => { modal.classList.remove('show'); startGame(); };
+            document.getElementById('modalMainMenu').onclick = () => { modal.classList.remove('show'); showPackView(); };
 
-        // --- View Switching Logic ---
-        const homeView = document.getElementById('homeView'); // New home view
-        const packView = document.getElementById('packView');
-        const collectionView = document.getElementById('collectionView');
-        const deckBuilderView = document.getElementById('deckBuilderView');
-        const gameView = document.getElementById('gameView');
-
-        function showView(viewElement) {
-            document.querySelectorAll('.view').forEach(view => {
-                view.classList.remove('active');
-            });
-            viewElement.classList.add('active');
-
-            // Clear containers when switching away from them
-            if (viewElement !== packView) {
-                 document.getElementById("packCardContainer").innerHTML = "";
-            }
-            if (viewElement !== collectionView) {
-                 document.getElementById("collectionCardContainer").innerHTML = "";
-            }
-            if (viewElement !== deckBuilderView) {
-                 document.getElementById("deckBuilderCardsContainer").innerHTML = "";
-            }
-            if (viewElement !== gameView) {
-                // Clear game specific containers
-                document.getElementById("playerHand").innerHTML = "";
-                document.getElementById("botHand").innerHTML = "";
-                document.getElementById("battlefield").innerHTML = "";
-                document.getElementById("botInPlay").innerHTML = "";
-                document.getElementById("gameMessage").innerText = "";
-            }
-
-            if (viewElement === collectionView) {
-                showCollection(); // Refresh collection when showing
-            } else if (viewElement === deckBuilderView) {
-                renderDeckBuilderCards(); // Refresh deck builder
-            }
+            modal.classList.add('show');
         }
 
-        function showHomeView() {
-            showView(homeView);
-        }
-
-        function showPackView() {
-            showView(packView);
-        }
-
-        function showCollectionView() {
-            showView(collectionView);
-        }
-
-        function showDeckBuilderView() {
-            showView(deckBuilderView);
-        }
-
-        function showGameView() {
-            showView(gameView);
-        }
-
-        // --- Message Display ---
-        let messageTimeout;
-        function showMessage(message, type = "info") {
-            const messageEl = document.getElementById('gameMessage');
-            messageEl.innerText = message;
-            messageEl.className = 'game-message ' + type; // Apply type class for styling (e.g., 'warning', 'error', 'success')
-
-            clearTimeout(messageTimeout);
-            if (type !== "game-end") { // Don't clear game-end messages automatically
-                messageTimeout = setTimeout(() => {
-                    messageEl.innerText = '';
-                    messageEl.className = 'game-message';
-                }, 3000);
-            }
-        }
-
-
-        // Initialize view when page loads
+        // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            showHomeView(); // Start on the new home screen
-            updateDeckSizeDisplay(); // Initialize deck size display (now safe to call)
+            showHomeView();
+            updateDeckSizeDisplay();
         });
     </script>
 </body>
