@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cryptid Pack Opening</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --text-light: #f0f0f0;
+            --pack-border: #a2c8c8;
+            --pack-shadow: #a2c8c8;
+            --card-back-color: #2c2c2c;
+            --uncollected-card-bg: #1f1f1f;
+            --uncollected-card-border: #444;
+            --selected-card-border: #00ff00; /* Green for selected cards */
+            --game-ui-bg: #2a2a2a;
+
+            /* Rarity Colors */
+            --common-color: #888;
+            --rare-color: #1e90ff;
+            --legendary-color: gold;
+            --victory-color: #28a745; /* Green for victory */
+            --defeat-color: #dc3545; /* Red for defeat */
+        }
+
+        body {
+            background: radial-gradient(circle at center, #2a2a2a, var(--bg-dark));
+            color: var(--text-light);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100dvh; /* Use dvh for dynamic viewport height */
+            margin: 0;
+            overflow-x: hidden; /* Prevent horizontal scrolling only */
+        }
+
+        /* --- Mobile-First Base Styles (Default for small screens) --- */
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        /* Global Button Styles */
+        .btn {
+            background: linear-gradient(135deg, #444, #666);
+            border: 2px solid #a2c8c8;
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--text-light);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 0 8px rgba(162, 200, 200, 0.5);
+            margin: 0 5px;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(162, 200, 200, 0.7);
+        }
+
+        .main-menu-buttons {
+            margin-top: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Pack Specific Styles */
+        .pack {
+            background: linear-gradient(135deg, #333, #555);
+            border: 3px solid var(--pack-border);
+            border-radius: 15px;
+            padding: 20px 30px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: bold;
+            transition: transform 0.3s ease, box-shadow 0.6s ease-in-out;
+            box-shadow: 0 0 15px var(--pack-shadow);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            text-align: center;
+            letter-spacing: 1px;
+            color: var(--text-light);
+            margin-top: 15px;
+        }
+
+        .pack::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pack-pulse 2s infinite alternate;
+            opacity: 0.7;
+            z-index: -1;
+        }
+
+        @keyframes pack-pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.05); opacity: 0.9; }
+        }
+
+        .pack:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px var(--pack-shadow), 0 0 50px rgba(162, 200, 200, 0.4);
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            padding-bottom: 30px;
+        }
+
+        /* Card Specific Styles (re-used for collection) */
+        .card-wrapper {
+            width: 120px;
+            height: 180px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease;
+            opacity: 0;
+            transform: translateY(20px) rotateY(0deg);
+            flex-shrink: 0;
+            flex-grow: 0;
+        }
+        /* Cards in collection, deck builder, game hand (player) should always show front */
+        .collection-view .card-wrapper,
+        .deck-builder-view .card-wrapper,
+        .player-area .card-wrapper,
+        .in-play-card-container .card-wrapper {
+            opacity: 1;
+            transform: translateY(0); /* Removed rotateY(0deg) here */
+        }
+
+        .card-wrapper.show {
+            opacity: 1;
+            transform: translateY(0) rotateY(0deg);
+        }
+
+        .card-wrapper.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-weight: bold;
+            color: var(--text-light);
+            text-shadow: 0 0 4px rgba(0,0,0,0.5);
+        }
+
+        /* Card Back Styles */
+        .card-back {
+            background-image: url('https://placehold.co/120x180/000000/FFFFFF?text=Card+Back'); /* Placeholder for your image */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 3px solid #666;
+            transform: rotateY(0deg); /* Back faces forward initially */
+        }
+
+        .card-front {
+            background-color: #222;
+            border: 3px solid #777;
+            transform: rotateY(180deg); /* Front faces away initially */
+            position: relative;
+        }
+
+        .card-front img {
+            max-width: 80%;
+            max-height: 60%;
+            object-fit: contain;
+            margin-bottom: 8px;
+            border-radius: 6px;
+        }
+
+        .card-name {
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+        }
+
+        .rarity-badge {
+            position: absolute;
+            bottom: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            border: 1px solid;
+        }
+
+        /* Card Stats Overlay */
+        .card-stats {
+            position: absolute;
+            top: 5px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5px;
+            font-size: 0.7em;
+            font-weight: bold;
+            color: #eee;
+            text-shadow: 0 0 2px black;
+        }
+        .card-stats .hp { color: #e74c3c; } /* Red for HP */
+        .card-stats .attack { color: #3498db; } /* Blue for Attack */
+
+        .card-ability {
+            font-size: 0.65em;
+            padding: 0 5px;
+            margin-top: 5px;
+            color: #ccc;
+            height: 30px; /* Fixed height for ability text */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
+        /* Rarity Specific Styles */
+        .card-front.common { border-color: var(--common-color); }
+        .card-front.rare { border-color: var(--rare-color); }
+        .card-front.legendary { border-color: var(--legendary-color); }
+
+        .rarity-badge.common { background-color: #555; border-color: var(--common-color); color: var(--common-color); }
+        .rarity-badge.rare { background-color: #0d47a1; border-color: var(--rare-color); color: var(--rare-color); }
+        .rarity-badge.legendary { background-color: #6a5acd; border-color: var(--legendary-color); color: var(--legendary-color); }
+
+        /* Uncollected Card Styles */
+        .uncollected-card .card-inner {
+            background-color: var(--uncollected-card-bg);
+            border: 3px dashed var(--uncollected-card-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            color: var(--uncollected-card-border);
+            box-shadow: none;
+            transform: none !important;
+        }
+        .uncollected-card .card-inner::after {
+            content: '?';
+        }
+
+
+        /* --- View Management --- */
+        .view {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100dvh; /* Use dvh for dynamic viewport height */
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        #homeView {
+            justify-content: center; /* Center content vertically */
+            padding-top: 0; /* No top padding needed */
+        }
+        #homeView h1 {
+            font-size: 3rem; /* Larger title for home screen */
+            margin-bottom: 50px;
+        }
+        #homeView .btn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+        }
+
+
+        #packView {
+            padding-top: 0px; /* Buttons are now inside, so no global margin */
+        }
+
+        #collectionView {
+            padding-top: 15px;
+        }
+
+        #collectionView .cards-container {
+            margin-top: 15px;
+            padding: 0;
+            gap: 15px;
+            max-width: 100%;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .collection-rarity-group {
+            width: 100%;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .collection-rarity-group h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+            position: relative;
+            display: inline-block;
+            padding: 0 15px;
+        }
+
+        .collection-rarity-group h2::before,
+        .collection-rarity-group h2::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 30px;
+            height: 2px;
+            background-color: currentColor;
+            transform: translateY(-50%);
+        }
+
+        .collection-rarity-group h2::before {
+            left: -50px;
+        }
+
+        .collection-rarity-group h2::after {
+            right: -50px;
+        }
+
+        .collection-rarity-group .cards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        /* Rarity heading colors */
+        .collection-rarity-group.legendary h2 { color: var(--legendary-color); }
+        .collection-rarity-group.rare h2 { color: var(--rare-color); }
+        .collection-rarity-group.common h2 { color: var(--common-color); }
+
+
+        /* --- Deck Builder View Styles --- */
+        #deckBuilderView {
+            padding-top: 15px;
+        }
+        #deckBuilderView .cards-container {
+            margin-top: 20px;
+            padding: 0;
+            gap: 15px;
+            max-width: 100%;
+            width: 100%;
+            justify-content: center;
+        }
+        .deck-builder-controls {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .deck-builder-controls span {
+            font-size: 1.1rem;
+            font-weight: bold;
+            align-self: center;
+        }
+        .deck-builder-card.selected .card-inner {
+            border: 3px solid var(--selected-card-border);
+            box-shadow: 0 0 15px var(--selected-card-border);
+        }
+        .deck-builder-card .card-front img {
+            filter: brightness(0.8); /* Dim unselected cards */
+        }
+        .deck-builder-card.selected .card-front img {
+            filter: brightness(1); /* Full brightness for selected */
+        }
+        .deck-builder-card.uncollected-card {
+            pointer-events: none; /* Cannot select uncollected cards */
+            opacity: 0.5;
+        }
+
+
+        /* --- Game View Styles --- */
+        #gameView {
+            padding-top: 15px;
+            justify-content: space-between; /* Push elements to top/bottom */
+            flex-grow: 1; /* Allow game view to take available space */
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 800px;
+            margin-bottom: 10px; /* Reduced margin */
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: var(--game-ui-bg);
+            padding: 8px 12px; /* Reduced padding */
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .game-info .player-hp, .game-info .bot-hp {
+            color: #e74c3c; /* Red HP */
+        }
+        .game-info .turn-counter {
+            color: #f1c40f; /* Yellow turn counter */
+        }
+
+        .game-field {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px; /* Reduced gap */
+            width: 100%;
+            max-width: 800px;
+            flex-grow: 1; /* Allow field to take available space */
+            justify-content: center;
+        }
+
+        .bot-area, .player-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 8px; /* Reduced padding */
+            box-sizing: border-box;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .bot-area h3, .player-area h3 {
+            margin-top: 0;
+            margin-bottom: 8px; /* Reduced margin */
+            font-size: 1.2rem; /* Reduced font size */
+            color: #bbb;
+        }
+
+        .in-play-card-container {
+            min-height: 180px; /* Adjusted min-height for played card area */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px; /* Reduced gap */
+            width: 100%;
+            flex-grow: 1; /* Allow in-play area to grow */
+        }
+        .in-play-card-container .card-wrapper {
+            width: 45%; /* Make cards in play take 45% of container width */
+            height: auto; /* Auto height to maintain aspect ratio */
+            max-width: 140px; /* Max size for larger screens */
+            max-height: 200px; /* Max height for larger screens */
+            opacity: 1; /* Always visible when in play */
+            transform: none;
+            transition: none; /* No entry animation for in-play */
+            flex-shrink: 1; /* Allow shrinking if needed */
+        }
+
+        .player-hand, .bot-hand {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px; /* Reduced gap */
+            min-height: 130px; /* Adjusted min-height for hand to accommodate 2 rows of cards */
+            padding: 8px 0; /* Reduced padding */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .player-hand .card-wrapper,
+        .bot-hand .card-wrapper {
+            width: 80px; /* Fixed width for cards in hand */
+            height: 120px; /* Fixed height for cards in hand */
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        .player-hand .card-wrapper:hover {
+            transform: translateY(-5px);
+        }
+        .bot-hand .card-wrapper .card-front {
+            transform: rotateY(0deg); /* Bot cards remain face down */
+        }
+        .bot-hand .card-wrapper .card-back {
+            transform: rotateY(0deg); /* Ensure bot card backs are visible */
+        }
+        .bot-hand .card-wrapper.flipped .card-inner {
+            transform: rotateY(0deg); /* Prevent bot cards from flipping */
+        }
+
+        .game-controls {
+            margin-top: 10px; /* Reduced margin */
+            margin-bottom: 10px; /* Reduced margin */
+            display: flex;
+            gap: 10px; /* Reduced gap */
+            justify-content: center;
+            width: 100%;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .game-message {
+            margin-top: 8px; /* Reduced margin */
+            font-size: 1rem; /* Reduced font size */
+            font-weight: bold;
+            color: #f1c40f;
+            text-align: center;
+            min-height: 1.2em; /* Reserve space to prevent layout shift */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100dvh; /* Use dvh for dynamic viewport height */
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden; /* Hidden by default */
+            opacity: 0;
+            transition: visibility 0s 0.3s, opacity 0.3s ease;
+        }
+
+        .modal.show {
+            visibility: visible;
+            opacity: 1;
+            transition: visibility 0s, opacity 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: var(--bg-dark);
+            margin: auto;
+            padding: 25px; /* Reduced padding */
+            border: 2px solid var(--pack-border);
+            border-radius: 15px;
+            width: 85%; /* Increased width for mobile */
+            max-width: 350px; /* Max width for larger screens */
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transform: scale(0.8); /* Start smaller for animation */
+            opacity: 0;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 12px; /* Reduced margin */
+            font-size: 1.6rem; /* Reduced font size */
+        }
+        .modal-content.victory h2 { color: var(--victory-color); }
+        .modal-content.defeat h2 { color: var(--defeat-color); }
+        .modal-content.draw h2 { color: #f1c40f; } /* Yellow for draw */
+
+
+        .modal-content p {
+            font-size: 1rem; /* Reduced font size */
+            margin-bottom: 20px; /* Reduced margin */
+            line-height: 1.4;
+        }
+
+        .modal-buttons {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically on mobile */
+            justify-content: center;
+            gap: 10px; /* Reduced gap */
+        }
+        .modal-buttons .btn {
+            width: 100%; /* Full width buttons */
+        }
+        
+        /* New Global Message Style */
+        .global-message {
+            position: fixed;
+            top: -100px; /* Start off-screen */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(241, 196, 15, 0.95); /* Yellowish warning color */
+            color: #121212;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 2000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease;
+        }
+        .global-message.show {
+            opacity: 1;
+            visibility: visible;
+            top: 30px;
+        }
+        .global-message.error { background-color: rgba(220, 53, 69, 0.95); color: white; }
+        .global-message.success { background-color: rgba(40, 167, 69, 0.95); color: white; }
+        .global-message.warning { background-color: rgba(241, 196, 15, 0.95); color: #121212; }
+
+
+        /* --- Desktop/Tablet Overrides (min-width for larger screens) --- */
+        @media (min-width: 769px) {
+            h1 {
+                margin-bottom: 30px;
+                font-size: 2.5rem;
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            }
+            .btn {
+                padding: 12px 25px;
+                font-size: 1.2rem;
+                margin: 0 8px;
+                box-shadow: 0 0 10px rgba(162, 200, 200, 0.5);
+            }
+            .btn:hover {
+                box-shadow: 0 4px 15px rgba(162, 200, 200, 0.7);
+            }
+            .main-menu-buttons {
+                margin-top: 30px;
+                margin-bottom: 40px;
+                gap: 15px;
+            }
+            .pack {
+                padding: 25px 50px;
+                font-size: 1.8rem;
+                box-shadow: 0 0 20px var(--pack-shadow);
+                margin-top: 20px;
+            }
+            .pack:hover {
+                box-shadow: 0 0 30px var(--pack-shadow), 0 0 60px rgba(162, 200, 200, 0.4);
+            }
+            .cards-container {
+                gap: 25px;
+                margin-top: 50px;
+                padding-bottom: 50px;
+            }
+            .card-wrapper {
+                width: 150px;
+                height: 220px;
+                transform: translateY(30px) rotateY(0deg);
+            }
+            .card-inner {
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            }
+            .card-face {
+                padding: 15px;
+                border-radius: 12px;
+                text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            }
+            .card-front img {
+                margin-bottom: 10px;
+                border-radius: 8px;
+            }
+            .card-name {
+                font-size: 1.3rem;
+                margin-bottom: 8px;
+            }
+            .rarity-badge {
+                bottom: 10px;
+                padding: 5px 10px;
+                border-radius: 5px;
+                font-size: 0.85rem;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+            .uncollected-card .card-inner {
+                font-size: 3em;
+            }
+            .view {
+                padding: 20px;
+            }
+            #collectionView {
+                padding-top: 20px;
+            }
+            #collectionView .cards-container {
+                margin-top: 20px;
+                gap: 20px;
+                max-width: 1200px;
+            }
+            .collection-rarity-group {
+                margin-bottom: 40px;
+            }
+            .collection-rarity-group h2 {
+                font-size: 2rem;
+                margin-bottom: 25px;
+                text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+                padding: 0 20px;
+            }
+            .collection-rarity-group h2::before,
+            .collection-rarity-group h2::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                width: 60px;
+                height: 2px;
+                background-color: currentColor;
+                transform: translateY(-50%);
+            }
+
+            .collection-rarity-group h2::before {
+                left: -80px;
+            }
+
+            .collection-rarity-group h2::after {
+                right: -80px;
+            }
+            .collection-rarity-group .cards-grid {
+                gap: 20px;
+            }
+            .game-info {
+                font-size: 1.5rem;
+                padding: 15px 25px;
+            }
+            .in-play-card-container .card-wrapper {
+                width: 180px; /* Larger for desktop in-play */
+                height: 260px;
+            }
+            .modal-buttons {
+                flex-direction: row; /* Buttons side-by-side on desktop */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Message Container -->
+    <div id="globalMessage" class="global-message"></div>
+
+    <div id="homeView" class="view active">
+        <h1>Cryptid Card Game</h1>
+        <button class="btn" onclick="showPackView()">Enter Game</button>
+    </div>
+
+    <div id="packView" class="view">
+        <div class="main-menu-buttons">
+            <button class="btn" onclick="openPack()">Open Pack</button>
+            <button class="btn" onclick="showCollectionView()">View Collection</button>
+            <button class="btn" onclick="showDeckBuilderView()">Deck Builder</button>
+            <button class="btn" onclick="tryStartGame()">Play Game</button>
+        </div>
+        <h1>Cryptid Pack Opening</h1>
+        <div class="pack" onclick="openPack()">Click to Open a New Pack</div>
+        <div class="cards-container" id="packCardContainer"></div>
+    </div>
+
+    <div id="collectionView" class="view">
+        <h1>Your Cryptid Collection</h1>
+        <button class="btn back-btn" onclick="showPackView()">Back to Main Menu</button>
+        <div class="cards-container collection-view" id="collectionCardContainer"></div>
+    </div>
+
+    <div id="deckBuilderView" class="view">
+        <h1>Build Your Deck</h1>
+        <div class="deck-builder-controls">
+            <button class="btn" onclick="showPackView()">Back to Main Menu</button>
+            <button class="btn" onclick="saveDeck()">Save Deck</button>
+            <span>Deck Size: <span id="currentDeckSize">0</span> / <span id="maxDeckSize">10</span></span>
+        </div>
+        <div class="cards-container deck-builder-view" id="deckBuilderCardsContainer"></div>
+    </div>
+
+    <div id="gameView" class="view">
+        <h1>Cryptid Battle</h1>
+        <div class="game-info">
+            <span class="player-hp">Player HP: <span id="playerHP">100</span></span>
+            <span class="turn-counter">Turn: <span id="turnCounter">1</span> / 20</span>
+            <span class="bot-hp">Bot HP: <span id="botHP">100</span></span>
+        </div>
+
+        <div class="game-field">
+            <div class="bot-area">
+                <h3>Bot's Field</h3>
+                <div class="in-play-card-container" id="botInPlay"></div>
+                <div class="bot-hand" id="botHand"></div>
+            </div>
+
+            <div class="in-play-card-container" id="battlefield">
+                </div>
+
+            <div class="player-area">
+                <h3>Your Hand</h3>
+                <div class="player-hand" id="playerHand"></div>
+                <div class="game-controls">
+                    <button class="btn" id="playCardBtn" onclick="playPlayerCard()">Play Card</button>
+                    <button class="btn" id="nextTurnBtn" onclick="endTurn()" disabled>Next Turn</button>
+                </div>
+            </div>
+        </div>
+        <div class="game-message" id="gameMessage"></div>
+    </div>
+
+    <div id="gameEndModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle"></h2>
+            <p id="modalMessage"></p>
+            <div class="modal-buttons">
+                <button class="btn" id="modalPlayAgain">Play Again</button>
+                <button class="btn" id="modalMainMenu">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        // Data for all possible cryptids with corrected image paths
+        const allCryptids = [
+            { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: 10, ability: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Mothman" },
+            { id: 'chupacabra', name: "Chupacabra", rarity: "rare", hp: 40, attack: 20, ability: "Blood Drain: Heals self for 10 HP after attacking.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Chupacabra" },
+            { id: 'bigfoot', name: "Bigfoot", rarity: "common", hp: 50, attack: 15, ability: "Stomp: Deals 5 splash damage to all enemy cards.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Bigfoot" },
+            { id: 'jerseydevil', name: "Jersey Devil", rarity: "rare", hp: 35, attack: 25, ability: "Flight: Dodges first attack each turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Jersey+Devil" },
+            { id: 'wendigo', name: "Wendigo", rarity: "legendary", hp: 60, attack: 30, ability: "Insatiable Hunger: Gains +5 Attack for each enemy card defeated.", image: "https://placehold.co/120x180/ffd700/000000?text=Wendigo" },
+            { id: 'skinwalker', name: "Skinwalker", rarity: "legendary", hp: 55, attack: 28, ability: "Mimicry: Copies the ability of the last enemy card played.", image: "https://placehold.co/120x180/ffd700/000000?text=Skinwalker" },
+            { id: 'flatwoodsmonster', name: "Flatwoods Monster", rarity: "common", hp: 30, attack: 12, ability: "Gaseous Form: Cannot be targeted by abilities for one turn.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Flatwoods" },
+            { id: 'kraken', name: "Kraken", rarity: "rare", hp: 70, attack: 18, ability: "Crushing Grip: Stuns enemy card for one turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Kraken" },
+            { id: 'lochnessmonster', name: "Loch Ness Monster", rarity: "rare", hp: 65, attack: 15, ability: "Deep Dive: Becomes immune to damage for one turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Nessie" },
+            { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: 18, ability: "Wail: Deals 5 damage to enemy player directly.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Banshee" },
+            { id: 'gnome', name: "Gnome", rarity: "common", hp: 30, attack: 10, ability: "Burrow: Hides underground, cannot be attacked for one turn.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Gnome" },
+            { id: 'brownie', name: "Brownie", rarity: "common", hp: 20, attack: 8, ability: "Helpful Spirit: Heals player for 10 HP.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Brownie" },
+            { id: 'bunyip', name: "Bunyip", rarity: "common", hp: 45, attack: 13, ability: "Swamp Ambush: Next attack deals double damage if played from hand.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Bunyip" },
+            { id: 'kappa', name: "Kappa", rarity: "rare", hp: 38, attack: 22, ability: "Cucumber Feast: Gains +5 HP and +5 Attack for one turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Kappa" },
+            { id: 'siren', name: "Siren", rarity: "rare", hp: 32, attack: 28, ability: "Enchanting Song: Prevents enemy card from attacking next turn.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Siren" },
+            { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: 23, ability: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Basilisk" },
+            { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: 20, ability: "Sky Guardian: All friendly cards gain +5 HP.", image: "https://placehold.co/120x180/1e90ff/FFFFFF?text=Griffin" },
+            { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: 10, ability: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "https://placehold.co/120x180/888888/FFFFFF?text=Yeti" },
+            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: 35, ability: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image: "https://placehold.co/120x180/ffd700/000000?text=Woods+Devil" }
+        ];
+
+        // --- STATE MANAGEMENT ---
+        let collectedCardIds;
+        try {
+            collectedCardIds = new Set(JSON.parse(localStorage.getItem('cryptidCollection') || '[]'));
+        } catch (e) {
+            console.error("Error parsing cryptidCollection from localStorage:", e);
+            collectedCardIds = new Set(); // Fallback to empty set
+        }
+
+        let playerDeckIds;
+        try {
+            playerDeckIds = JSON.parse(localStorage.getItem('playerDeck') || '[]');
+        }
+        catch (e) {
+            console.error("Error parsing playerDeck from localStorage:", e);
+            playerDeckIds = []; // Fallback to empty array
+        }
+
+        const MAX_DECK_SIZE = 10;
+        const MAX_TURNS = 20;
+
+        // Game State Variables (declared globally)
+        let playerHP, botHP, currentTurn, playerCardInPlay, botCardInPlay;
+        let playerDeck, botDeck, playerHand, botHand;
+        let selectedPlayerCardData = null;
+        let selectedPlayerCardElement = null;
+        let messageTimeout, globalMessageTimeout;
+
+
+        // --- UTILITY & SETUP FUNCTIONS ---
+        function updateDeckSizeDisplay() {
+            const currentSizeElement = document.getElementById("currentDeckSize");
+            const maxSizeElement = document.getElementById("maxDeckSize");
+            if (currentSizeElement && maxSizeElement) {
+                currentSizeElement.innerText = playerDeckIds.length;
+                maxSizeElement.innerText = MAX_DECK_SIZE;
+            }
+        }
+
+        function getRarity() {
+            const roll = Math.random();
+            if (roll < 0.05) return "legendary"; // 5% chance
+            if (roll < 0.25) return "rare";      // 20% chance
+            return "common";                     // 75% chance
+        }
+
+        function getRandomCryptid(desiredRarity) {
+            const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
+            if (availableCryptids.length === 0) {
+                console.warn(`No cryptids found for rarity: ${desiredRarity}. Returning a random cryptid.`);
+                return allCryptids[Math.floor(Math.random() * allCryptids.length)];
+            }
+            return availableCryptids[Math.floor(Math.random() * availableCryptids.length)];
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function createCardElement(cryptid, isCollected = true, showFrontImmediately = false) {
+            const cardWrapper = document.createElement("div");
+            cardWrapper.className = `card-wrapper`;
+            cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
+
+            const cardInner = document.createElement("div");
+            cardInner.className = `card-inner`;
+
+            if (isCollected && cryptid) {
+                const cardFront = document.createElement("div");
+                cardFront.className = `card-face card-front ${cryptid.rarity}`;
+
+                const cardImage = document.createElement("img");
+                cardImage.src = cryptid.image;
+                cardImage.alt = cryptid.name;
+                cardImage.onerror = () => { cardImage.src = 'https://placehold.co/100x150/ff0000/FFFFFF?text=Error'; }; // Fallback
+                cardFront.appendChild(cardImage);
+
+                const cardName = document.createElement("div");
+                cardName.className = "card-name";
+                cardName.innerText = cryptid.name;
+                cardFront.appendChild(cardName);
+
+                const cardStats = document.createElement("div");
+                cardStats.className = "card-stats";
+                cardStats.innerHTML = `<span class="hp">HP: ${cryptid.hp}</span><span class="attack">ATK: ${cryptid.attack}</span>`;
+                cardFront.appendChild(cardStats);
+
+                const cardAbility = document.createElement("div");
+                cardAbility.className = "card-ability";
+                cardAbility.innerText = cryptid.ability;
+                cardFront.appendChild(cardAbility);
+
+                const rarityBadge = document.createElement("div");
+                rarityBadge.className = `rarity-badge ${cryptid.rarity}`;
+                rarityBadge.innerText = cryptid.rarity;
+                cardFront.appendChild(rarityBadge);
+
+                const cardBack = document.createElement("div");
+                cardBack.className = `card-face card-back`;
+
+                cardInner.appendChild(cardBack);
+                cardInner.appendChild(cardFront);
+
+                if (showFrontImmediately) {
+                    cardInner.style.transform = 'rotateY(180deg)';
+                }
+
+            } else {
+                cardWrapper.classList.add("uncollected-card");
+            }
+
+            cardWrapper.appendChild(cardInner);
+            return cardWrapper;
+        }
+
+        // --- MESSAGE DISPLAY ---
+        function showMessage(message, type = "info", isGlobal = false) {
+            const messageEl = isGlobal ? document.getElementById('globalMessage') : document.getElementById('gameMessage');
+            if (!messageEl) return; 
+
+            messageEl.innerText = message;
+            const baseClass = isGlobal ? 'global-message' : 'game-message';
+            messageEl.className = `${baseClass} ${type}`;
+
+            if (isGlobal) {
+                messageEl.classList.add('show');
+                clearTimeout(globalMessageTimeout);
+                globalMessageTimeout = setTimeout(() => {
+                    messageEl.classList.remove('show');
+                }, 3500);
+            } else {
+                clearTimeout(messageTimeout);
+                if (type !== "game-end") { 
+                    messageTimeout = setTimeout(() => {
+                        messageEl.innerText = '';
+                        messageEl.className = 'game-message';
+                    }, 3000);
+                }
+            }
+        }
+
+        // --- VIEW SWITCHING ---
+        const homeView = document.getElementById('homeView');
+        const packView = document.getElementById('packView');
+        const collectionView = document.getElementById('collectionView');
+        const deckBuilderView = document.getElementById('deckBuilderView');
+        const gameView = document.getElementById('gameView');
+
+        function showView(viewElement) {
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            viewElement.classList.add('active');
+
+            if (viewElement === collectionView) showCollection();
+            else if (viewElement === deckBuilderView) renderDeckBuilderCards();
+        }
+
+        function showHomeView() { showView(homeView); }
+        function showPackView() { showView(packView); }
+        function showCollectionView() { showView(collectionView); }
+        function showDeckBuilderView() { showView(deckBuilderView); }
+
+        // --- PACK OPENING ---
+        function openPack() {
+            const container = document.getElementById("packCardContainer");
+            container.innerHTML = ""; 
+
+            for (let i = 0; i < 5; i++) {
+                const rarity = getRarity();
+                const cryptid = getRandomCryptid(rarity);
+                const cardWrapper = createCardElement(cryptid, true, false);
+                container.appendChild(cardWrapper);
+
+                setTimeout(() => {
+                    cardWrapper.classList.add("show");
+                    setTimeout(() => {
+                        cardWrapper.classList.add("flipped");
+                        if (!collectedCardIds.has(cryptid.id)) {
+                            collectedCardIds.add(cryptid.id);
+                            localStorage.setItem('cryptidCollection', JSON.stringify(Array.from(collectedCardIds)));
+                            console.log(`Collected new cryptid: ${cryptid.name}`);
+                        }
+                    }, 500);
+                }, 200 * i);
+            }
+        }
+
+        // --- COLLECTION VIEW ---
+        function showCollection() {
+            const container = document.getElementById("collectionCardContainer");
+            container.innerHTML = "";
+            const rarityOrder = ["legendary", "rare", "common"];
+            const cryptidsByRarity = { legendary: [], rare: [], common: [] };
+
+            allCryptids.forEach(c => cryptidsByRarity[c.rarity].push(c));
+
+            rarityOrder.forEach(rarity => {
+                const cryptidsInThisRarity = cryptidsByRarity[rarity].sort((a, b) => a.name.localeCompare(b.name));
+                if (cryptidsInThisRarity.length > 0) {
+                    const rarityGroupDiv = document.createElement("div");
+                    rarityGroupDiv.className = `collection-rarity-group ${rarity}`;
+                    const heading = document.createElement("h2");
+                    heading.innerText = `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Cryptids`;
+                    rarityGroupDiv.appendChild(heading);
+                    const cardsGrid = document.createElement("div");
+                    cardsGrid.className = "cards-grid";
+                    cryptidsInThisRarity.forEach(cryptid => {
+                        const isCollected = collectedCardIds.has(cryptid.id);
+                        const cardWrapper = createCardElement(cryptid, isCollected, true);
+                        cardWrapper.classList.add("show");
+                        cardsGrid.appendChild(cardWrapper);
+                    });
+                    rarityGroupDiv.appendChild(cardsGrid);
+                    container.appendChild(rarityGroupDiv);
+                }
+            });
+        }
+
+        // --- DECK BUILDER ---
+        function renderDeckBuilderCards() {
+            const container = document.getElementById("deckBuilderCardsContainer");
+            container.innerHTML = "";
+            const collectedCryptids = allCryptids.filter(c => collectedCardIds.has(c.id)).sort((a,b) => a.name.localeCompare(b.name));
+            
+            collectedCryptids.forEach(cryptid => {
+                const cardWrapper = createCardElement(cryptid, true, true);
+                cardWrapper.classList.add("deck-builder-card");
+                if (playerDeckIds.includes(cryptid.id)) {
+                    cardWrapper.classList.add("selected");
+                }
+                cardWrapper.onclick = () => toggleCardInDeck(cryptid.id);
+                container.appendChild(cardWrapper);
+            });
+             updateDeckSizeDisplay();
+        }
+
+        function toggleCardInDeck(cryptidId) {
+            const index = playerDeckIds.indexOf(cryptidId);
+            if (index > -1) {
+                playerDeckIds.splice(index, 1);
+            } else {
+                if (playerDeckIds.length < MAX_DECK_SIZE) {
+                    playerDeckIds.push(cryptidId);
+                } else {
+                    showMessage("Deck is full! Max " + MAX_DECK_SIZE + " cards.", "warning", true);
+                }
+            }
+            document.querySelector(`.deck-builder-card[data-cryptid-id="${cryptidId}"]`).classList.toggle('selected', playerDeckIds.includes(cryptidId));
+            updateDeckSizeDisplay();
+        }
+
+        function saveDeck() {
+            if (playerDeckIds.length === MAX_DECK_SIZE) {
+                localStorage.setItem('playerDeck', JSON.stringify(playerDeckIds));
+                showMessage("Deck saved successfully!", "success", true);
+            } else {
+                showMessage("Your deck must contain exactly " + MAX_DECK_SIZE + " cards.", "warning", true);
+            }
+        }
+
+        // --- GAME LOGIC ---
+        function tryStartGame() {
+            if (playerDeckIds.length !== MAX_DECK_SIZE) {
+                showMessage("Please build and save a deck of " + MAX_DECK_SIZE + " cards first!", "error", true);
+                return;
+            }
+            startGame();
+        }
+
+        function startGame() {
+            showView(gameView);
+            showMessage("Game Started! Select a card to play.", "info");
+
+            playerHP = 100;
+            botHP = 100;
+            currentTurn = 1;
+            playerCardInPlay = null;
+            botCardInPlay = null;
+            selectedPlayerCardData = null;
+            selectedPlayerCardElement = null;
+
+            playerDeck = playerDeckIds.map(id => ({...allCryptids.find(c => c.id === id)}));
+            shuffleArray(playerDeck);
+            
+            botDeck = [...allCryptids].map(c => ({...c}));
+            shuffleArray(botDeck);
+            botDeck = botDeck.slice(0, MAX_DECK_SIZE);
+
+            playerHand = [];
+            botHand = [];
+            for (let i = 0; i < 3; i++) {
+                if (playerDeck.length > 0) playerHand.push(playerDeck.shift());
+                if (botDeck.length > 0) botHand.push(botDeck.shift());
+            }
+
+            updateGameUI();
+            document.getElementById('playCardBtn').disabled = false;
+            document.getElementById('nextTurnBtn').disabled = true;
+        }
+
+        function updateGameUI() {
+            document.getElementById('playerHP').innerText = playerHP;
+            document.getElementById('botHP').innerText = botHP;
+            document.getElementById('turnCounter').innerText = `${currentTurn} / ${MAX_TURNS}`;
+
+            const playerHandContainer = document.getElementById('playerHand');
+            playerHandContainer.innerHTML = '';
+            playerHand.forEach(card => {
+                const cardEl = createCardElement(card, true, true);
+                cardEl.onclick = () => selectPlayerCard(card, cardEl);
+                if(selectedPlayerCardData && selectedPlayerCardData.id === card.id) {
+                    cardEl.classList.add('selected');
+                }
+                playerHandContainer.appendChild(cardEl);
+            });
+
+            const botHandContainer = document.getElementById('botHand');
+            botHandContainer.innerHTML = '';
+            botHand.forEach(card => {
+                const cardEl = createCardElement(card, true, false);
+                botHandContainer.appendChild(cardEl);
+            });
+
+            const battlefield = document.getElementById('battlefield');
+            battlefield.innerHTML = '';
+            if (playerCardInPlay) {
+                battlefield.appendChild(createCardElement(playerCardInPlay, true, true));
+            }
+
+            const botInPlayContainer = document.getElementById('botInPlay');
+            botInPlayContainer.innerHTML = '';
+            if (botCardInPlay) {
+                botInPlayContainer.appendChild(createCardElement(botCardInPlay, true, true));
+            }
+        }
+
+        function selectPlayerCard(cardData, cardElement) {
+            if (selectedPlayerCardElement) {
+                selectedPlayerCardElement.classList.remove('selected');
+            }
+            selectedPlayerCardData = cardData;
+            selectedPlayerCardElement = cardElement;
+            selectedPlayerCardElement.classList.add('selected');
+        }
+
+        function playPlayerCard() {
+            if (!selectedPlayerCardData) {
+                showMessage("Please select a card from your hand to play!", "warning");
+                return;
+            }
+
+            playerCardInPlay = selectedPlayerCardData;
+            playerHand = playerHand.filter(card => card.id !== selectedPlayerCardData.id);
+            selectedPlayerCardData = null;
+            selectedPlayerCardElement = null;
+
+            if (botHand.length > 0) {
+                botCardInPlay = botHand.shift();
+            } else {
+                botCardInPlay = null;
+            }
+            
+            performCombat();
+            updateGameUI();
+
+            document.getElementById('playCardBtn').disabled = true;
+            document.getElementById('nextTurnBtn').disabled = false;
+        }
+
+        function performCombat() {
+            let message = "";
+            if (playerCardInPlay && botCardInPlay) {
+                botHP -= playerCardInPlay.attack;
+                playerHP -= botCardInPlay.attack;
+                message = `${playerCardInPlay.name} deals ${playerCardInPlay.attack} damage! ${botCardInPlay.name} deals ${botCardInPlay.attack} damage!`;
+            } else if (playerCardInPlay) {
+                botHP -= playerCardInPlay.attack;
+                message = `${playerCardInPlay.name} attacks the Bot directly for ${playerCardInPlay.attack} damage!`;
+            }
+            showMessage(message, "info");
+        }
+
+        function endTurn() {
+            currentTurn++;
+            playerCardInPlay = null;
+            botCardInPlay = null;
+
+            if (playerDeck.length > 0 && playerHand.length < 5) playerHand.push(playerDeck.shift());
+            if (botDeck.length > 0 && botHand.length < 5) botHand.push(botDeck.shift());
+            
+            if(checkGameEnd()) return;
+
+            updateGameUI();
+            showMessage(`Turn ${currentTurn} begins!`, "info");
+            document.getElementById('playCardBtn').disabled = false;
+            document.getElementById('nextTurnBtn').disabled = true;
+        }
+
+        function checkGameEnd() {
+            if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
+                let finalMessage = "";
+                let modalClass = "";
+                let title = "Game Over!";
+
+                if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
+                else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
+                else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; } 
+                else if (currentTurn > MAX_TURNS) {
+                    finalMessage = "Max turns reached. ";
+                    if (playerHP > botHP) { finalMessage += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; } 
+                    else if (botHP > playerHP) { finalMessage += "Bot wins by HP advantage!"; modalClass = "defeat"; title = "Defeat!"; } 
+                    else { finalMessage += "It's a draw!"; modalClass = "draw"; }
+                }
+                
+                showGameEndModal(title, finalMessage, modalClass);
+                return true; // Game has ended
+            }
+            return false; // Game continues
+        }
+
+        function showGameEndModal(title, message, outcomeClass) {
+            const modal = document.getElementById('gameEndModal');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            modal.querySelector('.modal-content').className = 'modal-content ' + outcomeClass;
+            
+            document.getElementById('modalPlayAgain').onclick = () => { modal.classList.remove('show'); startGame(); };
+            document.getElementById('modalMainMenu').onclick = () => { modal.classList.remove('show'); showPackView(); };
+
+            modal.classList.add('show');
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showHomeView();
+            updateDeckSizeDisplay();
+        });
+    </script>
+</body>
+</html>
