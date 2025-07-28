@@ -44,11 +44,17 @@
 
         /* --- Background Image for Main Views --- */
         #packView, #collectionView, #deckBuilderView, #gameView {
-            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png');
+            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
+        }
+        
+        #authView {
+             background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('http://googleusercontent.com/file_content/1');
+            background-size: cover;
+            background-position: center;
         }
 
 
@@ -378,20 +384,10 @@
             display: flex;
         }
 
-        #homeView {
+        #authView, #loadingView {
             justify-content: center; /* Center content vertically */
             padding-top: 0; /* No top padding needed */
-            background: var(--bg-dark); /* Home view doesn't get the image */
         }
-        #homeView h1 {
-            font-size: 3rem; /* Larger title for home screen */
-            margin-bottom: 50px;
-        }
-        #homeView .btn {
-            padding: 15px 40px;
-            font-size: 1.5rem;
-        }
-
 
         #packView {
             padding-top: 15px; 
@@ -760,6 +756,77 @@
             color: var(--nav-icon-active-color);
         }
 
+        /* --- Auth View Styles --- */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 350px;
+            padding: 20px;
+            background-color: rgba(42, 42, 42, 0.9);
+            border-radius: 10px;
+        }
+        .auth-container input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .auth-buttons .btn {
+            flex-grow: 1;
+        }
+        
+        /* --- Loading View Styles --- */
+        #loadingView {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--pack-border);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* --- Settings View --- */
+        .settings-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+            padding: 25px;
+            background-color: var(--game-ui-bg);
+            border-radius: 10px;
+            text-align: left;
+        }
+        .settings-container h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+        .info-row {
+            font-size: 1.1rem;
+        }
+        .info-row span {
+            font-weight: bold;
+            color: var(--pack-border);
+        }
+
+
         /* --- Desktop/Tablet Overrides (min-width for larger screens) --- */
         @media (min-width: 769px) {
             h1 {
@@ -878,9 +945,21 @@
     <!-- Global Message Container -->
     <div id="globalMessage" class="global-message"></div>
 
-    <div id="homeView" class="view active">
-        <h1>Cryptid Card Game</h1>
-        <button class="btn" onclick="showPackView()">Enter Game</button>
+    <div id="authView" class="view active">
+        <div class="auth-container">
+            <h1>Cryptid</h1>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <div class="auth-buttons">
+                <button class="btn" onclick="login()">Login</button>
+                <button class="btn" onclick="register()">Register</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingView" class="view">
+        <div class="loader"></div>
+        <p id="loading-text">Loading Game Data...</p>
     </div>
 
     <div id="packView" class="view">
@@ -934,6 +1013,15 @@
         <div class="game-message" id="gameMessage"></div>
     </div>
 
+    <div id="settingsView" class="view">
+        <div class="settings-container">
+            <h2>Settings</h2>
+            <div class="info-row">Username: <span id="settings-username"></span></div>
+            <div class="info-row">User ID: <span id="settings-userid"></span></div>
+            <button class="btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
     <div id="gameEndModal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle"></h2>
@@ -961,6 +1049,10 @@
         <button id="nav-battle" class="nav-btn" onclick="tryStartGame()">
             <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c-0.4,0.4-0.4-1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
             <span>Battle</span>
+        </button>
+        <button id="nav-settings" class="nav-btn" onclick="showSettingsView()">
+            <svg viewBox="0 0 24 24"><path d="M19.4,12.9c0.1-0.3,0.1-0.6,0.1-0.9s0-0.6-0.1-0.9l2.1-1.6c0.2-0.1,0.2-0.4,0.1-0.6l-2-3.5c-0.1-0.2-0.4-0.3-0.6-0.2l-2.5,1c-0.5-0.4-1-0.7-1.6-0.9L14.4,2.4c-0.1-0.3-0.3-0.4-0.6-0.4h-4c-0.3,0-0.5,0.2-0.6,0.4l-0.4,2.9c-0.6,0.2-1.1,0.5-1.6,0.9l-2.5-1c-0.2-0.1-0.5,0-0.6,0.2l-2,3.5c-0.1,0.2-0.1,0.5,0.1,0.6l2.1,1.6C4.6,11.4,4.5,11.7,4.5,12s0,0.6,0.1,0.9l-2.1,1.6c-0.2,0.1-0.2,0.4-0.1,0.6l2,3.5c0.1,0.2,0.4,0.3,0.6,0.2l2.5-1c0.5,0.4,1,0.7,1.6,0.9l0.4,2.9c0.1,0.3,0.3,0.4,0.6,0.4h4c0.3,0,0.5-0.2,0.6-0.4l0.4-2.9c0.6-0.2,1.1-0.5,1.6-0.9l2.5,1c0.2,0.1,0.5,0,0.6-0.2l2-3.5c0.1-0.2,0.1-0.5-0.1-0.6L19.4,12.9z M12,15.5c-1.9,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5s3.5,1.6,3.5,3.5S13.9,15.5,12,15.5z"></path></svg>
+            <span>Settings</span>
         </button>
     </nav>
 
@@ -993,6 +1085,7 @@
         let playerDeckIds;
         let cryptidCoins;
         let packsOpened;
+        let currentUserId = null;
 
         const PACK_COST = 50;
         const WIN_REWARD = 10;
@@ -1006,43 +1099,60 @@
         let selectedPlayerCardElement = null;
         let messageTimeout, globalMessageTimeout;
 
-        function loadGameData() {
-            const hasPlayedBefore = localStorage.getItem('hasPlayedBefore');
+        function loadGameData(userId) {
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const userData = Object.values(allUsers).find(u => u.id === userId);
 
-            if (!hasPlayedBefore) {
-                // First time player setup
-                collectedCardIds = new Set();
-                playerDeckIds = [];
-                cryptidCoins = 100; // Starting coins
-                packsOpened = 0;
-                localStorage.setItem('hasPlayedBefore', 'true');
-                saveGameData(); // Initial save
-            } else {
-                // Returning player
-                try {
-                    collectedCardIds = new Set(JSON.parse(localStorage.getItem('cryptidCollection') || '[]'));
-                } catch (e) {
-                    console.error("Error parsing cryptidCollection from localStorage:", e);
-                    collectedCardIds = new Set();
-                }
-
-                try {
-                    playerDeckIds = JSON.parse(localStorage.getItem('playerDeck') || '[]');
-                } catch (e) {
-                    console.error("Error parsing playerDeck from localStorage:", e);
-                    playerDeckIds = [];
-                }
-                
-                cryptidCoins = parseInt(localStorage.getItem('cryptidCoins') || '0', 10);
-                packsOpened = parseInt(localStorage.getItem('packsOpened') || '0', 10);
+            if (userData) {
+                collectedCardIds = new Set(userData.collectedCardIds || []);
+                playerDeckIds = userData.playerDeckIds || [];
+                cryptidCoins = userData.cryptidCoins || 0;
+                packsOpened = userData.packsOpened || 0;
             }
         }
 
         function saveGameData() {
-             localStorage.setItem('cryptidCollection', JSON.stringify(Array.from(collectedCardIds)));
-             localStorage.setItem('playerDeck', JSON.stringify(playerDeckIds));
-             localStorage.setItem('cryptidCoins', cryptidCoins);
-             localStorage.setItem('packsOpened', packsOpened);
+            if (!currentUserId) return;
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            // Find the user by ID to update their data
+            const username = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
+            if (username) {
+                allUsers[username].collectedCardIds = Array.from(collectedCardIds);
+                allUsers[username].playerDeckIds = playerDeckIds;
+                allUsers[username].cryptidCoins = cryptidCoins;
+                allUsers[username].packsOpened = packsOpened;
+                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+            }
+        }
+
+        // --- ASSET PRELOADING ---
+        function preloadImages() {
+            const loadingText = document.getElementById('loading-text');
+            loadingText.innerText = 'Loading card images...';
+            const imageUrls = allCryptids.map(c => c.image);
+            imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
+            imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG');
+            imageUrls.push('http://googleusercontent.com/file_content/1');
+
+            let loadedCount = 0;
+            const totalImages = imageUrls.length;
+
+            return new Promise((resolve) => {
+                if (totalImages === 0) {
+                    resolve();
+                    return;
+                }
+                imageUrls.forEach(url => {
+                    const img = new Image();
+                    img.src = url;
+                    img.onload = img.onerror = () => {
+                        loadedCount++;
+                        if (loadedCount === totalImages) {
+                            resolve();
+                        }
+                    };
+                });
+            });
         }
 
 
@@ -1067,7 +1177,7 @@
             const roll = Math.random();
             if (roll < 0.05) return "legendary"; // 5% chance
             if (roll < 0.25) return "rare";     // 20% chance
-            return "common";                     // 75% chance
+            return "common";                   // 75% chance
         }
         
         function getNewRandomCryptid(rarity, currentlyDrawnIds) {
@@ -1194,11 +1304,13 @@
         }
 
         // --- VIEW SWITCHING ---
-        const homeView = document.getElementById('homeView');
+        const authView = document.getElementById('authView');
+        const loadingView = document.getElementById('loadingView');
         const packView = document.getElementById('packView');
         const collectionView = document.getElementById('collectionView');
         const deckBuilderView = document.getElementById('deckBuilderView');
         const gameView = document.getElementById('gameView');
+        const settingsView = document.getElementById('settingsView');
         const bottomNav = document.getElementById('bottom-nav');
 
         function showView(viewElement, navBtnId) {
@@ -1206,7 +1318,7 @@
             viewElement.classList.add('active');
 
             // Show or hide nav bar
-            if(viewElement === homeView){
+            if(viewElement === authView || viewElement === loadingView){
                 bottomNav.style.display = 'none';
             } else {
                 bottomNav.style.display = 'flex';
@@ -1221,6 +1333,7 @@
             // Run view-specific logic
             if (viewElement === collectionView) showCollection();
             else if (viewElement === deckBuilderView) renderDeckBuilderCards();
+            else if (viewElement === settingsView) showSettings();
             else if (viewElement === packView) {
                 updateCoinDisplay();
                 const titleEl = document.getElementById('pack-opening-title');
@@ -1232,10 +1345,18 @@
             }
         }
 
-        function showHomeView() { showView(homeView, null); }
+        function showAuthView() { showView(authView, null); }
         function showPackView() { showView(packView, 'nav-packs'); }
         function showCollectionView() { showView(collectionView, 'nav-collection'); }
         function showDeckBuilderView() { showView(deckBuilderView, 'nav-deck'); }
+        function showSettingsView() { showView(settingsView, 'nav-settings'); }
+
+        function showSettings() {
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const username = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
+            document.getElementById('settings-username').innerText = username || 'N/A';
+            document.getElementById('settings-userid').innerText = currentUserId || 'N/A';
+        }
 
         // --- PACK OPENING ---
         function openPack() {
@@ -1369,7 +1490,7 @@
 
         function saveDeck() {
             if (playerDeckIds.length === MAX_DECK_SIZE) {
-                localStorage.setItem('playerDeck', JSON.stringify(playerDeckIds));
+                saveGameData();
                 showMessage("Deck saved successfully!", "success", true);
             } else {
                 showMessage("Your deck must contain exactly " + MAX_DECK_SIZE + " cards.", "warning", true);
@@ -1557,14 +1678,113 @@
 
             modal.classList.add('show');
         }
+        
+        function generateUniqueId() {
+            return Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8);
+        }
 
+        // --- AUTHENTICATION FUNCTIONS (LOCAL STORAGE) ---
+        window.register = () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Username and password cannot be empty.', 'error', true);
+                return;
+            }
+            if (username === password) {
+                showMessage('Username and password cannot be the same.', 'error', true);
+                return;
+            }
+
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            if (allUsers[username]) {
+                showMessage('An account with this username already exists.', 'error', true);
+                return;
+            }
+
+            // In a real app, you'd hash the password. For this local-only version, we'll store it as is.
+            allUsers[username] = { 
+                id: generateUniqueId(),
+                password: password,
+                collectedCardIds: [],
+                playerDeckIds: [],
+                cryptidCoins: 100, // New player bonus
+                packsOpened: 0
+            };
+            localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+            showMessage('Registration successful! Please log in.', 'success', true);
+        };
+
+        window.login = async () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Please enter both username and password.', 'error', true);
+                return;
+            }
+
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const userData = allUsers[username];
+
+            if (userData && userData.password === password) {
+                localStorage.setItem('cryptid_lastUser', userData.id); // Save ID for auto-login
+                currentUserId = userData.id;
+                
+                showView(loadingView);
+                await preloadImages();
+                loadGameData(userData.id);
+                updateDeckSizeDisplay();
+                updateCoinDisplay();
+                showPackView();
+
+            } else {
+                showMessage('Invalid username or password.', 'error', true);
+            }
+        };
+
+        window.logout = () => {
+            localStorage.removeItem('cryptid_lastUser');
+            currentUserId = null;
+            showAuthView();
+            showMessage('You have been logged out.', 'success', true);
+        };
+        
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadGameData();
-            showHomeView();
-            updateDeckSizeDisplay();
-            updateCoinDisplay();
-        });
+        function checkLoginStatus() {
+            const lastUserId = localStorage.getItem('cryptid_lastUser');
+            if (lastUserId) {
+                currentUserId = lastUserId;
+                
+                (async () => {
+                    showView(loadingView);
+                    await preloadImages();
+                    loadGameData(lastUserId);
+                    updateDeckSizeDisplay();
+                    updateCoinDisplay();
+                    showPackView();
+                })();
+
+            } else {
+                showAuthView();
+            }
+        }
+        
+        // Make functions globally available
+        window.showPackView = showPackView;
+        window.showCollectionView = showCollectionView;
+        window.showDeckBuilderView = showDeckBuilderView;
+        window.showSettingsView = showSettingsView;
+        window.tryStartGame = tryStartGame;
+        window.openPack = openPack;
+        window.saveDeck = saveDeck;
+        window.toggleCardInDeck = toggleCardInDeck;
+        window.playPlayerCard = playPlayerCard;
+        window.endTurn = endTurn;
+        window.selectPlayerCard = selectPlayerCard;
+
+        document.addEventListener('DOMContentLoaded', checkLoginStatus);
     </script>
 </body>
 </html>
