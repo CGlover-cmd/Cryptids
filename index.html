@@ -44,7 +44,7 @@
 
         /* --- Background Image for Main Views --- */
         #packView, #collectionView, #deckBuilderView, #gameView {
-            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png');
+            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -214,7 +214,7 @@
 
         /* Card Back Styles */
         .card-back {
-            background-image: url("https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG"); /* Placeholder for your image */
+            background-image: url("https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.png"); /* Placeholder for your image */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -833,7 +833,7 @@
 
     <div id="packView" class="view">
          <div class="currency-display">Cryptid Coins: <span id="coinBalance">0</span></div>
-        <h1>Cryptid Pack Opening</h1>
+        <h1 id="pack-opening-title">Cryptid Pack Opening</h1>
         <div class="pack" onclick="openPack()">Open Pack (50 Coins)</div>
         <div class="cards-container" id="packCardContainer"></div>
     </div>
@@ -914,7 +914,6 @@
 
     <script>
         // --- DATA ---
-        // Data for all possible cryptids with corrected image paths
         const allCryptids = [
             { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: 10, ability: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/moth_man.png" },
             { id: 'chupacabra', name: "Chupacabra", rarity: "rare", hp: 40, attack: 20, ability: "Blood Drain: Heals self for 10 HP after attacking.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/chupacabra.png" },
@@ -925,22 +924,23 @@
             { id: 'flatwoodsmonster', name: "Flatwoods Monster", rarity: "common", hp: 30, attack: 12, ability: "Gaseous Form: Cannot be targeted by abilities for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/flatwoods.png" },
             { id: 'kraken', name: "Kraken", rarity: "rare", hp: 70, attack: 18, ability: "Crushing Grip: Stuns enemy card for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/kraken.png" },
             { id: 'lochnessmonster', name: "Loch Ness Monster", rarity: "rare", hp: 65, attack: 15, ability: "Deep Dive: Becomes immune to damage for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/lochness_monster.png" },
-            { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: 18, ability: "Wail: Deals 5 damage to enemy player directly.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/banshee.PNG" },
+            { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: 18, ability: "Wail: Deals 5 damage to enemy player directly.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/banshee.png" },
             { id: 'gnome', name: "Gnome", rarity: "common", hp: 30, attack: 10, ability: "Burrow: Hides underground, cannot be attacked for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/gnome.png" },
             { id: 'brownie', name: "Brownie", rarity: "common", hp: 20, attack: 8, ability: "Helpful Spirit: Heals player for 10 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/brownie.png" },
             { id: 'bunyip', name: "Bunyip", rarity: "common", hp: 45, attack: 13, ability: "Swamp Ambush: Next attack deals double damage if played from hand.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/bunyip.png" },
             { id: 'kappa', name: "Kappa", rarity: "rare", hp: 38, attack: 22, ability: "Cucumber Feast: Gains +5 HP and +5 Attack for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/kappa.png" },
             { id: 'siren', name: "Siren", rarity: "rare", hp: 32, attack: 28, ability: "Enchanting Song: Prevents enemy card from attacking next turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/siren.png" },
-            { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: 23, ability: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/basilisk.PNG" },
+            { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: 23, ability: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/basilisk.png" },
             { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: 20, ability: "Sky Guardian: All friendly cards gain +5 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/griffin.png" },
             { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: 10, ability: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/yeti.png" },
-            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: 35, ability: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/woodsdevil.PNG" }
+            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: 35, ability: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/woodsdevil.png" }
         ];
 
         // --- STATE MANAGEMENT ---
         let collectedCardIds;
         let playerDeckIds;
         let cryptidCoins;
+        let packsOpened;
 
         const PACK_COST = 50;
         const WIN_REWARD = 10;
@@ -955,28 +955,42 @@
         let messageTimeout, globalMessageTimeout;
 
         function loadGameData() {
-            try {
-                collectedCardIds = new Set(JSON.parse(localStorage.getItem('cryptidCollection') || '[]'));
-            } catch (e) {
-                console.error("Error parsing cryptidCollection from localStorage:", e);
-                collectedCardIds = new Set(); // Fallback to empty set
-            }
+            const hasPlayedBefore = localStorage.getItem('hasPlayedBefore');
 
-            try {
-                playerDeckIds = JSON.parse(localStorage.getItem('playerDeck') || '[]');
+            if (!hasPlayedBefore) {
+                // First time player setup
+                collectedCardIds = new Set();
+                playerDeckIds = [];
+                cryptidCoins = 100; // Starting coins
+                packsOpened = 0;
+                localStorage.setItem('hasPlayedBefore', 'true');
+                saveGameData(); // Initial save
+            } else {
+                // Returning player
+                try {
+                    collectedCardIds = new Set(JSON.parse(localStorage.getItem('cryptidCollection') || '[]'));
+                } catch (e) {
+                    console.error("Error parsing cryptidCollection from localStorage:", e);
+                    collectedCardIds = new Set();
+                }
+
+                try {
+                    playerDeckIds = JSON.parse(localStorage.getItem('playerDeck') || '[]');
+                } catch (e) {
+                    console.error("Error parsing playerDeck from localStorage:", e);
+                    playerDeckIds = [];
+                }
+                
+                cryptidCoins = parseInt(localStorage.getItem('cryptidCoins') || '0', 10);
+                packsOpened = parseInt(localStorage.getItem('packsOpened') || '0', 10);
             }
-            catch (e) {
-                console.error("Error parsing playerDeck from localStorage:", e);
-                playerDeckIds = []; // Fallback to empty array
-            }
-            
-            cryptidCoins = parseInt(localStorage.getItem('cryptidCoins') || '0', 10);
         }
 
         function saveGameData() {
              localStorage.setItem('cryptidCollection', JSON.stringify(Array.from(collectedCardIds)));
              localStorage.setItem('playerDeck', JSON.stringify(playerDeckIds));
              localStorage.setItem('cryptidCoins', cryptidCoins);
+             localStorage.setItem('packsOpened', packsOpened);
         }
 
 
@@ -1003,6 +1017,24 @@
             if (roll < 0.25) return "rare";     // 20% chance
             return "common";                   // 75% chance
         }
+        
+        function getNewRandomCryptid(rarity, currentlyDrawnIds) {
+            // Find cards of the desired rarity that are NOT yet collected AND not already in the current pack being drawn
+            let available = allCryptids.filter(c => c.rarity === rarity && !collectedCardIds.has(c.id) && !currentlyDrawnIds.includes(c.id));
+            
+            // If no uncollected cards of this rarity are left, fall back to any card of this rarity not in the current pack
+            if (available.length === 0) {
+                 available = allCryptids.filter(c => c.rarity === rarity && !currentlyDrawnIds.includes(c.id));
+            }
+
+            // If still no cards (highly unlikely unless the card pool is tiny), just return a random one of the rarity
+            if (available.length === 0) {
+                 available = allCryptids.filter(c => c.rarity === rarity);
+            }
+
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
 
         function getRandomCryptid(desiredRarity) {
             const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
@@ -1130,7 +1162,15 @@
             // Run view-specific logic
             if (viewElement === collectionView) showCollection();
             else if (viewElement === deckBuilderView) renderDeckBuilderCards();
-            else if (viewElement === packView) updateCoinDisplay();
+            else if (viewElement === packView) {
+                updateCoinDisplay();
+                const titleEl = document.getElementById('pack-opening-title');
+                if (packsOpened < 2) {
+                    titleEl.innerText = `Starter Pack (${packsOpened + 1}/2)`;
+                } else {
+                    titleEl.innerText = 'Cryptid Pack Opening';
+                }
+            }
         }
 
         function showHomeView() { showView(homeView, null); }
@@ -1150,24 +1190,58 @@
 
             const container = document.getElementById("packCardContainer");
             container.innerHTML = ""; 
+            
+            let cardsInPack = [];
+            
+            if (packsOpened < 2) {
+                // Starter pack logic
+                let drawnIds = [];
+                for(let i=0; i<2; i++) {
+                    const card = getNewRandomCryptid('rare', drawnIds);
+                    if(card) {
+                        cardsInPack.push(card);
+                        drawnIds.push(card.id);
+                    }
+                }
+                for(let i=0; i<3; i++) {
+                     const card = getNewRandomCryptid('common', drawnIds);
+                     if(card) {
+                        cardsInPack.push(card);
+                        drawnIds.push(card.id);
+                    }
+                }
+                shuffleArray(cardsInPack);
 
-            for (let i = 0; i < 5; i++) {
-                const rarity = getRarity();
-                const cryptid = getRandomCryptid(rarity);
-                const cardWrapper = createCardElement(cryptid, true, false);
-                container.appendChild(cardWrapper);
+            } else {
+                // Regular pack logic
+                for (let i = 0; i < 5; i++) {
+                    const rarity = getRarity();
+                    const cryptid = getRandomCryptid(rarity);
+                    cardsInPack.push(cryptid);
+                }
+            }
+            
+            // Display the cards from the generated pack
+            cardsInPack.forEach((cryptid, i) => {
+                 const cardWrapper = createCardElement(cryptid, true, false);
+                 container.appendChild(cardWrapper);
 
-                setTimeout(() => {
+                 setTimeout(() => {
                     cardWrapper.classList.add("show");
                     setTimeout(() => {
                         cardWrapper.classList.add("flipped");
-                        if (!collectedCardIds.has(cryptid.id)) {
-                            collectedCardIds.add(cryptid.id);
-                        }
+                        collectedCardIds.add(cryptid.id);
                     }, 500);
                 }, 200 * i);
-            }
+            });
+            
+            packsOpened++;
             saveGameData(); // Save after opening pack and updating collection
+            
+            // Update the title if starter packs are finished
+            if (packsOpened >= 2) {
+                 document.getElementById('pack-opening-title').innerText = 'Cryptid Pack Opening';
+            }
         }
 
         // --- COLLECTION VIEW ---
@@ -1435,3 +1509,4 @@
     </script>
 </body>
 </html>
+
