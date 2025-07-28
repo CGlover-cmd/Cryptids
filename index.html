@@ -51,8 +51,8 @@
             background-attachment: fixed;
         }
         
-        #authView {
-             background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://i.imgur.com/8i1a2Vp.jpg');
+        #homeView, #authView {
+             background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/title_screen.png');
             background-size: cover;
             background-position: center;
         }
@@ -91,6 +91,16 @@
             background: #555;
             cursor: not-allowed;
             opacity: 0.6;
+        }
+
+        .btn.btn-danger {
+            background: linear-gradient(135deg, #a03d3d, #dc3545);
+            border-color: #dc3545;
+            box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+        }
+
+        .btn.btn-danger:hover {
+             box-shadow: 0 4px 12px rgba(220, 53, 69, 0.7);
         }
         
         .currency-display {
@@ -384,9 +394,19 @@
             display: flex;
         }
 
-        #authView, #loadingView {
+        #homeView, #authView, #loadingView {
             justify-content: center; /* Center content vertically */
             padding-top: 0; /* No top padding needed */
+        }
+        
+        #homeView h1 {
+            font-size: 4rem;
+            color: white;
+            text-shadow: 0 0 15px black, 0 0 25px black;
+        }
+        #homeView .btn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
         }
 
         #packView {
@@ -676,6 +696,17 @@
             margin-bottom: 20px; /* Reduced margin */
             line-height: 1.4;
         }
+        
+        .modal-content input {
+             padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-light);
+            font-size: 1rem;
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+        }
 
         .modal-buttons {
             display: flex;
@@ -945,9 +976,14 @@
     <!-- Global Message Container -->
     <div id="globalMessage" class="global-message"></div>
 
-    <div id="authView" class="view active">
+    <div id="homeView" class="view active">
+        <h1>Cryptid</h1>
+        <button class="btn" onclick="enterGame()">Enter Game</button>
+    </div>
+
+    <div id="authView" class="view">
         <div class="auth-container">
-            <h1>Cryptid</h1>
+            <h1>Login or Register</h1>
             <input type="text" id="username" placeholder="Username">
             <input type="password" id="password" placeholder="Password">
             <div class="auth-buttons">
@@ -1019,6 +1055,7 @@
             <div class="info-row">Username: <span id="settings-username"></span></div>
             <div class="info-row">User ID: <span id="settings-userid"></span></div>
             <button class="btn" onclick="logout()">Logout</button>
+            <button class="btn btn-danger" onclick="showDeleteModal()">Delete Account</button>
         </div>
     </div>
 
@@ -1029,6 +1066,18 @@
             <div class="modal-buttons">
                 <button class="btn" id="modalPlayAgain">Play Again</button>
                 <button class="btn" id="modalMainMenu">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteAccountModal" class="modal">
+        <div class="modal-content">
+            <h2>Delete Account</h2>
+            <p>This action is irreversible. Please enter your password to confirm.</p>
+            <input type="password" id="delete-password" placeholder="Password">
+            <div class="modal-buttons" style="flex-direction: row;">
+                <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteAccount()">Confirm Delete</button>
             </div>
         </div>
     </div>
@@ -1133,9 +1182,9 @@
             const loadingText = document.getElementById('loading-text');
             loadingText.innerText = 'Loading card images...';
             const imageUrls = allCryptids.map(c => c.image);
-            imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
+            imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png');
             imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG');
-            imageUrls.push('https://i.imgur.com/8i1a2Vp.jpg');
+            imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/title_screen.png');
 
             let loadedCount = 0;
             const totalImages = imageUrls.length;
@@ -1307,6 +1356,7 @@
         }
 
         // --- VIEW SWITCHING ---
+        const homeView = document.getElementById('homeView');
         const authView = document.getElementById('authView');
         const loadingView = document.getElementById('loadingView');
         const packView = document.getElementById('packView');
@@ -1321,7 +1371,7 @@
             viewElement.classList.add('active');
 
             // Show or hide nav bar
-            if(viewElement === authView || viewElement === loadingView){
+            if(viewElement === authView || viewElement === loadingView || viewElement === homeView){
                 bottomNav.style.display = 'none';
             } else {
                 bottomNav.style.display = 'flex';
@@ -1714,7 +1764,6 @@
                 return;
             }
 
-            // In a real app, you'd hash the password. For this local-only version, we'll store it as is.
             allUsers[username] = { 
                 id: generateUniqueId(),
                 password: password,
@@ -1762,9 +1811,29 @@
             showAuthView();
             showMessage('You have been logged out.', 'success', true);
         };
+
+        window.showDeleteModal = () => {
+            document.getElementById('deleteAccountModal').classList.add('show');
+        };
+
+        window.confirmDeleteAccount = () => {
+            const password = document.getElementById('delete-password').value;
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const username = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
+            
+            if (username && allUsers[username].password === password) {
+                delete allUsers[username];
+                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+                document.getElementById('deleteAccountModal').classList.remove('show');
+                logout();
+                showMessage('Account deleted successfully.', 'success', true);
+            } else {
+                showMessage('Incorrect password. Account not deleted.', 'error', true);
+            }
+        };
         
         // --- INITIALIZATION ---
-        function checkLoginStatus() {
+        window.enterGame = () => {
             const lastUserId = localStorage.getItem('cryptid_lastUser');
             if (lastUserId) {
                 currentUserId = lastUserId;
@@ -1796,7 +1865,9 @@
         window.endTurn = endTurn;
         window.selectPlayerCard = selectPlayerCard;
 
-        document.addEventListener('DOMContentLoaded', checkLoginStatus);
+        document.addEventListener('DOMContentLoaded', () => {
+            showView(document.getElementById('homeView'));
+        });
     </script>
 </body>
 </html>
