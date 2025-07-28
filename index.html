@@ -43,8 +43,8 @@
         }
 
         /* --- Background Image for Main Views --- */
-        #packView, #collectionView, #deckBuilderView, #gameView {
-            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
+        #packView, #collectionView, #deckBuilderView, #gameView, #settingsView {
+            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -52,7 +52,7 @@
         }
         
         #authView {
-             background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('http://googleusercontent.com/file_content/1');
+             background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://i.imgur.com/8i1a2Vp.jpg');
             background-size: cover;
             background-position: center;
         }
@@ -1085,6 +1085,7 @@
         let playerDeckIds;
         let cryptidCoins;
         let packsOpened;
+        let gamesPlayed;
         let currentUserId = null;
 
         const PACK_COST = 50;
@@ -1108,6 +1109,7 @@
                 playerDeckIds = userData.playerDeckIds || [];
                 cryptidCoins = userData.cryptidCoins || 0;
                 packsOpened = userData.packsOpened || 0;
+                gamesPlayed = userData.gamesPlayed || 0;
             }
         }
 
@@ -1121,6 +1123,7 @@
                 allUsers[username].playerDeckIds = playerDeckIds;
                 allUsers[username].cryptidCoins = cryptidCoins;
                 allUsers[username].packsOpened = packsOpened;
+                allUsers[username].gamesPlayed = gamesPlayed;
                 localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
             }
         }
@@ -1132,7 +1135,7 @@
             const imageUrls = allCryptids.map(c => c.image);
             imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
             imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG');
-            imageUrls.push('http://googleusercontent.com/file_content/1');
+            imageUrls.push('https://i.imgur.com/8i1a2Vp.jpg');
 
             let loadedCount = 0;
             const totalImages = imageUrls.length;
@@ -1401,6 +1404,11 @@
                 }
             }
             
+            // BUG FIX: Add cards to collection BEFORE starting animations
+            cardsInPack.forEach(cryptid => collectedCardIds.add(cryptid.id));
+            packsOpened++;
+            saveGameData(); // Save immediately
+
             // Display the cards from the generated pack
             cardsInPack.forEach((cryptid, i) => {
                  const cardWrapper = createCardElement(cryptid, true, false);
@@ -1410,13 +1418,9 @@
                     cardWrapper.classList.add("show");
                     setTimeout(() => {
                         cardWrapper.classList.add("flipped");
-                        collectedCardIds.add(cryptid.id);
                     }, 500);
                 }, 200 * i);
             });
-            
-            packsOpened++;
-            saveGameData(); // Save after opening pack and updating collection
             
             // Update the title if starter packs are finished
             if (packsOpened >= 2) {
@@ -1521,7 +1525,12 @@
             playerDeck = playerDeckIds.map(id => ({...allCryptids.find(c => c.id === id)}));
             shuffleArray(playerDeck);
             
-            botDeck = [...allCryptids].map(c => ({...c}));
+            // Bot difficulty scaling
+            const botCardPool = gamesPlayed < 10 
+                ? allCryptids.filter(c => c.rarity === 'common' || c.rarity === 'rare')
+                : allCryptids;
+
+            botDeck = [...botCardPool].map(c => ({...c}));
             shuffleArray(botDeck);
             botDeck = botDeck.slice(0, MAX_DECK_SIZE);
 
@@ -1644,6 +1653,8 @@
 
             if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
                 gameIsOver = true;
+                gamesPlayed++; // Increment games played counter
+                
                 if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
                 else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
                 else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
@@ -1657,10 +1668,10 @@
                 if(isVictory){
                     cryptidCoins += WIN_REWARD;
                     finalMessage += ` You earned ${WIN_REWARD} Cryptid Coins!`;
-                    saveGameData();
                     updateCoinDisplay();
                 }
                 
+                saveGameData(); // Save game progress (coins, games played)
                 showGameEndModal(title, finalMessage, modalClass);
                 return true; // Game has ended
             }
@@ -1709,8 +1720,9 @@
                 password: password,
                 collectedCardIds: [],
                 playerDeckIds: [],
-                cryptidCoins: 100, // New player bonus
-                packsOpened: 0
+                cryptidCoins: 200, // New player bonus
+                packsOpened: 0,
+                gamesPlayed: 0
             };
             localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
             showMessage('Registration successful! Please log in.', 'success', true);
