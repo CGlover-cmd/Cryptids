@@ -15,6 +15,7 @@
             --uncollected-card-border: #444;
             --selected-card-border: #00ff00; /* Green for selected cards */
             --game-ui-bg: #2a2a2a;
+            --coin-color: #ffd700; /* Gold color for coins */
 
             /* Rarity Colors */
             --common-color: #888;
@@ -65,15 +66,29 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(162, 200, 200, 0.7);
         }
+        
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
 
         .main-menu-buttons {
             margin-top: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-wrap: wrap;
             gap: 10px;
+        }
+        
+        .currency-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--coin-color);
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
         }
 
         /* Pack Specific Styles */
@@ -159,6 +174,11 @@
         .card-wrapper.flipped .card-inner {
             transform: rotateY(180deg);
         }
+        
+        .card-wrapper.selected .card-inner {
+            border: 3px solid var(--selected-card-border);
+            box-shadow: 0 0 15px var(--selected-card-border);
+        }
 
         .card-inner {
             width: 100%;
@@ -190,7 +210,7 @@
 
         /* Card Back Styles */
         .card-back {
-            background-image: url('"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.png"'); /* Placeholder for your image */
+            background-image: url("https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.png"); /* Placeholder for your image */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -772,11 +792,12 @@
 
     <div id="packView" class="view">
         <div class="main-menu-buttons">
-            <button class="btn" onclick="openPack()">Open Pack</button>
+            <button class="btn" id="openPackBtn" onclick="openPack()">Open Pack (50 Coins)</button>
             <button class="btn" onclick="showCollectionView()">View Collection</button>
             <button class="btn" onclick="showDeckBuilderView()">Deck Builder</button>
             <button class="btn" onclick="tryStartGame()">Play Game</button>
         </div>
+         <div class="currency-display">Cryptid Coins: <span id="coinBalance">0</span></div>
         <h1>Cryptid Pack Opening</h1>
         <div class="pack" onclick="openPack()">Click to Open a New Pack</div>
         <div class="cards-container" id="packCardContainer"></div>
@@ -866,22 +887,11 @@
 
         // --- STATE MANAGEMENT ---
         let collectedCardIds;
-        try {
-            collectedCardIds = new Set(JSON.parse(localStorage.getItem('cryptidCollection') || '[]'));
-        } catch (e) {
-            console.error("Error parsing cryptidCollection from localStorage:", e);
-            collectedCardIds = new Set(); // Fallback to empty set
-        }
-
         let playerDeckIds;
-        try {
-            playerDeckIds = JSON.parse(localStorage.getItem('playerDeck') || '[]');
-        }
-        catch (e) {
-            console.error("Error parsing playerDeck from localStorage:", e);
-            playerDeckIds = []; // Fallback to empty array
-        }
+        let cryptidCoins;
 
+        const PACK_COST = 50;
+        const WIN_REWARD = 10;
         const MAX_DECK_SIZE = 10;
         const MAX_TURNS = 20;
 
@@ -892,8 +902,45 @@
         let selectedPlayerCardElement = null;
         let messageTimeout, globalMessageTimeout;
 
+        function loadGameData() {
+            try {
+                collectedCardIds = new Set(JSON.parse(localStorage.getItem('cryptidCollection') || '[]'));
+            } catch (e) {
+                console.error("Error parsing cryptidCollection from localStorage:", e);
+                collectedCardIds = new Set(); // Fallback to empty set
+            }
+
+            try {
+                playerDeckIds = JSON.parse(localStorage.getItem('playerDeck') || '[]');
+            }
+            catch (e) {
+                console.error("Error parsing playerDeck from localStorage:", e);
+                playerDeckIds = []; // Fallback to empty array
+            }
+            
+            cryptidCoins = parseInt(localStorage.getItem('cryptidCoins') || '0', 10);
+        }
+
+        function saveGameData() {
+             localStorage.setItem('cryptidCollection', JSON.stringify(Array.from(collectedCardIds)));
+             localStorage.setItem('playerDeck', JSON.stringify(playerDeckIds));
+             localStorage.setItem('cryptidCoins', cryptidCoins);
+        }
+
 
         // --- UTILITY & SETUP FUNCTIONS ---
+        function updateCoinDisplay() {
+            const coinBalanceEl = document.getElementById('coinBalance');
+            if(coinBalanceEl) {
+                coinBalanceEl.innerText = cryptidCoins;
+            }
+            // Disable pack button if not enough coins
+            const openPackBtn = document.getElementById('openPackBtn');
+            if(openPackBtn) {
+                openPackBtn.disabled = cryptidCoins < PACK_COST;
+            }
+        }
+
         function updateDeckSizeDisplay() {
             const currentSizeElement = document.getElementById("currentDeckSize");
             const maxSizeElement = document.getElementById("maxDeckSize");
@@ -906,8 +953,8 @@
         function getRarity() {
             const roll = Math.random();
             if (roll < 0.05) return "legendary"; // 5% chance
-            if (roll < 0.25) return "rare";      // 20% chance
-            return "common";                     // 75% chance
+            if (roll < 0.25) return "rare";     // 20% chance
+            return "common";                   // 75% chance
         }
 
         function getRandomCryptid(desiredRarity) {
@@ -1021,6 +1068,7 @@
 
             if (viewElement === collectionView) showCollection();
             else if (viewElement === deckBuilderView) renderDeckBuilderCards();
+            else if (viewElement === packView) updateCoinDisplay();
         }
 
         function showHomeView() { showView(homeView); }
@@ -1030,6 +1078,14 @@
 
         // --- PACK OPENING ---
         function openPack() {
+            if (cryptidCoins < PACK_COST) {
+                showMessage(`You need ${PACK_COST} Cryptid Coins to open a pack!`, "error", true);
+                return;
+            }
+
+            cryptidCoins -= PACK_COST;
+            updateCoinDisplay();
+
             const container = document.getElementById("packCardContainer");
             container.innerHTML = ""; 
 
@@ -1045,12 +1101,11 @@
                         cardWrapper.classList.add("flipped");
                         if (!collectedCardIds.has(cryptid.id)) {
                             collectedCardIds.add(cryptid.id);
-                            localStorage.setItem('cryptidCollection', JSON.stringify(Array.from(collectedCardIds)));
-                            console.log(`Collected new cryptid: ${cryptid.name}`);
                         }
                     }, 500);
                 }, 200 * i);
             }
+            saveGameData(); // Save after opening pack and updating collection
         }
 
         // --- COLLECTION VIEW ---
@@ -1265,19 +1320,29 @@
         }
 
         function checkGameEnd() {
-            if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
-                let finalMessage = "";
-                let modalClass = "";
-                let title = "Game Over!";
+            let gameIsOver = false;
+            let finalMessage = "";
+            let modalClass = "";
+            let title = "Game Over!";
+            let isVictory = false;
 
+            if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
+                gameIsOver = true;
                 if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
                 else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
-                else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; } 
+                else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
                 else if (currentTurn > MAX_TURNS) {
                     finalMessage = "Max turns reached. ";
-                    if (playerHP > botHP) { finalMessage += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; } 
+                    if (playerHP > botHP) { finalMessage += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
                     else if (botHP > playerHP) { finalMessage += "Bot wins by HP advantage!"; modalClass = "defeat"; title = "Defeat!"; } 
                     else { finalMessage += "It's a draw!"; modalClass = "draw"; }
+                }
+
+                if(isVictory){
+                    cryptidCoins += WIN_REWARD;
+                    finalMessage += ` You earned ${WIN_REWARD} Cryptid Coins!`;
+                    saveGameData();
+                    updateCoinDisplay();
                 }
                 
                 showGameEndModal(title, finalMessage, modalClass);
@@ -1300,8 +1365,10 @@
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
+            loadGameData();
             showHomeView();
             updateDeckSizeDisplay();
+            updateCoinDisplay();
         });
     </script>
 </body>
