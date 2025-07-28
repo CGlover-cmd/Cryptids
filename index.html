@@ -21,9 +21,9 @@
             --coin-color: #ffd700; /* Gold color for coins */
 
             /* Rarity Colors */
-            --common-color: #888;
-            --rare-color: #1e90ff;
-            --legendary-color: gold;
+            --common-color: #a0aec0; /* Gray */
+            --rare-color: #3b82f6;   /* Blue */
+            --legendary-color: #eab308; /* Yellow/Gold */
             --victory-color: #28a745; /* Green for victory */
             --defeat-color: #dc3545; /* Red for defeat */
         }
@@ -202,9 +202,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between; /* Adjusted for better layout */
             text-align: center;
-            padding: 10px;
+            padding: 5px; /* Adjusted padding */
             border-radius: 10px;
             box-sizing: border-box;
             font-weight: bold;
@@ -223,31 +223,50 @@
         }
 
         .card-front {
-            background-color: #222;
-            border: 3px solid #777;
             transform: rotateY(180deg); /* Front faces away initially */
+            position: relative;
+            justify-content: flex-start; /* Align content to top */
+        }
+        
+        .card-front-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        
+        .card-front .image-container {
+            width: calc(100% - 10px);
+            height: 65%; /* Allocate more space for image */
+            margin-bottom: 4px;
+            border-radius: 6px;
+            overflow: hidden;
             position: relative;
         }
 
         .card-front img {
-            max-width: 80%;
-            max-height: 60%;
-            object-fit: contain;
-            margin-bottom: 8px;
-            border-radius: 6px;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .card-name {
-            font-size: 1.1rem;
-            margin-bottom: 6px;
+            font-size: 1rem; /* Adjusted size */
+            margin-bottom: 2px;
+            font-weight: 700;
         }
 
         .rarity-badge {
             position: absolute;
-            bottom: 8px;
-            padding: 4px 8px;
+            bottom: 5px;
+            right: 5px;
+            padding: 2px 5px;
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-size: 0.6rem;
             font-weight: bold;
             text-transform: uppercase;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -258,37 +277,73 @@
         .card-stats {
             position: absolute;
             top: 5px;
-            width: 100%;
+            width: calc(100% - 10px);
             display: flex;
             justify-content: space-between;
-            padding: 0 5px;
-            font-size: 0.7em;
+            font-size: 0.8em;
             font-weight: bold;
             color: #eee;
-            text-shadow: 0 0 2px black;
+            text-shadow: 1px 1px 3px black;
+            z-index: 2;
         }
-        .card-stats .hp { color: #e74c3c; } /* Red for HP */
-        .card-stats .attack { color: #3498db; } /* Blue for Attack */
+        .card-stats .hp { color: #f87171; } /* Red for HP */
+        .card-stats .attack { color: #60a5fa; } /* Blue for Attack */
 
-        .card-ability {
-            font-size: 0.65em;
-            padding: 0 5px;
-            margin-top: 5px;
-            color: #ccc;
-            height: 30px; /* Fixed height for ability text */
-            overflow: hidden;
-            text-overflow: ellipsis;
+        /* --- Rarity Specific Styles --- */
+        /* Common (Gray) Theme */
+        .card-front.common { 
+            background: #2d3748; /* Changed from gradient to flat gray */
+            border: 3px solid #4a5568;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+        }
+        .card-front.common .card-name {
+            color: #e2e8f0;
+            text-shadow: 0 0 6px #94a3b8;
+        }
+        .card-front.common .rarity-badge {
+            background-color: #2d3748;
+            border-color: var(--common-color);
+            color: var(--common-color);
+        }
+        .card-front.common img {
+            filter: grayscale(1); /* Made fully grayscale */
         }
 
+        /* Rare (Blue) Theme */
+        .card-front.rare { 
+            background: linear-gradient(to bottom right, #1e3a8a, #1c1942);
+            border: 3px solid var(--rare-color);
+            box-shadow: inset 0 0 10px rgba(59,130,246,0.25);
+        }
+        .card-front.rare .card-name {
+            color: #e0f2fe;
+            text-shadow: 0 0 6px #60a5fa, 0 0 10px #2563eb;
+        }
+        .card-front.rare .rarity-badge {
+            background-color: #1e3a8a;
+            border-color: var(--rare-color);
+            color: #e0f2fe;
+        }
 
-        /* Rarity Specific Styles */
-        .card-front.common { border-color: var(--common-color); }
-        .card-front.rare { border-color: var(--rare-color); }
-        .card-front.legendary { border-color: var(--legendary-color); }
+        /* Legendary (Yellow) Theme */
+        .card-front.legendary { 
+            background: linear-gradient(to bottom right, #422f1d, #2a1d10);
+            border: 3px solid var(--legendary-color);
+            box-shadow: inset 0 0 10px rgba(255,193,7,0.2);
+        }
+        .card-front.legendary .card-name {
+            color: #fefce8;
+            text-shadow: 0 0 8px #fde047, 0 0 12px #eab308;
+        }
+        .card-front.legendary .rarity-badge {
+            background-color: #422f1d;
+            border-color: var(--legendary-color);
+            color: #fefce8;
+        }
+        .card-front.legendary img {
+            filter: sepia(0.4);
+        }
 
-        .rarity-badge.common { background-color: #555; border-color: var(--common-color); color: var(--common-color); }
-        .rarity-badge.rare { background-color: #0d47a1; border-color: var(--rare-color); color: var(--rare-color); }
-        .rarity-badge.legendary { background-color: #6a5acd; border-color: var(--legendary-color); color: var(--legendary-color); }
 
         /* Uncollected Card Styles */
         .uncollected-card .card-inner {
@@ -745,24 +800,21 @@
                 box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
             }
             .card-face {
-                padding: 15px;
+                padding: 10px;
                 border-radius: 12px;
                 text-shadow: 0 0 5px rgba(0,0,0,0.5);
             }
-            .card-front img {
-                margin-bottom: 10px;
-                border-radius: 8px;
-            }
+            
             .card-name {
-                font-size: 1.3rem;
-                margin-bottom: 8px;
+                font-size: 1.1rem;
             }
+            
             .rarity-badge {
-                bottom: 10px;
-                padding: 5px 10px;
+                bottom: 8px;
+                right: 8px;
+                padding: 4px 8px;
                 border-radius: 5px;
-                font-size: 0.85rem;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                font-size: 0.75rem;
             }
             .uncollected-card .card-inner {
                 font-size: 3em;
@@ -907,7 +959,7 @@
             <span>Deck</span>
         </button>
         <button id="nav-battle" class="nav-btn" onclick="tryStartGame()">
-            <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c-0.4,0.4-0.4,1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
+            <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c-0.4,0.4-0.4-1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
             <span>Battle</span>
         </button>
     </nav>
@@ -1015,7 +1067,7 @@
             const roll = Math.random();
             if (roll < 0.05) return "legendary"; // 5% chance
             if (roll < 0.25) return "rare";     // 20% chance
-            return "common";                   // 75% chance
+            return "common";                     // 75% chance
         }
         
         function getNewRandomCryptid(rarity, currentlyDrawnIds) {
@@ -1064,27 +1116,34 @@
                 const cardFront = document.createElement("div");
                 cardFront.className = `card-face card-front ${cryptid.rarity}`;
 
-                const cardImage = document.createElement("img");
-                cardImage.src = cryptid.image;
-                cardImage.alt = cryptid.name;
-                cardImage.onerror = () => { cardImage.src = 'https://placehold.co/100x150/ff0000/FFFFFF?text=Error'; }; // Fallback
-                cardFront.appendChild(cardImage);
-
-                const cardName = document.createElement("div");
-                cardName.className = "card-name";
-                cardName.innerText = cryptid.name;
-                cardFront.appendChild(cardName);
-
+                // Stats (HP/ATK) - Placed here to be on top of the image
                 const cardStats = document.createElement("div");
                 cardStats.className = "card-stats";
                 cardStats.innerHTML = `<span class="hp">HP: ${cryptid.hp}</span><span class="attack">ATK: ${cryptid.attack}</span>`;
                 cardFront.appendChild(cardStats);
 
-                const cardAbility = document.createElement("div");
-                cardAbility.className = "card-ability";
-                cardAbility.innerText = cryptid.ability;
-                cardFront.appendChild(cardAbility);
+                // Image container
+                const imageContainer = document.createElement("div");
+                imageContainer.className = "image-container";
+                const cardImage = document.createElement("img");
+                cardImage.src = cryptid.image;
+                cardImage.alt = cryptid.name;
+                cardImage.onerror = () => { cardImage.src = 'https://placehold.co/100x150/ff0000/FFFFFF?text=Error'; }; // Fallback
+                imageContainer.appendChild(cardImage);
+                cardFront.appendChild(imageContainer);
 
+                // Container for text content below image
+                const textContent = document.createElement('div');
+                textContent.style.textAlign = 'center';
+                
+                const cardName = document.createElement("div");
+                cardName.className = "card-name";
+                cardName.innerText = cryptid.name;
+                textContent.appendChild(cardName);
+                
+                cardFront.appendChild(textContent);
+
+                // Rarity Badge
                 const rarityBadge = document.createElement("div");
                 rarityBadge.className = `rarity-badge ${cryptid.rarity}`;
                 rarityBadge.innerText = cryptid.rarity;
@@ -1509,4 +1568,3 @@
     </script>
 </body>
 </html>
-
