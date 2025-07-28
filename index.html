@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cryptid Pack Opening</title>
+    <title>Cryptid Card Game</title>
     <style>
         :root {
             --bg-dark: #121212;
@@ -15,6 +15,9 @@
             --uncollected-card-border: #444;
             --selected-card-border: #00ff00; /* Green for selected cards */
             --game-ui-bg: #2a2a2a;
+            --nav-bg: #1a1a1a;
+            --nav-icon-color: #888;
+            --nav-icon-active-color: #a2c8c8;
             --coin-color: #ffd700; /* Gold color for coins */
 
             /* Rarity Colors */
@@ -26,17 +29,28 @@
         }
 
         body {
-            background: radial-gradient(circle at center, #2a2a2a, var(--bg-dark));
+            background: var(--bg-dark);
             color: var(--text-light);
             font-family: 'Segoe UI', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            min-height: 100dvh; /* Use dvh for dynamic viewport height */
+            min-height: 100dvh;
             margin: 0;
-            overflow-x: hidden; /* Prevent horizontal scrolling only */
+            padding-bottom: 80px; /* Space for bottom nav bar */
+            overflow-x: hidden;
         }
+
+        /* --- Background Image for Main Views --- */
+        #packView, #collectionView, #deckBuilderView, #gameView {
+            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
 
         /* --- Mobile-First Base Styles (Default for small screens) --- */
         h1 {
@@ -71,16 +85,6 @@
             background: #555;
             cursor: not-allowed;
             opacity: 0.6;
-        }
-
-        .main-menu-buttons {
-            margin-top: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
         }
         
         .currency-display {
@@ -210,7 +214,7 @@
 
         /* Card Back Styles */
         .card-back {
-            background-image: url("https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG"); /* Placeholder for your image */
+            background-image: url("https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.png"); /* Placeholder for your image */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -310,7 +314,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            min-height: 100dvh; /* Use dvh for dynamic viewport height */
+            min-height: calc(100dvh - 80px); /* Adjust for nav bar */
             padding: 15px;
             box-sizing: border-box;
         }
@@ -322,6 +326,7 @@
         #homeView {
             justify-content: center; /* Center content vertically */
             padding-top: 0; /* No top padding needed */
+            background: var(--bg-dark); /* Home view doesn't get the image */
         }
         #homeView h1 {
             font-size: 3rem; /* Larger title for home screen */
@@ -334,7 +339,7 @@
 
 
         #packView {
-            padding-top: 0px; /* Buttons are now inside, so no global margin */
+            padding-top: 15px; 
         }
 
         #collectionView {
@@ -658,6 +663,47 @@
         .global-message.success { background-color: rgba(40, 167, 69, 0.95); color: white; }
         .global-message.warning { background-color: rgba(241, 196, 15, 0.95); color: #121212; }
 
+        /* --- Bottom Navigation Bar --- */
+        #bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background-color: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+            z-index: 500;
+            display: none; /* Hidden by default, shown with views */
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--nav-icon-color);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 5px;
+            transition: color 0.2s ease;
+        }
+        .nav-btn svg {
+            width: 28px;
+            height: 28px;
+            fill: currentColor;
+        }
+        .nav-btn:hover {
+            color: var(--text-light);
+        }
+        .nav-btn.active {
+            color: var(--nav-icon-active-color);
+        }
 
         /* --- Desktop/Tablet Overrides (min-width for larger screens) --- */
         @media (min-width: 769px) {
@@ -674,11 +720,6 @@
             }
             .btn:hover {
                 box-shadow: 0 4px 15px rgba(162, 200, 200, 0.7);
-            }
-            .main-menu-buttons {
-                margin-top: 30px;
-                margin-bottom: 40px;
-                gap: 15px;
             }
             .pack {
                 padding: 25px 50px;
@@ -791,28 +832,20 @@
     </div>
 
     <div id="packView" class="view">
-        <div class="main-menu-buttons">
-            <button class="btn" id="openPackBtn" onclick="openPack()">Open Pack (50 Coins)</button>
-            <button class="btn" onclick="showCollectionView()">View Collection</button>
-            <button class="btn" onclick="showDeckBuilderView()">Deck Builder</button>
-            <button class="btn" onclick="tryStartGame()">Play Game</button>
-        </div>
          <div class="currency-display">Cryptid Coins: <span id="coinBalance">0</span></div>
         <h1>Cryptid Pack Opening</h1>
-        <div class="pack" onclick="openPack()">Click to Open a New Pack</div>
+        <div class="pack" onclick="openPack()">Open Pack (50 Coins)</div>
         <div class="cards-container" id="packCardContainer"></div>
     </div>
 
     <div id="collectionView" class="view">
         <h1>Your Cryptid Collection</h1>
-        <button class="btn back-btn" onclick="showPackView()">Back to Main Menu</button>
         <div class="cards-container collection-view" id="collectionCardContainer"></div>
     </div>
 
     <div id="deckBuilderView" class="view">
         <h1>Build Your Deck</h1>
         <div class="deck-builder-controls">
-            <button class="btn" onclick="showPackView()">Back to Main Menu</button>
             <button class="btn" onclick="saveDeck()">Save Deck</button>
             <span>Deck Size: <span id="currentDeckSize">0</span> / <span id="maxDeckSize">10</span></span>
         </div>
@@ -860,6 +893,25 @@
         </div>
     </div>
 
+    <nav id="bottom-nav">
+        <button id="nav-packs" class="nav-btn" onclick="showPackView()">
+            <svg viewBox="0 0 24 24"><path d="M21.4,6.6l-8.8-5.1C12.2,1.3,11.8,1.3,11.4,1.5L2.6,6.6C2.2,6.8,2,7.2,2,7.6v9.6c0,0.4,0.2,0.8,0.6,1l8.8,5.1c0.2,0.1,0.4,0.2,0.6,0.2s0.4-0.1,0.6-0.2l8.8-5.1c0.4-0.2,0.6-0.6,0.6-1V7.6C22,7.2,21.8,6.8,21.4,6.6z M12,3.1l7.1,4.1l-7.1,4.1L4.9,7.2L12,3.1z M4,16.5V8.8l7.4,4.3v7.7L4,16.5z M13.4,20.8v-7.7l7.4-4.3v7.7L13.4,20.8z"></path></svg>
+            <span>Packs</span>
+        </button>
+        <button id="nav-collection" class="nav-btn" onclick="showCollectionView()">
+            <svg viewBox="0 0 24 24"><path d="M4,6H2v14c0,1.1,0.9,2,2,2h14v-2H4V6z M20,2H8C6.9,2,6,2.9,6,4v12c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z M12,14.5L9.5,12.7l-1.5,1.8h8l-2.5-3.3L12,14.5z"></path></svg>
+            <span>Collection</span>
+        </button>
+        <button id="nav-deck" class="nav-btn" onclick="showDeckBuilderView()">
+            <svg viewBox="0 0 24 24"><path d="M20,2H8C6.9,2,6,2.9,6,4v12c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z M17,13h-4v4h-2v-4H7v-2h4V7h2v4h4V13z M4,6H2v14c0,1.1,0.9,2,2,2h14v-2H4V6z"></path></svg>
+            <span>Deck</span>
+        </button>
+        <button id="nav-battle" class="nav-btn" onclick="tryStartGame()">
+            <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c-0.4,0.4-0.4,1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
+            <span>Battle</span>
+        </button>
+    </nav>
+
     <script>
         // --- DATA ---
         // Data for all possible cryptids with corrected image paths
@@ -873,16 +925,16 @@
             { id: 'flatwoodsmonster', name: "Flatwoods Monster", rarity: "common", hp: 30, attack: 12, ability: "Gaseous Form: Cannot be targeted by abilities for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/flatwoods.png" },
             { id: 'kraken', name: "Kraken", rarity: "rare", hp: 70, attack: 18, ability: "Crushing Grip: Stuns enemy card for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/kraken.png" },
             { id: 'lochnessmonster', name: "Loch Ness Monster", rarity: "rare", hp: 65, attack: 15, ability: "Deep Dive: Becomes immune to damage for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/lochness_monster.png" },
-            { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: 18, ability: "Wail: Deals 5 damage to enemy player directly.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/banshee.PNG" },
+            { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: 18, ability: "Wail: Deals 5 damage to enemy player directly.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/banshee.png" },
             { id: 'gnome', name: "Gnome", rarity: "common", hp: 30, attack: 10, ability: "Burrow: Hides underground, cannot be attacked for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/gnome.png" },
             { id: 'brownie', name: "Brownie", rarity: "common", hp: 20, attack: 8, ability: "Helpful Spirit: Heals player for 10 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/brownie.png" },
             { id: 'bunyip', name: "Bunyip", rarity: "common", hp: 45, attack: 13, ability: "Swamp Ambush: Next attack deals double damage if played from hand.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/bunyip.png" },
             { id: 'kappa', name: "Kappa", rarity: "rare", hp: 38, attack: 22, ability: "Cucumber Feast: Gains +5 HP and +5 Attack for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/kappa.png" },
             { id: 'siren', name: "Siren", rarity: "rare", hp: 32, attack: 28, ability: "Enchanting Song: Prevents enemy card from attacking next turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/siren.png" },
-            { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: 23, ability: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/basilisk.PNG" },
+            { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: 23, ability: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/basilisk.png" },
             { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: 20, ability: "Sky Guardian: All friendly cards gain +5 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/griffin.png" },
             { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: 10, ability: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/yeti.png" },
-            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: 35, ability: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/woodsdevil.PNG" }
+            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: 35, ability: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/woodsdevil.png" }
         ];
 
         // --- STATE MANAGEMENT ---
@@ -933,11 +985,6 @@
             const coinBalanceEl = document.getElementById('coinBalance');
             if(coinBalanceEl) {
                 coinBalanceEl.innerText = cryptidCoins;
-            }
-            // Disable pack button if not enough coins
-            const openPackBtn = document.getElementById('openPackBtn');
-            if(openPackBtn) {
-                openPackBtn.disabled = cryptidCoins < PACK_COST;
             }
         }
 
@@ -1061,20 +1108,35 @@
         const collectionView = document.getElementById('collectionView');
         const deckBuilderView = document.getElementById('deckBuilderView');
         const gameView = document.getElementById('gameView');
+        const bottomNav = document.getElementById('bottom-nav');
 
-        function showView(viewElement) {
+        function showView(viewElement, navBtnId) {
             document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
             viewElement.classList.add('active');
 
+            // Show or hide nav bar
+            if(viewElement === homeView){
+                bottomNav.style.display = 'none';
+            } else {
+                bottomNav.style.display = 'flex';
+            }
+
+            // Update active state on nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if(navBtnId){
+                document.getElementById(navBtnId).classList.add('active');
+            }
+
+            // Run view-specific logic
             if (viewElement === collectionView) showCollection();
             else if (viewElement === deckBuilderView) renderDeckBuilderCards();
             else if (viewElement === packView) updateCoinDisplay();
         }
 
-        function showHomeView() { showView(homeView); }
-        function showPackView() { showView(packView); }
-        function showCollectionView() { showView(collectionView); }
-        function showDeckBuilderView() { showView(deckBuilderView); }
+        function showHomeView() { showView(homeView, null); }
+        function showPackView() { showView(packView, 'nav-packs'); }
+        function showCollectionView() { showView(collectionView, 'nav-collection'); }
+        function showDeckBuilderView() { showView(deckBuilderView, 'nav-deck'); }
 
         // --- PACK OPENING ---
         function openPack() {
@@ -1191,7 +1253,7 @@
         }
 
         function startGame() {
-            showView(gameView);
+            showView(gameView, 'nav-battle');
             showMessage("Game Started! Select a card to play.", "info");
 
             playerHP = 100;
