@@ -970,12 +970,12 @@
     <div id="authView" class="view">
         <div class="auth-container">
             <h1>Login or Register</h1>
-            <button class="btn" onclick="window.signInWithGoogle()">
-                <svg style="width:24px;height:24px;vertical-align: middle; margin-right: 8px;" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.19,4.73C14.03,4.73 15.69,5.36 16.95,6.57L19.05,4.5C17.22,2.77 15,2 12.19,2C6.92,2 2.71,6.62 2.71,12C2.71,17.38 6.92,22 12.19,22C17.6,22 21.54,18.33 21.54,12.23C21.54,11.76 21.48,11.43 21.35,11.1V11.1Z" />
-                </svg>
-                Sign in with Google
-            </button>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <div class="auth-buttons">
+                <button class="btn" onclick="window.login()">Login</button>
+                <button class="btn" onclick="window.register()">Register</button>
+            </div>
         </div>
     </div>
 
@@ -1059,10 +1059,11 @@
     <div id="deleteAccountModal" class="modal">
         <div class="modal-content">
             <h2>Delete Account</h2>
-            <p>This action is irreversible. Please re-authenticate to confirm.</p>
-            <div class="modal-buttons">
-                 <button class="btn btn-danger" onclick="window.confirmDeleteAccount()">Re-authenticate & Delete</button>
-                 <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
+            <p>This action is irreversible. Please enter your password to confirm.</p>
+            <input type="password" id="delete-password" placeholder="Password">
+            <div class="modal-buttons" style="flex-direction: row;">
+                <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
+                <button class="btn btn-danger" onclick="window.confirmDeleteAccount()">Confirm Delete</button>
             </div>
         </div>
     </div>
@@ -1089,43 +1090,7 @@
             <span>Settings</span>
         </button>
     </nav>
-    <script type="module">
-        // --- Firebase SDK Imports ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { 
-            getAuth, 
-            onAuthStateChanged, 
-            GoogleAuthProvider,
-            signInWithPopup,
-            signOut,
-            deleteUser,
-            reauthenticateWithPopup
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            setDoc,
-            deleteDoc
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // --- Firebase Initialization ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAcmRLOgKaT2WURzDKqTi6v0639JEw2W8g",
-            authDomain: "cryptid-card-game-1217a.firebaseapp.com",
-            projectId: "cryptid-card-game-1217a",
-            storageBucket: "cryptid-card-game-1217a.appspot.com",
-            messagingSenderId: "72783465915",
-            appId: "1:72783465915:web:eb0ce6036ecefd0c94489e"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
-        let currentUser = null;
-        let currentUsername = null;
-
+    <script>
         // --- DATA ---
         const allCryptids = [
             { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: { name: "Sonic Screech", damage: 10 }, effect: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/moth_man.png" },
@@ -1155,6 +1120,8 @@
         let cryptidCoins;
         let packsOpened;
         let gamesPlayed;
+        let currentUserId = null;
+        let currentUsername = null;
 
         const PACK_COST = 50;
         const WIN_REWARD = 10;
@@ -1168,45 +1135,33 @@
         let selectedPlayerCardElement = null;
         let messageTimeout, globalMessageTimeout;
 
-        async function loadGameData(user) {
-            const userDocRef = doc(db, "users", user.uid);
-            const userDoc = await getDoc(userDocRef);
+        function loadGameData(userId) {
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const userData = Object.values(allUsers).find(u => u.id === userId);
 
-            if (userDoc.exists()) {
-                const data = userDoc.data();
-                collectedCardIds = new Set(data.collectedCardIds || []);
-                playerDeckIds = data.playerDeckIds || [];
-                cryptidCoins = data.cryptidCoins || 0;
-                packsOpened = data.packsOpened || 0;
-                gamesPlayed = data.gamesPlayed || 0;
-                currentUsername = data.username || user.displayName || 'Player';
-            } else {
-                // New player setup
-                currentUsername = user.displayName || 'Player';
-                await setDoc(userDocRef, {
-                    username: currentUsername,
-                    collectedCardIds: [],
-                    playerDeckIds: [],
-                    cryptidCoins: 200,
-                    packsOpened: 0,
-                    gamesPlayed: 0
-                });
-                await loadGameData(user); // Reload to populate variables
+            if (userData) {
+                const username = Object.keys(allUsers).find(key => allUsers[key].id === userId);
+                currentUsername = username;
+                collectedCardIds = new Set(userData.collectedCardIds || []);
+                playerDeckIds = userData.playerDeckIds || [];
+                cryptidCoins = userData.cryptidCoins || 0;
+                packsOpened = userData.packsOpened || 0;
+                gamesPlayed = userData.gamesPlayed || 0;
             }
         }
 
-        async function saveGameData() {
-            if (!currentUser) return;
-            const userDocRef = doc(db, "users", currentUser.uid);
-            const dataToSave = {
-                username: currentUsername,
-                collectedCardIds: Array.from(collectedCardIds),
-                playerDeckIds: playerDeckIds,
-                cryptidCoins: cryptidCoins,
-                packsOpened: packsOpened,
-                gamesPlayed: gamesPlayed
-            };
-            await setDoc(userDocRef, dataToSave, { merge: true });
+        function saveGameData() {
+            if (!currentUserId || !currentUsername) return;
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            
+            if (allUsers[currentUsername]) {
+                 allUsers[currentUsername].collectedCardIds = Array.from(collectedCardIds);
+                 allUsers[currentUsername].playerDeckIds = playerDeckIds;
+                 allUsers[currentUsername].cryptidCoins = cryptidCoins;
+                 allUsers[currentUsername].packsOpened = packsOpened;
+                 allUsers[currentUsername].gamesPlayed = gamesPlayed;
+                 localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+            }
         }
 
         // --- ASSET PRELOADING ---
@@ -1435,7 +1390,7 @@
 
         function showSettings() {
             document.getElementById('settings-username').innerText = currentUsername || 'N/A';
-            document.getElementById('settings-userid').innerText = currentUser?.uid || 'N/A';
+            document.getElementById('settings-userid').innerText = currentUserId || 'N/A';
         }
 
         // --- PACK OPENING ---
@@ -1766,19 +1721,76 @@
             modal.classList.add('show');
         }
         
-        // --- AUTHENTICATION FUNCTIONS (FIREBASE) ---
-        window.signInWithGoogle = async () => {
-            try {
-                await signInWithPopup(auth, provider);
-                // onAuthStateChanged will handle the rest
-            } catch (error) {
-                showMessage(error.message, 'error', true);
+        // --- AUTHENTICATION FUNCTIONS (LOCAL STORAGE) ---
+        function generateUniqueId() {
+            return Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8);
+        }
+
+        window.register = () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Username and password cannot be empty.', 'error', true);
+                return;
+            }
+            if (username === password) {
+                showMessage('Username and password cannot be the same.', 'error', true);
+                return;
+            }
+
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            if (allUsers[username]) {
+                showMessage('An account with this username already exists.', 'error', true);
+                return;
+            }
+
+            allUsers[username] = { 
+                id: generateUniqueId(),
+                password: password,
+                collectedCardIds: [],
+                playerDeckIds: [],
+                cryptidCoins: 200, // New player bonus
+                packsOpened: 0,
+                gamesPlayed: 0
+            };
+            localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+            showMessage('Registration successful! Please log in.', 'success', true);
+        };
+
+        window.login = async () => {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('Please enter both username and password.', 'error', true);
+                return;
+            }
+
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const userData = allUsers[username];
+
+            if (userData && userData.password === password) {
+                localStorage.setItem('cryptid_lastUser', userData.id); // Save ID for auto-login
+                currentUserId = userData.id;
+                
+                showView(loadingView);
+                await preloadImages();
+                loadGameData(userData.id);
+                updateDeckSizeDisplay();
+                updateCoinDisplay();
+                showPackView();
+
+            } else {
+                showMessage('Invalid username or password.', 'error', true);
             }
         };
 
-        window.logout = async () => {
-            await signOut(auth);
-            document.getElementById('packCardContainer').innerHTML = ''; // Clear pack view
+        window.logout = () => {
+            localStorage.removeItem('cryptid_lastUser');
+            currentUserId = null;
+            currentUsername = null;
+            document.getElementById('packCardContainer').innerHTML = ''; // Clear pack view on logout
             showAuthView();
             showMessage('You have been logged out.', 'success', true);
         };
@@ -1787,62 +1799,40 @@
             document.getElementById('deleteAccountModal').classList.add('show');
         };
 
-        window.confirmDeleteAccount = async () => {
-            const user = auth.currentUser;
-            if (!user) return;
-
-            // For Google Sign-In, re-authentication is needed for security.
-            try {
-                await reauthenticateWithPopup(user, provider);
-                
-                // Delete Firestore document
-                await deleteDoc(doc(db, "users", user.uid));
-
-                // Delete the user from Auth
-                await deleteUser(user);
-                
+        window.confirmDeleteAccount = () => {
+            const password = document.getElementById('delete-password').value;
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            
+            if (currentUsername && allUsers[currentUsername] && allUsers[currentUsername].password === password) {
+                delete allUsers[currentUsername];
+                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
                 document.getElementById('deleteAccountModal').classList.remove('show');
+                logout();
                 showMessage('Account deleted successfully.', 'success', true);
-                // onAuthStateChanged will redirect to auth view
-            } catch (error) {
-                showMessage('Re-authentication failed. Account not deleted.', 'error', true);
+            } else {
+                showMessage('Incorrect password. Account not deleted.', 'error', true);
             }
         };
         
         // --- INITIALIZATION ---
         window.enterGame = () => {
-            const user = auth.currentUser;
-            if (user) {
-                 // If user is already logged in from a previous session, go to loading
+            const lastUserId = localStorage.getItem('cryptid_lastUser');
+            if (lastUserId) {
+                currentUserId = lastUserId;
+                
                 (async () => {
                     showView(loadingView);
                     await preloadImages();
-                    await loadGameData(user);
+                    loadGameData(lastUserId);
                     updateDeckSizeDisplay();
                     updateCoinDisplay();
                     showPackView();
                 })();
+
             } else {
-                // If no user, go to auth screen
                 showAuthView();
             }
         }
-        
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                showView(loadingView);
-                await preloadImages();
-                await loadGameData(user);
-                updateDeckSizeDisplay();
-                updateCoinDisplay();
-                showPackView();
-            } else {
-                currentUser = null;
-                currentUsername = null;
-                showAuthView();
-            }
-        });
         
         // Make functions globally available
         window.showPackView = showPackView;
