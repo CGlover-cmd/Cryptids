@@ -44,7 +44,7 @@
 
         /* --- Background Image for Main Views --- */
         #packView, #collectionView, #deckBuilderView, #gameView, #settingsView {
-            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png');
+            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -1082,7 +1082,7 @@
             <span>Deck</span>
         </button>
         <button id="nav-battle" class="nav-btn" onclick="window.tryStartGame()">
-            <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c-0.4,0.4-0.4-1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
+            <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c0.4-0.4,0.4-1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
             <span>Battle</span>
         </button>
         <button id="nav-settings" class="nav-btn" onclick="window.showSettingsView()">
@@ -1090,8 +1090,48 @@
             <span>Settings</span>
         </button>
     </nav>
+    <script type="module">
+        // --- Firebase SDK Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword,
+            signOut,
+            deleteUser,
+            EmailAuthProvider,
+            reauthenticateWithCredential
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc,
+            deleteDoc,
+            collection,
+            query,
+            where,
+            getDocs,
+            writeBatch
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <script>
+        // --- Firebase Initialization ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAcmRLOgKaT2WURzDKqTi6v0639JEw2W8g",
+            authDomain: "cryptid-card-game-1217a.firebaseapp.com",
+            projectId: "cryptid-card-game-1217a",
+            storageBucket: "cryptid-card-game-1217a.appspot.com",
+            messagingSenderId: "72783465915",
+            appId: "1:72783465915:web:eb0ce6036ecefd0c94489e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+        let currentUsername = null;
+
         // --- DATA ---
         const allCryptids = [
             { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: { name: "Sonic Screech", damage: 10 }, effect: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/moth_man.png" },
@@ -1121,7 +1161,6 @@
         let cryptidCoins;
         let packsOpened;
         let gamesPlayed;
-        let currentUserId = null;
 
         const PACK_COST = 50;
         const WIN_REWARD = 10;
@@ -1135,32 +1174,33 @@
         let selectedPlayerCardElement = null;
         let messageTimeout, globalMessageTimeout;
 
-        function loadGameData(userId) {
-            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            const userData = Object.values(allUsers).find(u => u.id === userId);
+        async function loadGameData(userId) {
+            const userDocRef = doc(db, "users", userId);
+            const userDoc = await getDoc(userDocRef);
 
-            if (userData) {
-                collectedCardIds = new Set(userData.collectedCardIds || []);
-                playerDeckIds = userData.playerDeckIds || [];
-                cryptidCoins = userData.cryptidCoins || 0;
-                packsOpened = userData.packsOpened || 0;
-                gamesPlayed = userData.gamesPlayed || 0;
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                collectedCardIds = new Set(data.collectedCardIds || []);
+                playerDeckIds = data.playerDeckIds || [];
+                cryptidCoins = data.cryptidCoins || 0;
+                packsOpened = data.packsOpened || 0;
+                gamesPlayed = data.gamesPlayed || 0;
+                currentUsername = data.username || 'Player';
             }
         }
 
-        function saveGameData() {
-            if (!currentUserId) return;
-            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            // Find the user by ID to update their data
-            const username = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
-            if (username) {
-                allUsers[username].collectedCardIds = Array.from(collectedCardIds);
-                allUsers[username].playerDeckIds = playerDeckIds;
-                allUsers[username].cryptidCoins = cryptidCoins;
-                allUsers[username].packsOpened = packsOpened;
-                allUsers[username].gamesPlayed = gamesPlayed;
-                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
-            }
+        async function saveGameData() {
+            if (!currentUser) return;
+            const userDocRef = doc(db, "users", currentUser.uid);
+            const dataToSave = {
+                username: currentUsername,
+                collectedCardIds: Array.from(collectedCardIds),
+                playerDeckIds: playerDeckIds,
+                cryptidCoins: cryptidCoins,
+                packsOpened: packsOpened,
+                gamesPlayed: gamesPlayed
+            };
+            await setDoc(userDocRef, dataToSave, { merge: true });
         }
 
         // --- ASSET PRELOADING ---
@@ -1387,14 +1427,12 @@
         function showSettingsView() { showView(settingsView, 'nav-settings'); }
 
         function showSettings() {
-            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            const username = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
-            document.getElementById('settings-username').innerText = username || 'N/A';
-            document.getElementById('settings-userid').innerText = currentUserId || 'N/A';
+            document.getElementById('settings-username').innerText = currentUsername || 'N/A';
+            document.getElementById('settings-userid').innerText = currentUser?.uid || 'N/A';
         }
 
         // --- PACK OPENING ---
-        function openPack() {
+        async function openPack() {
             if (cryptidCoins < PACK_COST) {
                 showMessage(`You need ${PACK_COST} Cryptid Coins to open a pack!`, "error", true);
                 return;
@@ -1436,10 +1474,9 @@
                 }
             }
             
-            // BUG FIX: Add cards to collection BEFORE starting animations
             cardsInPack.forEach(cryptid => collectedCardIds.add(cryptid.id));
             packsOpened++;
-            saveGameData(); // Save immediately
+            await saveGameData(); // Save immediately
 
             // Display the cards from the generated pack
             cardsInPack.forEach((cryptid, i) => {
@@ -1524,9 +1561,9 @@
             updateDeckSizeDisplay();
         }
 
-        function saveDeck() {
+        async function saveDeck() {
             if (playerDeckIds.length === MAX_DECK_SIZE) {
-                saveGameData();
+                await saveGameData();
                 showMessage("Deck saved successfully!", "success", true);
             } else {
                 showMessage("Your deck must contain exactly " + MAX_DECK_SIZE + " cards.", "warning", true);
@@ -1676,7 +1713,7 @@
             document.getElementById('nextTurnBtn').disabled = true;
         }
 
-        function checkGameEnd() {
+        async function checkGameEnd() {
             let gameIsOver = false;
             let finalMessage = "";
             let modalClass = "";
@@ -1703,7 +1740,7 @@
                     updateCoinDisplay();
                 }
                 
-                saveGameData(); // Save game progress (coins, games played)
+                await saveGameData(); // Save game progress (coins, games played)
                 showGameEndModal(title, finalMessage, modalClass);
                 return true; // Game has ended
             }
@@ -1722,75 +1759,78 @@
             modal.classList.add('show');
         }
         
-        function generateUniqueId() {
-            return Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8);
+        // --- AUTHENTICATION FUNCTIONS (FIREBASE) ---
+        async function isUsernameTaken(username) {
+            const q = query(collection(db, "users"), where("username", "==", username));
+            const querySnapshot = await getDocs(q);
+            return !querySnapshot.empty;
         }
 
-        // --- AUTHENTICATION FUNCTIONS (LOCAL STORAGE) ---
-        window.register = () => {
+        window.register = async () => {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
+            const email = `${username}@cryptidgame.io`; // Create a dummy email
 
             if (!username || !password) {
                 showMessage('Username and password cannot be empty.', 'error', true);
                 return;
             }
-            if (username === password) {
-                showMessage('Username and password cannot be the same.', 'error', true);
+            if (username.length < 3) {
+                showMessage('Username must be at least 3 characters.', 'error', true);
+                return;
+            }
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters.', 'error', true);
                 return;
             }
 
-            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            if (allUsers[username]) {
-                showMessage('An account with this username already exists.', 'error', true);
+            const taken = await isUsernameTaken(username);
+            if (taken) {
+                showMessage('Username is already taken.', 'error', true);
                 return;
             }
 
-            allUsers[username] = { 
-                id: generateUniqueId(),
-                password: password,
-                collectedCardIds: [],
-                playerDeckIds: [],
-                cryptidCoins: 200, // New player bonus
-                packsOpened: 0,
-                gamesPlayed: 0
-            };
-            localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
-            showMessage('Registration successful! Please log in.', 'success', true);
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Create user document in Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    username: username,
+                    collectedCardIds: [],
+                    playerDeckIds: [],
+                    cryptidCoins: 200,
+                    packsOpened: 0,
+                    gamesPlayed: 0
+                });
+
+                showMessage('Registration successful! Please log in.', 'success', true);
+            } catch (error) {
+                showMessage(error.message, 'error', true);
+            }
         };
 
         window.login = async () => {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
+            const email = `${username}@cryptidgame.io`;
 
             if (!username || !password) {
                 showMessage('Please enter both username and password.', 'error', true);
                 return;
             }
 
-            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            const userData = allUsers[username];
-
-            if (userData && userData.password === password) {
-                localStorage.setItem('cryptid_lastUser', userData.id); // Save ID for auto-login
-                currentUserId = userData.id;
-                
-                showView(loadingView);
-                await preloadImages();
-                loadGameData(userData.id);
-                updateDeckSizeDisplay();
-                updateCoinDisplay();
-                showPackView();
-
-            } else {
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged will handle the rest
+            } catch (error) {
                 showMessage('Invalid username or password.', 'error', true);
             }
         };
 
-        window.logout = () => {
-            localStorage.removeItem('cryptid_lastUser');
-            currentUserId = null;
-            document.getElementById('packCardContainer').innerHTML = ''; // Clear pack view on logout
+        window.logout = async () => {
+            await signOut(auth);
+            document.getElementById('packCardContainer').innerHTML = ''; // Clear pack view
             showAuthView();
             showMessage('You have been logged out.', 'success', true);
         };
@@ -1799,41 +1839,64 @@
             document.getElementById('deleteAccountModal').classList.add('show');
         };
 
-        window.confirmDeleteAccount = () => {
+        window.confirmDeleteAccount = async () => {
             const password = document.getElementById('delete-password').value;
-            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            const username = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
-            
-            if (username && allUsers[username].password === password) {
-                delete allUsers[username];
-                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+            const user = auth.currentUser;
+
+            if (!user || !password) {
+                showMessage('Please enter your password.', 'warning', true);
+                return;
+            }
+
+            const credential = EmailAuthProvider.credential(user.email, password);
+
+            try {
+                // Re-authenticate for security
+                await reauthenticateWithCredential(user, credential);
+                
+                // Delete Firestore documents
+                const batch = writeBatch(db);
+                const userDocRef = doc(db, "users", user.uid);
+                batch.delete(userDocRef);
+                await batch.commit();
+
+                // Delete user from Auth
+                await deleteUser(user);
+                
                 document.getElementById('deleteAccountModal').classList.remove('show');
-                logout();
                 showMessage('Account deleted successfully.', 'success', true);
-            } else {
-                showMessage('Incorrect password. Account not deleted.', 'error', true);
+                // onAuthStateChanged will handle redirecting to auth view
+            } catch (error) {
+                showMessage('Incorrect password or error deleting account.', 'error', true);
             }
         };
         
         // --- INITIALIZATION ---
         window.enterGame = () => {
-            const lastUserId = localStorage.getItem('cryptid_lastUser');
-            if (lastUserId) {
-                currentUserId = lastUserId;
-                
-                (async () => {
-                    showView(loadingView);
-                    await preloadImages();
-                    loadGameData(lastUserId);
-                    updateDeckSizeDisplay();
-                    updateCoinDisplay();
-                    showPackView();
-                })();
-
-            } else {
+            // This function is now just a wrapper for the auth state check
+            // which runs automatically. If a user is logged in, it proceeds.
+            // If not, it shows the auth screen.
+            const user = auth.currentUser;
+            if (!user) {
                 showAuthView();
             }
         }
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                showView(loadingView);
+                await preloadImages();
+                await loadGameData(user.uid);
+                updateDeckSizeDisplay();
+                updateCoinDisplay();
+                showPackView();
+            } else {
+                currentUser = null;
+                currentUsername = null;
+                // Don't show auth view immediately, wait for enterGame click
+            }
+        });
         
         // Make functions globally available
         window.showPackView = showPackView;
