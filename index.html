@@ -1059,11 +1059,10 @@
     <div id="deleteAccountModal" class="modal">
         <div class="modal-content">
             <h2>Delete Account</h2>
-            <p>This action is irreversible. Please enter your password to confirm.</p>
-            <input type="password" id="delete-password" placeholder="Password">
-            <div class="modal-buttons" style="flex-direction: row;">
-                <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
-                <button class="btn btn-danger" onclick="window.confirmDeleteAccount()">Confirm Delete</button>
+            <p>This action is irreversible. Please re-authenticate to confirm.</p>
+            <div class="modal-buttons">
+                 <button class="btn btn-danger" onclick="window.confirmDeleteAccount()">Re-authenticate & Delete</button>
+                 <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
             </div>
         </div>
     </div>
@@ -1107,8 +1106,7 @@
             doc, 
             getDoc, 
             setDoc,
-            deleteDoc,
-            writeBatch
+            deleteDoc
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // --- Firebase Initialization ---
@@ -1193,7 +1191,7 @@
                     packsOpened: 0,
                     gamesPlayed: 0
                 });
-                await loadGameData(user.uid); // Reload to populate variables
+                await loadGameData(user); // Reload to populate variables
             }
         }
 
