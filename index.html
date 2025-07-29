@@ -970,12 +970,12 @@
     <div id="authView" class="view">
         <div class="auth-container">
             <h1>Login or Register</h1>
-            <input type="text" id="username" placeholder="Username">
-            <input type="password" id="password" placeholder="Password">
-            <div class="auth-buttons">
-                <button class="btn" onclick="window.login()">Login</button>
-                <button class="btn" onclick="window.register()">Register</button>
-            </div>
+            <button class="btn" onclick="window.signInWithGoogle()">
+                <svg style="width:24px;height:24px;vertical-align: middle; margin-right: 8px;" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.19,4.73C14.03,4.73 15.69,5.36 16.95,6.57L19.05,4.5C17.22,2.77 15,2 12.19,2C6.92,2 2.71,6.62 2.71,12C2.71,17.38 6.92,22 12.19,22C17.6,22 21.54,18.33 21.54,12.23C21.54,11.76 21.48,11.43 21.35,11.1V11.1Z" />
+                </svg>
+                Sign in with Google
+            </button>
         </div>
     </div>
 
@@ -1096,12 +1096,11 @@
         import { 
             getAuth, 
             onAuthStateChanged, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword,
+            GoogleAuthProvider,
+            signInWithPopup,
             signOut,
             deleteUser,
-            EmailAuthProvider,
-            reauthenticateWithCredential
+            reauthenticateWithPopup
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
             getFirestore, 
@@ -1109,10 +1108,6 @@
             getDoc, 
             setDoc,
             deleteDoc,
-            collection,
-            query,
-            where,
-            getDocs,
             writeBatch
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -1129,6 +1124,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
         let currentUser = null;
         let currentUsername = null;
 
@@ -1174,8 +1170,8 @@
         let selectedPlayerCardElement = null;
         let messageTimeout, globalMessageTimeout;
 
-        async function loadGameData(userId) {
-            const userDocRef = doc(db, "users", userId);
+        async function loadGameData(user) {
+            const userDocRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userDocRef);
 
             if (userDoc.exists()) {
@@ -1185,7 +1181,19 @@
                 cryptidCoins = data.cryptidCoins || 0;
                 packsOpened = data.packsOpened || 0;
                 gamesPlayed = data.gamesPlayed || 0;
-                currentUsername = data.username || 'Player';
+                currentUsername = data.username || user.displayName || 'Player';
+            } else {
+                // New player setup
+                currentUsername = user.displayName || 'Player';
+                await setDoc(userDocRef, {
+                    username: currentUsername,
+                    collectedCardIds: [],
+                    playerDeckIds: [],
+                    cryptidCoins: 200,
+                    packsOpened: 0,
+                    gamesPlayed: 0
+                });
+                await loadGameData(user.uid); // Reload to populate variables
             }
         }
 
@@ -1761,77 +1769,12 @@
         }
         
         // --- AUTHENTICATION FUNCTIONS (FIREBASE) ---
-        async function isUsernameTaken(username) {
-            const q = query(collection(db, "users"), where("username", "==", username));
-            const querySnapshot = await getDocs(q);
-            return !querySnapshot.empty;
-        }
-
-        window.register = async () => {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const email = `${username}@cryptidgame.io`; // Create a dummy email
-
-            if (!username || !password) {
-                showMessage('Username and password cannot be empty.', 'error', true);
-                return;
-            }
-            if (username.length < 3) {
-                showMessage('Username must be at least 3 characters.', 'error', true);
-                return;
-            }
-            if (password.length < 6) {
-                showMessage('Password must be at least 6 characters.', 'error', true);
-                return;
-            }
-
-            showView(loadingView); // Show loading screen
-            const taken = await isUsernameTaken(username);
-            if (taken) {
-                showMessage('Username is already taken.', 'error', true);
-                showAuthView(); // Go back to auth view on error
-                return;
-            }
-
+        window.signInWithGoogle = async () => {
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // Create user document in Firestore
-                await setDoc(doc(db, "users", user.uid), {
-                    username: username,
-                    collectedCardIds: [],
-                    playerDeckIds: [],
-                    cryptidCoins: 200,
-                    packsOpened: 0,
-                    gamesPlayed: 0
-                });
-                
-                // Log the user out immediately after registration
-                await signOut(auth);
-                showMessage('Registration successful! Please log in.', 'success', true);
-                showAuthView(); // Go back to auth view
-            } catch (error) {
-                showMessage(error.message, 'error', true);
-                showAuthView(); // Go back to auth view on error
-            }
-        };
-
-        window.login = async () => {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const email = `${username}@cryptidgame.io`;
-
-            if (!username || !password) {
-                showMessage('Please enter both username and password.', 'error', true);
-                return;
-            }
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
+                await signInWithPopup(auth, provider);
                 // onAuthStateChanged will handle the rest
             } catch (error) {
-                showMessage('Invalid username or password.', 'error', true);
+                showMessage(error.message, 'error', true);
             }
         };
 
@@ -1847,34 +1790,24 @@
         };
 
         window.confirmDeleteAccount = async () => {
-            const password = document.getElementById('delete-password').value;
             const user = auth.currentUser;
+            if (!user) return;
 
-            if (!user || !password) {
-                showMessage('Please enter your password.', 'warning', true);
-                return;
-            }
-
-            const credential = EmailAuthProvider.credential(user.email, password);
-
+            // For Google Sign-In, re-authentication is needed for security.
             try {
-                // Re-authenticate for security
-                await reauthenticateWithCredential(user, credential);
+                await reauthenticateWithPopup(user, provider);
                 
-                // Delete Firestore documents
-                const batch = writeBatch(db);
-                const userDocRef = doc(db, "users", user.uid);
-                batch.delete(userDocRef);
-                await batch.commit();
+                // Delete Firestore document
+                await deleteDoc(doc(db, "users", user.uid));
 
-                // Delete user from Auth
+                // Delete the user from Auth
                 await deleteUser(user);
                 
                 document.getElementById('deleteAccountModal').classList.remove('show');
                 showMessage('Account deleted successfully.', 'success', true);
-                // onAuthStateChanged will handle redirecting to auth view
+                // onAuthStateChanged will redirect to auth view
             } catch (error) {
-                showMessage('Incorrect password or error deleting account.', 'error', true);
+                showMessage('Re-authentication failed. Account not deleted.', 'error', true);
             }
         };
         
@@ -1886,7 +1819,7 @@
                 (async () => {
                     showView(loadingView);
                     await preloadImages();
-                    await loadGameData(user.uid);
+                    await loadGameData(user);
                     updateDeckSizeDisplay();
                     updateCoinDisplay();
                     showPackView();
@@ -1900,7 +1833,12 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                // Don't automatically load game here, wait for enterGame()
+                showView(loadingView);
+                await preloadImages();
+                await loadGameData(user);
+                updateDeckSizeDisplay();
+                updateCoinDisplay();
+                showPackView();
             } else {
                 currentUser = null;
                 currentUsername = null;
