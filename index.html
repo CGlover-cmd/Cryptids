@@ -1206,11 +1206,12 @@
         // --- ASSET PRELOADING ---
         function preloadImages() {
             const loadingText = document.getElementById('loading-text');
-            loadingText.innerText = 'Loading card images...';
-            const imageUrls = allCryptids.map(c => c.image);
-            imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG');
-            imageUrls.push('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG');
-            imageUrls.push('https://i.imgur.com/8i1a2Vp.jpg');
+            loadingText.innerText = 'Loading essential assets...';
+            const imageUrls = [
+                'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG',
+                'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG',
+                'https://i.imgur.com/8i1a2Vp.jpg'
+            ];
 
             let loadedCount = 0;
             const totalImages = imageUrls.length;
@@ -1784,9 +1785,11 @@
                 return;
             }
 
+            showView(loadingView); // Show loading screen
             const taken = await isUsernameTaken(username);
             if (taken) {
                 showMessage('Username is already taken.', 'error', true);
+                showAuthView(); // Go back to auth view on error
                 return;
             }
 
@@ -1803,10 +1806,14 @@
                     packsOpened: 0,
                     gamesPlayed: 0
                 });
-
+                
+                // Log the user out immediately after registration
+                await signOut(auth);
                 showMessage('Registration successful! Please log in.', 'success', true);
+                showAuthView(); // Go back to auth view
             } catch (error) {
                 showMessage(error.message, 'error', true);
+                showAuthView(); // Go back to auth view on error
             }
         };
 
@@ -1873,11 +1880,19 @@
         
         // --- INITIALIZATION ---
         window.enterGame = () => {
-            // This function is now just a wrapper for the auth state check
-            // which runs automatically. If a user is logged in, it proceeds.
-            // If not, it shows the auth screen.
             const user = auth.currentUser;
-            if (!user) {
+            if (user) {
+                 // If user is already logged in from a previous session, go to loading
+                (async () => {
+                    showView(loadingView);
+                    await preloadImages();
+                    await loadGameData(user.uid);
+                    updateDeckSizeDisplay();
+                    updateCoinDisplay();
+                    showPackView();
+                })();
+            } else {
+                // If no user, go to auth screen
                 showAuthView();
             }
         }
@@ -1885,16 +1900,11 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                showView(loadingView);
-                await preloadImages();
-                await loadGameData(user.uid);
-                updateDeckSizeDisplay();
-                updateCoinDisplay();
-                showPackView();
+                // Don't automatically load game here, wait for enterGame()
             } else {
                 currentUser = null;
                 currentUsername = null;
-                // Don't show auth view immediately, wait for enterGame click
+                showAuthView();
             }
         });
         
