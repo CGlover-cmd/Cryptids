@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cryptid Card Game</title>
+    <!-- Google Identity Services Library -->
+    <script src="https://accounts.google.com/gsi/client" async></script>
     <style>
         :root {
             --bg-dark: #121212;
@@ -976,6 +978,8 @@
                 <button class="btn" onclick="window.login()">Login</button>
                 <button class="btn" onclick="window.register()">Register</button>
             </div>
+            <div style="text-align: center; margin: 15px 0; color: #888;">OR</div>
+            <div id="googleSignInButton" style="align-self: center;"></div>
         </div>
     </div>
 
@@ -1217,7 +1221,7 @@
             const roll = Math.random();
             if (roll < 0.05) return "legendary"; // 5% chance
             if (roll < 0.25) return "rare";     // 20% chance
-            return "common";                   // 75% chance
+            return "common";                    // 75% chance
         }
         
         function getNewRandomCryptid(rarity, currentlyDrawnIds) {
@@ -1382,7 +1386,12 @@
             }
         }
 
-        function showAuthView() { showView(authView, null); }
+        function showAuthView() { 
+            showView(authView, null);
+            if (typeof google !== 'undefined') {
+                google.accounts.id.prompt(); // Show one-tap prompt if available
+            }
+        }
         function showPackView() { showView(packView, 'nav-packs'); }
         function showCollectionView() { showView(collectionView, 'nav-collection'); }
         function showDeckBuilderView() { showView(deckBuilderView, 'nav-deck'); }
@@ -1391,6 +1400,16 @@
         function showSettings() {
             document.getElementById('settings-username').innerText = currentUsername || 'N/A';
             document.getElementById('settings-userid').innerText = currentUserId || 'N/A';
+            
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const currentUserData = allUsers[currentUsername];
+            const deleteButton = document.querySelector('#settingsView .btn-danger');
+
+            if (currentUserData && currentUserData.googleId) {
+                deleteButton.style.display = 'none'; // Hide delete for Google users
+            } else {
+                deleteButton.style.display = 'block';
+            }
         }
 
         // --- PACK OPENING ---
@@ -1446,11 +1465,11 @@
                  container.appendChild(cardWrapper);
 
                  setTimeout(() => {
-                    cardWrapper.classList.add("show");
-                    setTimeout(() => {
-                        cardWrapper.classList.add("flipped");
-                    }, 500);
-                }, 200 * i);
+                     cardWrapper.classList.add("show");
+                     setTimeout(() => {
+                         cardWrapper.classList.add("flipped");
+                     }, 500);
+                 }, 200 * i);
             });
             
             // Update the title if starter packs are finished
@@ -1721,9 +1740,56 @@
             modal.classList.add('show');
         }
         
-        // --- AUTHENTICATION FUNCTIONS (LOCAL STORAGE) ---
+        // --- AUTHENTICATION FUNCTIONS (LOCAL STORAGE & GOOGLE) ---
         function generateUniqueId() {
             return Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8);
+        }
+
+        async function onLoginSuccess(userId) {
+            localStorage.setItem('cryptid_lastUser', userId);
+            currentUserId = userId;
+            showView(loadingView);
+            await preloadImages();
+            loadGameData(userId);
+            updateDeckSizeDisplay();
+            updateCoinDisplay();
+            showPackView();
+        }
+
+        function handleCredentialResponse(response) {
+            const decodedToken = JSON.parse(atob(response.credential.split('.')[1]));
+            const googleId = decodedToken.sub;
+            const googleName = decodedToken.name;
+
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            let userData = Object.values(allUsers).find(u => u.googleId === googleId);
+            
+            if (userData) {
+                // Existing Google user logs in
+                onLoginSuccess(userData.id);
+            } else {
+                // New Google user registration
+                let newUsername = googleName.replace(/\s/g, ''); // Remove spaces
+                let counter = 1;
+                while (allUsers[newUsername]) {
+                    newUsername = `${googleName.replace(/\s/g, '')}${counter}`;
+                    counter++;
+                }
+                
+                const newUserId = generateUniqueId();
+                allUsers[newUsername] = { 
+                    id: newUserId,
+                    googleId: googleId,
+                    password: null, // No password for Google-linked accounts
+                    collectedCardIds: [],
+                    playerDeckIds: [],
+                    cryptidCoins: 200,
+                    packsOpened: 0,
+                    gamesPlayed: 0
+                };
+                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+                onLoginSuccess(newUserId);
+            }
         }
 
         window.register = () => {
@@ -1770,23 +1836,22 @@
             const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
             const userData = allUsers[username];
 
-            if (userData && userData.password === password) {
-                localStorage.setItem('cryptid_lastUser', userData.id); // Save ID for auto-login
-                currentUserId = userData.id;
-                
-                showView(loadingView);
-                await preloadImages();
-                loadGameData(userData.id);
-                updateDeckSizeDisplay();
-                updateCoinDisplay();
-                showPackView();
+            if (userData && userData.googleId) {
+                showMessage('This account is linked with Google. Please use Google Sign-In.', 'error', true);
+                return;
+            }
 
+            if (userData && userData.password === password) {
+                onLoginSuccess(userData.id);
             } else {
                 showMessage('Invalid username or password.', 'error', true);
             }
         };
 
         window.logout = () => {
+            if (typeof google !== 'undefined') {
+                google.accounts.id.disableAutoSelect();
+            }
             localStorage.removeItem('cryptid_lastUser');
             currentUserId = null;
             currentUsername = null;
@@ -1818,17 +1883,7 @@
         window.enterGame = () => {
             const lastUserId = localStorage.getItem('cryptid_lastUser');
             if (lastUserId) {
-                currentUserId = lastUserId;
-                
-                (async () => {
-                    showView(loadingView);
-                    await preloadImages();
-                    loadGameData(lastUserId);
-                    updateDeckSizeDisplay();
-                    updateCoinDisplay();
-                    showPackView();
-                })();
-
+                onLoginSuccess(lastUserId);
             } else {
                 showAuthView();
             }
@@ -1847,9 +1902,25 @@
         window.endTurn = endTurn;
         window.selectPlayerCard = selectPlayerCard;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        window.onload = function () {
+            // Initialize Google Sign-In
+            if (typeof google !== 'undefined') {
+                google.accounts.id.initialize({
+                    client_id: "736869974803-67gmolnoitirougo0fkpp06vfetpgndl.apps.googleusercontent.com",
+                    callback: handleCredentialResponse
+                });
+                // Render the button in the auth view (it's hidden initially)
+                google.accounts.id.renderButton(
+                    document.getElementById("googleSignInButton"),
+                    { theme: "outline", size: "large", text: "signin_with" } 
+                );
+            } else {
+                console.error("Google GSI script failed to load.");
+            }
+            // Start the game logic by showing the home screen
             showView(document.getElementById('homeView'));
-        });
+        };
+
     </script>
 </body>
 </html>
