@@ -12,7 +12,6 @@
             --text-light: #f0f0f0;
             --pack-border: #a2c8c8;
             --pack-shadow: #a2c8c8;
-            --card-back-color: #2c2c2c;
             --uncollected-card-bg: #1f1f1f;
             --uncollected-card-border: #444;
             --selected-card-border: #00ff00; /* Green for selected cards */
@@ -167,25 +166,35 @@
             padding-bottom: 30px;
         }
 
-        /* Card Specific Styles (re-used for collection) */
+        /* --- NEW CARD STYLES --- */
         .card-wrapper {
             width: 120px;
             height: 180px;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease, box-shadow 0.3s ease-in-out;
             opacity: 0;
             transform: translateY(20px) rotateY(0deg);
             flex-shrink: 0;
             flex-grow: 0;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
-        /* Cards in collection, deck builder, game hand (player) should always show front */
+
+        .card-wrapper.rare {
+            box-shadow: 0 0 12px var(--rare-color), 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .card-wrapper.legendary {
+            box-shadow: 0 0 12px var(--legendary-color), 0 5px 15px rgba(0,0,0,0.5);
+        }
+
         .collection-view .card-wrapper,
         .deck-builder-view .card-wrapper,
         .player-area .card-wrapper,
         .in-play-card-container .card-wrapper {
             opacity: 1;
-            transform: translateY(0); /* Removed rotateY(0deg) here */
+            transform: translateY(0);
         }
 
         .card-wrapper.show {
@@ -209,7 +218,6 @@
             transform-style: preserve-3d;
             transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
             border-radius: 10px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
         }
 
         .card-face {
@@ -217,141 +225,61 @@
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start; /* Align content to top */
-            text-align: center;
-            padding: 5px;
             border-radius: 10px;
-            box-sizing: border-box;
-            font-weight: bold;
-            color: var(--text-light);
-            text-shadow: 0 0 4px rgba(0,0,0,0.5);
+            overflow: hidden;
         }
 
-        /* Card Back Styles */
         .card-back {
             background-image: url("https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.png");
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            border: 3px solid #666;
-            transform: rotateY(0deg); /* Back faces forward initially */
         }
 
         .card-front {
-            transform: rotateY(180deg); /* Front faces away initially */
-            position: relative;
-        }
-        
-        .card-front .image-container {
-            width: calc(100% - 4px);
-            height: 55%;
-            margin-bottom: 4px;
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
+            transform: rotateY(180deg);
+            background-size: cover;
+            background-position: center;
         }
 
-        .card-front img {
+        .card-content {
+            position: relative;
+            z-index: 2;
             width: 100%;
             height: 100%;
-            object-fit: cover;
         }
 
-        .card-name {
-            font-size: 0.9rem;
-            margin-bottom: 2px;
-            font-weight: 700;
-        }
-        
-        .card-hp {
+        .stat-display {
             position: absolute;
-            top: 2px;
-            left: 2px;
-            background-color: rgba(0,0,0,0.6);
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 0.8em;
+            top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 1rem;
             font-weight: bold;
-            color: #f87171;
-            text-shadow: 1px 1px 2px black;
-            z-index: 2;
+            padding: 3px 6px;
+            text-shadow: 0 0 5px black, 0 0 3px black;
         }
+        .stat-display svg {
+            width: 18px;
+            height: 18px;
+            filter: drop-shadow(0 0 2px black);
+        }
+        .hp-display { left: 5px; }
+        .attack-display { right: 5px; }
 
-        .card-effect {
-            font-size: 0.6em;
-            padding: 0 2px;
-            margin-bottom: 4px;
-            color: #ccc;
-            height: 28px; /* Fixed height for effect text */
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .name-plate {
+            position: absolute;
+            bottom: 0;
+            left: 0;
             width: 100%;
-        }
-
-        .card-attack-info {
-            background-color: rgba(0,0,0,0.4);
-            border-radius: 5px;
-            padding: 4px;
-            width: 100%;
-            margin-top: auto; /* Pushes to the bottom */
-        }
-
-        .attack-name {
+            padding: 8px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+            text-align: center;
+            font-size: 1rem;
             font-weight: bold;
-            font-size: 0.7rem;
+            color: white;
         }
 
-        .attack-damage {
-            font-weight: bold;
-            font-size: 0.8rem;
-            color: #60a5fa;
-        }
-
-        /* --- Rarity Specific Styles --- */
-        /* Common (Gray) Theme */
-        .card-front.common { 
-            background: #2d3748;
-            border: 3px solid #4a5568;
-            box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
-        }
-        .card-front.common .card-name {
-            color: #e2e8f0;
-            text-shadow: 0 0 6px #94a3b8;
-        }
-        .card-front.common img {
-            filter: grayscale(1);
-        }
-
-        /* Rare (Blue) Theme */
-        .card-front.rare { 
-            background: linear-gradient(to bottom right, #1e3a8a, #1c1942);
-            border: 3px solid var(--rare-color);
-            box-shadow: inset 0 0 10px rgba(59,130,246,0.25);
-        }
-        .card-front.rare .card-name {
-            color: #e0f2fe;
-            text-shadow: 0 0 6px #60a5fa, 0 0 10px #2563eb;
-        }
-
-        /* Legendary (Yellow) Theme */
-        .card-front.legendary { 
-            background: linear-gradient(to bottom right, #422f1d, #2a1d10);
-            border: 3px solid var(--legendary-color);
-            box-shadow: inset 0 0 10px rgba(255,193,7,0.2);
-        }
-        .card-front.legendary .card-name {
-            color: #fefce8;
-            text-shadow: 0 0 8px #fde047, 0 0 12px #eab308;
-        }
-        .card-front.legendary img {
-            filter: sepia(0.4);
-        }
-
-
-        /* Uncollected Card Styles */
         .uncollected-card .card-inner {
             background-color: var(--uncollected-card-bg);
             border: 3px dashed var(--uncollected-card-border);
@@ -368,7 +296,7 @@
         }
 
 
-        /* --- View Management --- */
+        /* --- VIEW MANAGEMENT --- */
         .view {
             width: 100%;
             display: none;
@@ -879,29 +807,19 @@
             .card-wrapper {
                 width: 150px;
                 height: 220px;
-                transform: translateY(30px) rotateY(0deg);
             }
-            .card-inner {
-                border-radius: 12px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            .stat-display {
+                font-size: 1.2rem;
+                padding: 5px 8px;
             }
-            .card-face {
-                padding: 10px;
-                border-radius: 12px;
-                text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            .stat-display svg {
+                width: 20px;
+                height: 20px;
             }
-            
-            .card-name {
-                font-size: 1.1rem;
+            .name-plate {
+                font-size: 1.2rem;
             }
             
-            .rarity-badge {
-                bottom: 8px;
-                right: 8px;
-                padding: 4px 8px;
-                border-radius: 5px;
-                font-size: 0.75rem;
-            }
             .uncollected-card .card-inner {
                 font-size: 3em;
             }
@@ -1175,7 +1093,7 @@
             const loadingText = document.getElementById('loading-text');
             loadingText.innerText = 'Loading essential assets...';
             const imageUrls = [
-                'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG',
+                'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png',
                 'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.png',
                 'https://i.imgur.com/8i1a2Vp.jpg'
             ];
@@ -1262,47 +1180,49 @@
 
         function createCardElement(cryptid, isCollected = true, showFrontImmediately = false) {
             const cardWrapper = document.createElement("div");
-            cardWrapper.className = `card-wrapper`;
+            if (isCollected && cryptid) {
+                cardWrapper.className = `card-wrapper ${cryptid.rarity}`;
+            } else {
+                cardWrapper.className = 'card-wrapper';
+            }
             cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
 
             const cardInner = document.createElement("div");
             cardInner.className = `card-inner`;
 
             if (isCollected && cryptid) {
-                const cardFront = document.createElement("div");
-                cardFront.className = `card-face card-front ${cryptid.rarity}`;
-
-                const cardHp = document.createElement("div");
-                cardHp.className = "card-hp";
-                cardHp.innerText = `HP: ${cryptid.hp}`;
-                cardFront.appendChild(cardHp);
-
-                const imageContainer = document.createElement("div");
-                imageContainer.className = "image-container";
-                const cardImage = document.createElement("img");
-                cardImage.src = cryptid.image;
-                cardImage.alt = cryptid.name;
-                cardImage.onerror = () => { cardImage.src = 'https://placehold.co/100x150/ff0000/FFFFFF?text=Error'; };
-                imageContainer.appendChild(cardImage);
-                cardFront.appendChild(imageContainer);
-                
-                const cardName = document.createElement("div");
-                cardName.className = "card-name";
-                cardName.innerText = cryptid.name;
-                cardFront.appendChild(cardName);
-
-                const cardEffect = document.createElement("div");
-                cardEffect.className = "card-effect";
-                cardEffect.innerText = cryptid.effect;
-                cardFront.appendChild(cardEffect);
-
-                const attackInfo = document.createElement("div");
-                attackInfo.className = "card-attack-info";
-                attackInfo.innerHTML = `<div class="attack-name">${cryptid.attack.name}</div><div class="attack-damage">${cryptid.attack.damage} DMG</div>`;
-                cardFront.appendChild(attackInfo);
-
                 const cardBack = document.createElement("div");
                 cardBack.className = `card-face card-back`;
+
+                const cardFront = document.createElement("div");
+                cardFront.className = `card-face card-front`;
+                cardFront.style.backgroundImage = `url('${cryptid.image}')`;
+
+                const cardContent = document.createElement("div");
+                cardContent.className = 'card-content';
+
+                const hpDisplay = document.createElement('div');
+                hpDisplay.className = 'stat-display hp-display';
+                hpDisplay.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="#f56565"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span>${cryptid.hp}</span>
+                `;
+                cardContent.appendChild(hpDisplay);
+
+                const attackDisplay = document.createElement('div');
+                attackDisplay.className = 'stat-display attack-display';
+                attackDisplay.innerHTML = `
+                     <svg viewBox="0 0 24 24" fill="#63b3ed"><path d="M20.7,5.3l-2-2c-0.4-0.4-1-0.4-1.4,0L12,8.6L6.7,3.3c-0.4-0.4-1-0.4-1.4,0l-2,2c-0.4,0.4-0.4,1,0,1.4L8.6,12l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4l2,2c0.4,0.4,1,0.4,1.4,0L12,15.4l5.3,5.3c0.4,0.4,1,0.4,1.4,0l2-2c0.4-0.4,0.4-1,0-1.4L15.4,12l5.3-5.3C21.1,6.3,21.1,5.7,20.7,5.3z"/></svg>
+                    <span>${cryptid.attack.damage}</span>
+                `;
+                cardContent.appendChild(attackDisplay);
+
+                const namePlate = document.createElement('div');
+                namePlate.className = 'name-plate';
+                namePlate.innerText = cryptid.name;
+                cardContent.appendChild(namePlate);
+
+                cardFront.appendChild(cardContent);
 
                 cardInner.appendChild(cardBack);
                 cardInner.appendChild(cardFront);
