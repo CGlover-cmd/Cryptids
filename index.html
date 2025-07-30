@@ -1221,7 +1221,7 @@
             const roll = Math.random();
             if (roll < 0.05) return "legendary"; // 5% chance
             if (roll < 0.25) return "rare";     // 20% chance
-            return "common";                    // 75% chance
+            return "common";                     // 75% chance
         }
         
         function getNewRandomCryptid(rarity, currentlyDrawnIds) {
@@ -1440,8 +1440,8 @@
                 for(let i=0; i<3; i++) {
                      const card = getNewRandomCryptid('common', drawnIds);
                      if(card) {
-                        cardsInPack.push(card);
-                        drawnIds.push(card.id);
+                         cardsInPack.push(card);
+                         drawnIds.push(card.id);
                     }
                 }
                 shuffleArray(cardsInPack);
