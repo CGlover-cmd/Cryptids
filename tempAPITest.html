@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cryptid Card Game</title>
-    <!-- NEW: Google Sign-In Library -->
+    <!-- Google Identity Services Library -->
     <script src="https://accounts.google.com/gsi/client" async></script>
     <style>
         :root {
@@ -53,7 +53,7 @@
             background-attachment: fixed;
         }
         
-        #homeView {
+        #homeView, #authView {
              background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://i.imgur.com/8i1a2Vp.jpg');
             background-size: cover;
             background-position: center;
@@ -185,7 +185,7 @@
         .player-area .card-wrapper,
         .in-play-card-container .card-wrapper {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0); /* Removed rotateY(0deg) here */
         }
 
         .card-wrapper.show {
@@ -220,7 +220,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: flex-start; /* Align content to top */
             text-align: center;
             padding: 5px;
             border-radius: 10px;
@@ -237,17 +237,17 @@
             background-position: center;
             background-repeat: no-repeat;
             border: 3px solid #666;
-            transform: rotateY(0deg);
+            transform: rotateY(0deg); /* Back faces forward initially */
         }
 
         .card-front {
-            transform: rotateY(180deg);
+            transform: rotateY(180deg); /* Front faces away initially */
             position: relative;
         }
         
         .card-front .image-container {
             width: calc(100% - 4px);
-            height: 65%;
+            height: 55%;
             margin-bottom: 4px;
             border-radius: 6px;
             overflow: hidden;
@@ -261,7 +261,7 @@
         }
 
         .card-name {
-            font-size: 1rem;
+            font-size: 0.9rem;
             margin-bottom: 2px;
             font-weight: 700;
         }
@@ -280,21 +280,38 @@
             z-index: 2;
         }
 
+        .card-effect {
+            font-size: 0.6em;
+            padding: 0 2px;
+            margin-bottom: 4px;
+            color: #ccc;
+            height: 28px; /* Fixed height for effect text */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
         .card-attack-info {
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            background-color: rgba(0,0,0,0.6);
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 0.8em;
+            background-color: rgba(0,0,0,0.4);
+            border-radius: 5px;
+            padding: 4px;
+            width: 100%;
+            margin-top: auto; /* Pushes to the bottom */
+        }
+
+        .attack-name {
             font-weight: bold;
+            font-size: 0.7rem;
+        }
+
+        .attack-damage {
+            font-weight: bold;
+            font-size: 0.8rem;
             color: #60a5fa;
-            text-shadow: 1px 1px 2px black;
-            z-index: 2;
         }
 
         /* --- Rarity Specific Styles --- */
+        /* Common (Gray) Theme */
         .card-front.common { 
             background: #2d3748;
             border: 3px solid #4a5568;
@@ -308,6 +325,7 @@
             filter: grayscale(1);
         }
 
+        /* Rare (Blue) Theme */
         .card-front.rare { 
             background: linear-gradient(to bottom right, #1e3a8a, #1c1942);
             border: 3px solid var(--rare-color);
@@ -318,6 +336,7 @@
             text-shadow: 0 0 6px #60a5fa, 0 0 10px #2563eb;
         }
 
+        /* Legendary (Yellow) Theme */
         .card-front.legendary { 
             background: linear-gradient(to bottom right, #422f1d, #2a1d10);
             border: 3px solid var(--legendary-color);
@@ -331,6 +350,8 @@
             filter: sepia(0.4);
         }
 
+
+        /* Uncollected Card Styles */
         .uncollected-card .card-inner {
             background-color: var(--uncollected-card-bg);
             border: 3px dashed var(--uncollected-card-border);
@@ -346,13 +367,15 @@
             content: '?';
         }
 
+
+        /* --- View Management --- */
         .view {
             width: 100%;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            min-height: calc(100dvh - 80px);
+            min-height: calc(100dvh - 80px); /* Adjust for nav bar */
             padding: 15px;
             box-sizing: border-box;
         }
@@ -361,10 +384,348 @@
             display: flex;
         }
 
-        #homeView {
-            justify-content: center;
+        #authView, #loadingView {
+            justify-content: center; /* Center content vertically */
+            padding-top: 0; /* No top padding needed */
         }
         
+        #packView {
+            padding-top: 15px; 
+        }
+
+        #collectionView {
+            padding-top: 15px;
+        }
+
+        #collectionView .cards-container {
+            margin-top: 15px;
+            padding: 0;
+            gap: 15px;
+            max-width: 100%;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .collection-rarity-group {
+            width: 100%;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .collection-rarity-group h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+            position: relative;
+            display: inline-block;
+            padding: 0 15px;
+        }
+
+        .collection-rarity-group h2::before,
+        .collection-rarity-group h2::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 30px;
+            height: 2px;
+            background-color: currentColor;
+            transform: translateY(-50%);
+        }
+
+        .collection-rarity-group h2::before {
+            left: -50px;
+        }
+
+        .collection-rarity-group h2::after {
+            right: -50px;
+        }
+
+        .collection-rarity-group .cards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        /* Rarity heading colors */
+        .collection-rarity-group.legendary h2 { color: var(--legendary-color); }
+        .collection-rarity-group.rare h2 { color: var(--rare-color); }
+        .collection-rarity-group.common h2 { color: var(--common-color); }
+
+
+        /* --- Deck Builder View Styles --- */
+        #deckBuilderView {
+            padding-top: 15px;
+        }
+        #deckBuilderView .cards-container {
+            margin-top: 20px;
+            padding: 0;
+            gap: 15px;
+            max-width: 100%;
+            width: 100%;
+            justify-content: center;
+        }
+        .deck-builder-controls {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .deck-builder-controls span {
+            font-size: 1.1rem;
+            font-weight: bold;
+            align-self: center;
+        }
+        .deck-builder-card.selected .card-inner {
+            border: 3px solid var(--selected-card-border);
+            box-shadow: 0 0 15px var(--selected-card-border);
+        }
+        .deck-builder-card .card-front img {
+            filter: brightness(0.8); /* Dim unselected cards */
+        }
+        .deck-builder-card.selected .card-front img {
+            filter: brightness(1); /* Full brightness for selected */
+        }
+        .deck-builder-card.uncollected-card {
+            pointer-events: none; /* Cannot select uncollected cards */
+            opacity: 0.5;
+        }
+
+
+        /* --- Game View Styles --- */
+        #gameView {
+            padding-top: 15px;
+            justify-content: space-between; /* Push elements to top/bottom */
+            flex-grow: 1; /* Allow game view to take available space */
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 800px;
+            margin-bottom: 10px; /* Reduced margin */
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: var(--game-ui-bg);
+            padding: 8px 12px; /* Reduced padding */
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .game-info .player-hp, .game-info .bot-hp {
+            color: #e74c3c; /* Red HP */
+        }
+        .game-info .turn-counter {
+            color: #f1c40f; /* Yellow turn counter */
+        }
+
+        .game-field {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px; /* Reduced gap */
+            width: 100%;
+            max-width: 800px;
+            flex-grow: 1; /* Allow field to take available space */
+            justify-content: center;
+        }
+
+        .bot-area, .player-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 8px; /* Reduced padding */
+            box-sizing: border-box;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .bot-area h3, .player-area h3 {
+            margin-top: 0;
+            margin-bottom: 8px; /* Reduced margin */
+            font-size: 1.2rem; /* Reduced font size */
+            color: #bbb;
+        }
+
+        .in-play-card-container {
+            min-height: 180px; /* Adjusted min-height for played card area */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px; /* Reduced gap */
+            width: 100%;
+            flex-grow: 1; /* Allow in-play area to grow */
+        }
+        .in-play-card-container .card-wrapper {
+            width: 45%; /* Make cards in play take 45% of container width */
+            height: auto; /* Auto height to maintain aspect ratio */
+            max-width: 140px; /* Max size for larger screens */
+            max-height: 200px; /* Max height for larger screens */
+            opacity: 1; /* Always visible when in play */
+            transform: none;
+            transition: none; /* No entry animation for in-play */
+            flex-shrink: 1; /* Allow shrinking if needed */
+        }
+
+        .player-hand, .bot-hand {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px; /* Reduced gap */
+            min-height: 130px; /* Adjusted min-height for hand to accommodate 2 rows of cards */
+            padding: 8px 0; /* Reduced padding */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .player-hand .card-wrapper,
+        .bot-hand .card-wrapper {
+            width: 80px; /* Fixed width for cards in hand */
+            height: 120px; /* Fixed height for cards in hand */
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        .player-hand .card-wrapper:hover {
+            transform: translateY(-5px);
+        }
+        .bot-hand .card-wrapper .card-front {
+            transform: rotateY(0deg); /* Bot cards remain face down */
+        }
+        .bot-hand .card-wrapper .card-back {
+            transform: rotateY(0deg); /* Ensure bot card backs are visible */
+        }
+        .bot-hand .card-wrapper.flipped .card-inner {
+            transform: rotateY(0deg); /* Prevent bot cards from flipping */
+        }
+
+        .game-controls {
+            margin-top: 10px; /* Reduced margin */
+            margin-bottom: 10px; /* Reduced margin */
+            display: flex;
+            gap: 10px; /* Reduced gap */
+            justify-content: center;
+            width: 100%;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .game-message {
+            margin-top: 8px; /* Reduced margin */
+            font-size: 1rem; /* Reduced font size */
+            font-weight: bold;
+            color: #f1c40f;
+            text-align: center;
+            min-height: 1.2em; /* Reserve space to prevent layout shift */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100dvh; /* Use dvh for dynamic viewport height */
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden; /* Hidden by default */
+            opacity: 0;
+            transition: visibility 0s 0.3s, opacity 0.3s ease;
+        }
+
+        .modal.show {
+            visibility: visible;
+            opacity: 1;
+            transition: visibility 0s, opacity 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: var(--bg-dark);
+            margin: auto;
+            padding: 25px; /* Reduced padding */
+            border: 2px solid var(--pack-border);
+            border-radius: 15px;
+            width: 85%; /* Increased width for mobile */
+            max-width: 350px; /* Max width for larger screens */
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transform: scale(0.8); /* Start smaller for animation */
+            opacity: 0;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 12px; /* Reduced margin */
+            font-size: 1.6rem; /* Reduced font size */
+        }
+        .modal-content.victory h2 { color: var(--victory-color); }
+        .modal-content.defeat h2 { color: var(--defeat-color); }
+        .modal-content.draw h2 { color: #f1c40f; } /* Yellow for draw */
+
+
+        .modal-content p {
+            font-size: 1rem; /* Reduced font size */
+            margin-bottom: 20px; /* Reduced margin */
+            line-height: 1.4;
+        }
+        
+        .modal-content input {
+             padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-light);
+            font-size: 1rem;
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically on mobile */
+            justify-content: center;
+            gap: 10px; /* Reduced gap */
+        }
+        .modal-buttons .btn {
+            width: 100%; /* Full width buttons */
+        }
+        
+        /* New Global Message Style */
+        .global-message {
+            position: fixed;
+            top: -100px; /* Start off-screen */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(241, 196, 15, 0.95); /* Yellowish warning color */
+            color: #121212;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 2000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease;
+        }
+        .global-message.show {
+            opacity: 1;
+            visibility: visible;
+            top: 30px;
+        }
+        .global-message.error { background-color: rgba(220, 53, 69, 0.95); color: white; }
+        .global-message.success { background-color: rgba(40, 167, 69, 0.95); color: white; }
+        .global-message.warning { background-color: rgba(241, 196, 15, 0.95); color: #121212; }
+
+        /* --- Bottom Navigation Bar --- */
         #bottom-nav {
             position: fixed;
             bottom: 0;
@@ -377,7 +738,7 @@
             align-items: center;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
             z-index: 500;
-            display: none;
+            display: none; /* Hidden by default, shown with views */
         }
 
         .nav-btn {
@@ -406,6 +767,38 @@
             color: var(--nav-icon-active-color);
         }
 
+        /* --- Auth View Styles --- */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center the button */
+            gap: 20px;
+            width: 100%;
+            max-width: 350px;
+            padding: 30px 20px;
+            background-color: rgba(42, 42, 42, 0.9);
+            border-radius: 10px;
+        }
+        
+        /* --- Loading View Styles --- */
+        #loadingView {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--pack-border);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         /* --- Settings View --- */
         .settings-container {
             display: flex;
@@ -428,64 +821,145 @@
         .info-row span {
             font-weight: bold;
             color: var(--pack-border);
+            word-break: break-all; /* Break long user IDs */
         }
 
-        /* Modal Styles */
-        .modal {
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100dvh;
-            background-color: rgba(0,0,0,0.7);
-            display: none; /* Hidden by default */
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.show {
-            display: flex;
-        }
-        .modal-content {
-            background-color: var(--bg-dark);
-            margin: auto;
-            padding: 25px;
-            border: 2px solid var(--pack-border);
-            border-radius: 15px;
-            width: 85%;
-            max-width: 350px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        .modal-content input {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #555;
-            background-color: #333;
-            color: var(--text-light);
-            font-size: 1rem;
-            width: calc(100% - 22px);
-            margin-bottom: 15px;
-        }
-        .modal-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
+
+        /* --- Desktop/Tablet Overrides (min-width for larger screens) --- */
+        @media (min-width: 769px) {
+            h1 {
+                margin-bottom: 30px;
+                font-size: 2.5rem;
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            }
+            .btn {
+                padding: 12px 25px;
+                font-size: 1.2rem;
+                margin: 0 8px;
+                box-shadow: 0 0 10px rgba(162, 200, 200, 0.5);
+            }
+            .btn:hover {
+                box-shadow: 0 4px 15px rgba(162, 200, 200, 0.7);
+            }
+            .pack {
+                padding: 25px 50px;
+                font-size: 1.8rem;
+                box-shadow: 0 0 20px var(--pack-shadow);
+                margin-top: 20px;
+            }
+            .pack:hover {
+                box-shadow: 0 0 30px var(--pack-shadow), 0 0 60px rgba(162, 200, 200, 0.4);
+            }
+            .cards-container {
+                gap: 25px;
+                margin-top: 50px;
+                padding-bottom: 50px;
+            }
+            .card-wrapper {
+                width: 150px;
+                height: 220px;
+                transform: translateY(30px) rotateY(0deg);
+            }
+            .card-inner {
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            }
+            .card-face {
+                padding: 10px;
+                border-radius: 12px;
+                text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            }
+            
+            .card-name {
+                font-size: 1.1rem;
+            }
+            
+            .rarity-badge {
+                bottom: 8px;
+                right: 8px;
+                padding: 4px 8px;
+                border-radius: 5px;
+                font-size: 0.75rem;
+            }
+            .uncollected-card .card-inner {
+                font-size: 3em;
+            }
+            .view {
+                padding: 20px;
+            }
+            #collectionView {
+                padding-top: 20px;
+            }
+            #collectionView .cards-container {
+                margin-top: 20px;
+                gap: 20px;
+                max-width: 1200px;
+            }
+            .collection-rarity-group {
+                margin-bottom: 40px;
+            }
+            .collection-rarity-group h2 {
+                font-size: 2rem;
+                margin-bottom: 25px;
+                text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+                padding: 0 20px;
+            }
+            .collection-rarity-group h2::before,
+            .collection-rarity-group h2::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                width: 60px;
+                height: 2px;
+                background-color: currentColor;
+                transform: translateY(-50%);
+            }
+
+            .collection-rarity-group h2::before {
+                left: -80px;
+            }
+
+            .collection-rarity-group h2::after {
+                right: -80px;
+            }
+            .collection-rarity-group .cards-grid {
+                gap: 20px;
+            }
+            .game-info {
+                font-size: 1.5rem;
+                padding: 15px 25px;
+            }
+            .in-play-card-container .card-wrapper {
+                width: 180px; /* Larger for desktop in-play */
+                height: 260px;
+            }
+            .modal-buttons {
+                flex-direction: row; /* Buttons side-by-side on desktop */
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Global Message Container -->
     <div id="globalMessage" class="global-message"></div>
 
-    <div id="homeView" class="view active">
-        <h1>Cryptid Card Game</h1>
-        <div id="googleSignInButton"></div>
+    <div id="authView" class="view active">
+        <div class="auth-container">
+            <h1>Cryptid Collector</h1>
+            <p>Sign in to begin your adventure.</p>
+            <div id="googleSignInButton"></div>
+        </div>
     </div>
-    
+
+    <div id="loadingView" class="view">
+        <div class="loader"></div>
+        <p id="loading-text">Loading Game Data...</p>
+    </div>
+
     <div id="packView" class="view">
          <div class="currency-display">Cryptid Coins: <span id="coinBalance">0</span></div>
         <h1 id="pack-opening-title">Cryptid Pack Opening</h1>
-        <div class="pack" onclick="openPack()">Open Pack (50 Coins)</div>
+        <div class="pack" onclick="window.openPack()">Open Pack (50 Coins)</div>
         <div class="cards-container" id="packCardContainer"></div>
     </div>
 
@@ -497,7 +971,7 @@
     <div id="deckBuilderView" class="view">
         <h1>Build Your Deck</h1>
         <div class="deck-builder-controls">
-            <button class="btn" onclick="saveDeck()">Save Deck</button>
+            <button class="btn" onclick="window.saveDeck()">Save Deck</button>
             <span>Deck Size: <span id="currentDeckSize">0</span> / <span id="maxDeckSize">10</span></span>
         </div>
         <div class="cards-container deck-builder-view" id="deckBuilderCardsContainer"></div>
@@ -510,32 +984,36 @@
             <span class="turn-counter">Turn: <span id="turnCounter">1</span> / 20</span>
             <span class="bot-hp">Bot HP: <span id="botHP">100</span></span>
         </div>
+
         <div class="game-field">
             <div class="bot-area">
                 <h3>Bot's Field</h3>
                 <div class="in-play-card-container" id="botInPlay"></div>
                 <div class="bot-hand" id="botHand"></div>
             </div>
-            <div class="in-play-card-container" id="battlefield"></div>
+
+            <div class="in-play-card-container" id="battlefield">
+                </div>
+
             <div class="player-area">
                 <h3>Your Hand</h3>
                 <div class="player-hand" id="playerHand"></div>
                 <div class="game-controls">
-                    <button class="btn" id="playCardBtn" onclick="playPlayerCard()">Play Card</button>
-                    <button class="btn" id="nextTurnBtn" onclick="endTurn()" disabled>Next Turn</button>
+                    <button class="btn" id="playCardBtn" onclick="window.playPlayerCard()">Play Card</button>
+                    <button class="btn" id="nextTurnBtn" onclick="window.endTurn()" disabled>Next Turn</button>
                 </div>
             </div>
         </div>
         <div class="game-message" id="gameMessage"></div>
     </div>
 
-    <!-- NEW: Settings View -->
     <div id="settingsView" class="view">
         <div class="settings-container">
             <h2>Settings</h2>
-            <div class="info-row">Player Name: <span id="settings-username"></span></div>
+            <div class="info-row">Username: <span id="settings-username"></span></div>
             <div class="info-row">User ID: <span id="settings-userid"></span></div>
-            <button class="btn btn-danger" onclick="showDeleteModal()">Delete Account</button>
+            <button class="btn" onclick="window.logout()">Logout</button>
+            <button class="btn btn-danger" onclick="window.showDeleteModal()">Delete Account</button>
         </div>
     </div>
 
@@ -550,70 +1028,40 @@
         </div>
     </div>
 
-    <!-- NEW: Delete Account Confirmation Modal -->
     <div id="deleteAccountModal" class="modal">
         <div class="modal-content">
             <h2>Delete Account</h2>
-            <p>This action is irreversible and will permanently delete all your cards and progress. Are you sure?</p>
-            <div class="modal-buttons">
+            <p>This action is irreversible and will permanently delete all your cards and progress. Are you sure you want to continue?</p>
+            <div class="modal-buttons" style="flex-direction: row;">
                 <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
-                <button class="btn btn-danger" onclick="confirmDeleteAccount()">Confirm Delete</button>
+                <button class="btn btn-danger" onclick="window.confirmDeleteAccount()">Confirm Delete</button>
             </div>
         </div>
     </div>
 
     <nav id="bottom-nav">
-        <button id="nav-packs" class="nav-btn" onclick="showPackView()">
+        <button id="nav-packs" class="nav-btn" onclick="window.showPackView()">
             <svg viewBox="0 0 24 24"><path d="M21.4,6.6l-8.8-5.1C12.2,1.3,11.8,1.3,11.4,1.5L2.6,6.6C2.2,6.8,2,7.2,2,7.6v9.6c0,0.4,0.2,0.8,0.6,1l8.8,5.1c0.2,0.1,0.4,0.2,0.6,0.2s0.4-0.1,0.6-0.2l8.8-5.1c0.4-0.2,0.6-0.6,0.6-1V7.6C22,7.2,21.8,6.8,21.4,6.6z M12,3.1l7.1,4.1l-7.1,4.1L4.9,7.2L12,3.1z M4,16.5V8.8l7.4,4.3v7.7L4,16.5z M13.4,20.8v-7.7l7.4-4.3v7.7L13.4,20.8z"></path></svg>
             <span>Packs</span>
         </button>
-        <button id="nav-collection" class="nav-btn" onclick="showCollectionView()">
+        <button id="nav-collection" class="nav-btn" onclick="window.showCollectionView()">
             <svg viewBox="0 0 24 24"><path d="M4,6H2v14c0,1.1,0.9,2,2,2h14v-2H4V6z M20,2H8C6.9,2,6,2.9,6,4v12c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z M12,14.5L9.5,12.7l-1.5,1.8h8l-2.5-3.3L12,14.5z"></path></svg>
             <span>Collection</span>
         </button>
-        <button id="nav-deck" class="nav-btn" onclick="showDeckBuilderView()">
+        <button id="nav-deck" class="nav-btn" onclick="window.showDeckBuilderView()">
             <svg viewBox="0 0 24 24"><path d="M20,2H8C6.9,2,6,2.9,6,4v12c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z M17,13h-4v4h-2v-4H7v-2h4V7h2v4h4V13z M4,6H2v14c0,1.1,0.9,2,2,2h14v-2H4V6z"></path></svg>
             <span>Deck</span>
         </button>
-        <button id="nav-battle" class="nav-btn" onclick="tryStartGame()">
-            <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c-0.4,0.4-0.4-1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
+        <button id="nav-battle" class="nav-btn" onclick="window.tryStartGame()">
+            <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c0.4-0.4,0.4-1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
             <span>Battle</span>
         </button>
-        <!-- NEW: Settings Button -->
-        <button id="nav-settings" class="nav-btn" onclick="showSettingsView()">
+        <button id="nav-settings" class="nav-btn" onclick="window.showSettingsView()">
             <svg viewBox="0 0 24 24"><path d="M19.4,12.9c0.1-0.3,0.1-0.6,0.1-0.9s0-0.6-0.1-0.9l2.1-1.6c0.2-0.1,0.2-0.4,0.1-0.6l-2-3.5c-0.1-0.2-0.4-0.3-0.6-0.2l-2.5,1c-0.5-0.4-1-0.7-1.6-0.9L14.4,2.4c-0.1-0.3-0.3-0.4-0.6-0.4h-4c-0.3,0-0.5,0.2-0.6,0.4l-0.4,2.9c-0.6,0.2-1.1,0.5-1.6,0.9l-2.5-1c-0.2-0.1-0.5,0-0.6,0.2l-2,3.5c-0.1,0.2-0.1,0.5,0.1,0.6l2.1,1.6C4.6,11.4,4.5,11.7,4.5,12s0,0.6,0.1,0.9l-2.1,1.6c-0.2,0.1-0.2,0.4-0.1,0.6l2,3.5c0.1,0.2,0.4,0.3,0.6,0.2l2.5-1c0.5,0.4,1,0.7,1.6,0.9l0.4,2.9c0.1,0.3,0.3,0.4,0.6,0.4h4c0.3,0,0.5-0.2,0.6-0.4l0.4-2.9c0.6-0.2,1.1-0.5,1.6-0.9l2.5,1c0.2,0.1,0.5,0,0.6-0.2l2-3.5c0.1-0.2,0.1-0.5-0.1-0.6L19.4,12.9z M12,15.5c-1.9,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5s3.5,1.6,3.5,3.5S13.9,15.5,12,15.5z"></path></svg>
             <span>Settings</span>
         </button>
-        <button id="nav-sign-out" class="nav-btn" onclick="signOut()">
-            <svg viewBox="0 0 24 24"><path d="M17,8l-1.4,1.4l1.6,1.6H9v2h8.2l-1.6,1.6L17,16l4-4L17,8z M5,5h7V3H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h7v-2H5V5z"></path></svg>
-            <span>Sign Out</span>
-        </button>
     </nav>
     <script>
-        // --- GOOGLE SIGN-IN & USER STATE ---
-        let currentUser = null;
-
-        function handleCredentialResponse(response) {
-            const decodedToken = JSON.parse(atob(response.credential.split('.')[1]));
-            currentUser = {
-                id: decodedToken.sub,
-                name: decodedToken.name,
-                picture: decodedToken.picture
-            };
-            console.log("User signed in:", currentUser.name);
-            document.getElementById('homeView').classList.remove('active');
-            loadGameData(currentUser.id);
-            showPackView();
-        }
-
-        function signOut() {
-            currentUser = null;
-            console.log("User signed out.");
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('homeView').classList.add('active');
-            bottomNav.style.display = 'none';
-        }
-
         // --- DATA ---
         const allCryptids = [
             { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: { name: "Sonic Screech", damage: 10 }, effect: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/moth_man.png" },
@@ -638,63 +1086,135 @@
         ];
 
         // --- STATE MANAGEMENT ---
-        let collectedCardIds, playerDeckIds, cryptidCoins, packsOpened, gamesPlayed;
-        const PACK_COST = 50, WIN_REWARD = 10, MAX_DECK_SIZE = 10, MAX_TURNS = 20;
+        let collectedCardIds;
+        let playerDeckIds;
+        let cryptidCoins;
+        let packsOpened;
+        let gamesPlayed;
+        let currentUserId = null;
+        let currentUsername = null;
+
+        const PACK_COST = 50;
+        const WIN_REWARD = 10;
+        const MAX_DECK_SIZE = 10;
+        const MAX_TURNS = 20;
+
+        // Game State Variables (declared globally)
         let playerHP, botHP, currentTurn, playerCardInPlay, botCardInPlay;
         let playerDeck, botDeck, playerHand, botHand;
-        let selectedPlayerCardData = null, selectedPlayerCardElement = null;
+        let selectedPlayerCardData = null;
+        let selectedPlayerCardElement = null;
         let messageTimeout, globalMessageTimeout;
 
         function loadGameData(userId) {
-            const userSaveDataKey = `cryptid_save_${userId}`;
-            const savedData = JSON.parse(localStorage.getItem(userSaveDataKey) || '{}');
-            if (Object.keys(savedData).length === 0) {
-                collectedCardIds = new Set();
-                playerDeckIds = [];
-                cryptidCoins = 100;
-                packsOpened = 0;
-                gamesPlayed = 0;
-                saveGameData();
-            } else {
-                collectedCardIds = new Set(savedData.collectedCardIds || []);
-                playerDeckIds = savedData.playerDeckIds || [];
-                cryptidCoins = savedData.cryptidCoins || 0;
-                packsOpened = savedData.packsOpened || 0;
-                gamesPlayed = savedData.gamesPlayed || 0;
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const userData = allUsers[userId]; // Use userId as the key
+
+            if (userData) {
+                currentUsername = userData.username;
+                collectedCardIds = new Set(userData.collectedCardIds || []);
+                playerDeckIds = userData.playerDeckIds || [];
+                cryptidCoins = userData.cryptidCoins || 0;
+                packsOpened = userData.packsOpened || 0;
+                gamesPlayed = userData.gamesPlayed || 0;
             }
-            updateDeckSizeDisplay();
-            updateCoinDisplay();
         }
 
         function saveGameData() {
-            if (!currentUser) return;
-            const userSaveDataKey = `cryptid_save_${currentUser.id}`;
-            const dataToSave = {
-                collectedCardIds: Array.from(collectedCardIds),
-                playerDeckIds, cryptidCoins, packsOpened, gamesPlayed
-            };
-            localStorage.setItem(userSaveDataKey, JSON.stringify(dataToSave));
+            if (!currentUserId) return;
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            
+            if (allUsers[currentUserId]) {
+                 allUsers[currentUserId].collectedCardIds = Array.from(collectedCardIds);
+                 allUsers[currentUserId].playerDeckIds = playerDeckIds;
+                 allUsers[currentUserId].cryptidCoins = cryptidCoins;
+                 allUsers[currentUserId].packsOpened = packsOpened;
+                 allUsers[currentUserId].gamesPlayed = gamesPlayed;
+                 localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+            }
         }
 
+        // --- ASSET PRELOADING ---
+        function preloadImages() {
+            const loadingText = document.getElementById('loading-text');
+            loadingText.innerText = 'Loading essential assets...';
+            const imageUrls = [
+                'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.PNG',
+                'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.PNG',
+                'https://i.imgur.com/8i1a2Vp.jpg'
+            ];
+
+            let loadedCount = 0;
+            const totalImages = imageUrls.length;
+
+            return new Promise((resolve) => {
+                if (totalImages === 0) {
+                    resolve();
+                    return;
+                }
+                imageUrls.forEach(url => {
+                    const img = new Image();
+                    img.src = url;
+                    img.onload = img.onerror = () => {
+                        loadedCount++;
+                        if (loadedCount === totalImages) {
+                            resolve();
+                        }
+                    };
+                });
+            });
+        }
+
+
+        // --- UTILITY & SETUP FUNCTIONS ---
         function updateCoinDisplay() {
-            document.getElementById('coinBalance').innerText = cryptidCoins;
+            const coinBalanceEl = document.getElementById('coinBalance');
+            if(coinBalanceEl) {
+                coinBalanceEl.innerText = cryptidCoins;
+            }
         }
 
         function updateDeckSizeDisplay() {
-            document.getElementById("currentDeckSize").innerText = playerDeckIds.length;
-            document.getElementById("maxDeckSize").innerText = MAX_DECK_SIZE;
+            const currentSizeElement = document.getElementById("currentDeckSize");
+            const maxSizeElement = document.getElementById("maxDeckSize");
+            if (currentSizeElement && maxSizeElement) {
+                currentSizeElement.innerText = playerDeckIds.length;
+                maxSizeElement.innerText = MAX_DECK_SIZE;
+            }
         }
 
         function getRarity() {
             const roll = Math.random();
-            if (roll < 0.05) return "legendary";
-            if (roll < 0.25) return "rare";
-            return "common";
+            if (roll < 0.05) return "legendary"; // 5% chance
+            if (roll < 0.25) return "rare";     // 20% chance
+            return "common";                    // 75% chance
+        }
+        
+        function getNewRandomCryptid(rarity, currentlyDrawnIds) {
+            // Find cards of the desired rarity that are NOT yet collected AND not already in the current pack being drawn
+            let available = allCryptids.filter(c => c.rarity === rarity && !collectedCardIds.has(c.id) && !currentlyDrawnIds.includes(c.id));
+            
+            // If no uncollected cards of this rarity are left, fall back to any card of this rarity not in the current pack
+            if (available.length === 0) {
+                 available = allCryptids.filter(c => c.rarity === rarity && !currentlyDrawnIds.includes(c.id));
+            }
+
+            // If still no cards (highly unlikely unless the card pool is tiny), just return a random one of the rarity
+            if (available.length === 0) {
+                 available = allCryptids.filter(c => c.rarity === rarity);
+            }
+
+            return available[Math.floor(Math.random() * available.length)];
         }
 
-        function getRandomCryptid(rarity) {
-            const available = allCryptids.filter(c => c.rarity === rarity);
-            return available[Math.floor(Math.random() * available.length)];
+
+        function getRandomCryptid(desiredRarity) {
+            const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
+            if (availableCryptids.length === 0) {
+                console.warn(`No cryptids found for rarity: ${desiredRarity}. Returning a random cryptid.`);
+                return allCryptids[Math.floor(Math.random() * allCryptids.length)];
+            }
+            return availableCryptids[Math.floor(Math.random() * availableCryptids.length)];
         }
 
         function shuffleArray(array) {
@@ -708,44 +1228,79 @@
             const cardWrapper = document.createElement("div");
             cardWrapper.className = `card-wrapper`;
             cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
+
             const cardInner = document.createElement("div");
             cardInner.className = `card-inner`;
 
             if (isCollected && cryptid) {
                 const cardFront = document.createElement("div");
                 cardFront.className = `card-face card-front ${cryptid.rarity}`;
-                cardFront.innerHTML = `
-                    <div class="card-hp">HP: ${cryptid.hp}</div>
-                    <div class="card-attack-info">${cryptid.attack.damage}</div>
-                    <div class="image-container">
-                        <img src="${cryptid.image}" alt="${cryptid.name}" onerror="this.onerror=null;this.src='https://placehold.co/100x150/ff0000/FFFFFF?text=Error';">
-                    </div>
-                    <div class="card-name">${cryptid.name}</div>
-                `;
+
+                const cardHp = document.createElement("div");
+                cardHp.className = "card-hp";
+                cardHp.innerText = `HP: ${cryptid.hp}`;
+                cardFront.appendChild(cardHp);
+
+                const imageContainer = document.createElement("div");
+                imageContainer.className = "image-container";
+                const cardImage = document.createElement("img");
+                cardImage.src = cryptid.image;
+                cardImage.alt = cryptid.name;
+                cardImage.onerror = () => { cardImage.src = 'https://placehold.co/100x150/ff0000/FFFFFF?text=Error'; };
+                imageContainer.appendChild(cardImage);
+                cardFront.appendChild(imageContainer);
+                
+                const cardName = document.createElement("div");
+                cardName.className = "card-name";
+                cardName.innerText = cryptid.name;
+                cardFront.appendChild(cardName);
+
+                const cardEffect = document.createElement("div");
+                cardEffect.className = "card-effect";
+                cardEffect.innerText = cryptid.effect;
+                cardFront.appendChild(cardEffect);
+
+                const attackInfo = document.createElement("div");
+                attackInfo.className = "card-attack-info";
+                attackInfo.innerHTML = `<div class="attack-name">${cryptid.attack.name}</div><div class="attack-damage">${cryptid.attack.damage} DMG</div>`;
+                cardFront.appendChild(attackInfo);
+
                 const cardBack = document.createElement("div");
                 cardBack.className = `card-face card-back`;
+
                 cardInner.appendChild(cardBack);
                 cardInner.appendChild(cardFront);
-                if (showFrontImmediately) cardInner.style.transform = 'rotateY(180deg)';
+
+                if (showFrontImmediately) {
+                    cardInner.style.transform = 'rotateY(180deg)';
+                }
+
             } else {
                 cardWrapper.classList.add("uncollected-card");
             }
+
             cardWrapper.appendChild(cardInner);
             return cardWrapper;
         }
 
+        // --- MESSAGE DISPLAY ---
         function showMessage(message, type = "info", isGlobal = false) {
             const messageEl = isGlobal ? document.getElementById('globalMessage') : document.getElementById('gameMessage');
-            if (!messageEl) return;
+            if (!messageEl) return; 
+
             messageEl.innerText = message;
-            messageEl.className = `${isGlobal ? 'global-message' : 'game-message'} ${type}`;
+            const baseClass = isGlobal ? 'global-message' : 'game-message';
+            messageEl.className = `${baseClass} ${type}`;
+
             if (isGlobal) {
                 messageEl.classList.add('show');
                 clearTimeout(globalMessageTimeout);
-                globalMessageTimeout = setTimeout(() => messageEl.classList.remove('show'), 3500);
+                globalMessageTimeout = setTimeout(() => {
+                    messageEl.classList.remove('show');
+                }, 3500);
             } else {
                 clearTimeout(messageTimeout);
-                if (type !== "game-end") {
+                if (type !== "game-end") { 
                     messageTimeout = setTimeout(() => {
                         messageEl.innerText = '';
                         messageEl.className = 'game-message';
@@ -754,191 +1309,315 @@
             }
         }
 
-        const views = {
-            home: document.getElementById('homeView'),
-            pack: document.getElementById('packView'),
-            collection: document.getElementById('collectionView'),
-            deck: document.getElementById('deckBuilderView'),
-            game: document.getElementById('gameView'),
-            settings: document.getElementById('settingsView')
-        };
+        // --- VIEW SWITCHING ---
+        const authView = document.getElementById('authView');
+        const loadingView = document.getElementById('loadingView');
+        const packView = document.getElementById('packView');
+        const collectionView = document.getElementById('collectionView');
+        const deckBuilderView = document.getElementById('deckBuilderView');
+        const gameView = document.getElementById('gameView');
+        const settingsView = document.getElementById('settingsView');
         const bottomNav = document.getElementById('bottom-nav');
 
         function showView(viewElement, navBtnId) {
-            Object.values(views).forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
             viewElement.classList.add('active');
-            bottomNav.style.display = (viewElement === views.home) ? 'none' : 'flex';
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            if (navBtnId) document.getElementById(navBtnId).classList.add('active');
 
-            if (viewElement === views.collection) showCollection();
-            else if (viewElement === views.deck) renderDeckBuilderCards();
-            else if (viewElement === views.settings) showSettings();
-            else if (viewElement === views.pack) {
+            // Show or hide nav bar
+            if(viewElement === authView || viewElement === loadingView){
+                bottomNav.style.display = 'none';
+            } else {
+                bottomNav.style.display = 'flex';
+            }
+
+            // Update active state on nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if(navBtnId){
+                document.getElementById(navBtnId).classList.add('active');
+            }
+
+            // Run view-specific logic
+            if (viewElement === collectionView) showCollection();
+            else if (viewElement === deckBuilderView) renderDeckBuilderCards();
+            else if (viewElement === settingsView) showSettings();
+            else if (viewElement === packView) {
                 updateCoinDisplay();
-                document.getElementById('pack-opening-title').innerText = packsOpened < 2 ? `Starter Pack (${packsOpened + 1}/2)` : 'Cryptid Pack Opening';
+                const titleEl = document.getElementById('pack-opening-title');
+                if (packsOpened < 2) {
+                    titleEl.innerText = `Starter Pack (${packsOpened + 1}/2)`;
+                } else {
+                    titleEl.innerText = 'Cryptid Pack Opening';
+                }
             }
         }
 
-        function showPackView() { showView(views.pack, 'nav-packs'); }
-        function showCollectionView() { showView(views.collection, 'nav-collection'); }
-        function showDeckBuilderView() { showView(views.deck, 'nav-deck'); }
-        function showSettingsView() { showView(views.settings, 'nav-settings'); }
+        function showAuthView() { 
+            showView(authView, null); 
+            // Re-render the button in case the user logged out
+            google.accounts.id.renderButton(
+                document.getElementById("googleSignInButton"),
+                { theme: "outline", size: "large", text: "signin_with" }
+            );
+        }
+        function showPackView() { showView(packView, 'nav-packs'); }
+        function showCollectionView() { showView(collectionView, 'nav-collection'); }
+        function showDeckBuilderView() { showView(deckBuilderView, 'nav-deck'); }
+        function showSettingsView() { showView(settingsView, 'nav-settings'); }
 
         function showSettings() {
-            document.getElementById('settings-username').innerText = currentUser.name || 'N/A';
-            document.getElementById('settings-userid').innerText = currentUser.id || 'N/A';
+            document.getElementById('settings-username').innerText = currentUsername || 'N/A';
+            document.getElementById('settings-userid').innerText = currentUserId || 'N/A';
         }
 
-        function showDeleteModal() {
-            document.getElementById('deleteAccountModal').classList.add('show');
-        }
-
-        function confirmDeleteAccount() {
-            if (!currentUser) return;
-            const userSaveDataKey = `cryptid_save_${currentUser.id}`;
-            localStorage.removeItem(userSaveDataKey);
-            document.getElementById('deleteAccountModal').classList.remove('show');
-            signOut();
-            showMessage('Account deleted successfully.', 'success', true);
-        }
-
-        function openPack() {
+        // --- PACK OPENING ---
+        async function openPack() {
             if (cryptidCoins < PACK_COST) {
-                return showMessage(`You need ${PACK_COST} Cryptid Coins!`, "error", true);
+                showMessage(`You need ${PACK_COST} Cryptid Coins to open a pack!`, "error", true);
+                return;
             }
+
             cryptidCoins -= PACK_COST;
             updateCoinDisplay();
-            const container = document.getElementById("packCardContainer");
-            container.innerHTML = "";
-            let cardsInPack = [];
-            for (let i = 0; i < 5; i++) {
-                cardsInPack.push(getRandomCryptid(getRarity()));
-            }
-            cardsInPack.forEach(c => collectedCardIds.add(c.id));
-            packsOpened++;
-            saveGameData();
 
+            const container = document.getElementById("packCardContainer");
+            container.innerHTML = ""; 
+            
+            let cardsInPack = [];
+            
+            if (packsOpened < 2) {
+                // Starter pack logic
+                let drawnIds = [];
+                for(let i=0; i<2; i++) {
+                    const card = getNewRandomCryptid('rare', drawnIds);
+                    if(card) {
+                        cardsInPack.push(card);
+                        drawnIds.push(card.id);
+                    }
+                }
+                for(let i=0; i<3; i++) {
+                     const card = getNewRandomCryptid('common', drawnIds);
+                     if(card) {
+                         cardsInPack.push(card);
+                         drawnIds.push(card.id);
+                    }
+                }
+                shuffleArray(cardsInPack);
+
+            } else {
+                // Regular pack logic
+                for (let i = 0; i < 5; i++) {
+                    const rarity = getRarity();
+                    const cryptid = getRandomCryptid(rarity);
+                    cardsInPack.push(cryptid);
+                }
+            }
+            
+            cardsInPack.forEach(cryptid => collectedCardIds.add(cryptid.id));
+            packsOpened++;
+            await saveGameData(); // Save immediately
+
+            // Display the cards from the generated pack
             cardsInPack.forEach((cryptid, i) => {
-                const cardWrapper = createCardElement(cryptid, true, false);
-                container.appendChild(cardWrapper);
-                setTimeout(() => {
+                 const cardWrapper = createCardElement(cryptid, true, false);
+                 container.appendChild(cardWrapper);
+
+                 setTimeout(() => {
                     cardWrapper.classList.add("show");
-                    setTimeout(() => cardWrapper.classList.add("flipped"), 500);
+                    setTimeout(() => {
+                        cardWrapper.classList.add("flipped");
+                    }, 500);
                 }, 200 * i);
             });
+            
+            // Update the title if starter packs are finished
+            if (packsOpened >= 2) {
+                 document.getElementById('pack-opening-title').innerText = 'Cryptid Pack Opening';
+            }
         }
 
+        // --- COLLECTION VIEW ---
         function showCollection() {
             const container = document.getElementById("collectionCardContainer");
             container.innerHTML = "";
-            ['legendary', 'rare', 'common'].forEach(rarity => {
-                const cryptids = allCryptids.filter(c => c.rarity === rarity).sort((a,b) => a.name.localeCompare(b.name));
-                if (cryptids.length > 0) {
-                    cryptids.forEach(cryptid => {
-                        container.appendChild(createCardElement(cryptid, collectedCardIds.has(cryptid.id), true));
+            const rarityOrder = ["legendary", "rare", "common"];
+            const cryptidsByRarity = { legendary: [], rare: [], common: [] };
+
+            allCryptids.forEach(c => cryptidsByRarity[c.rarity].push(c));
+
+            rarityOrder.forEach(rarity => {
+                const cryptidsInThisRarity = cryptidsByRarity[rarity].sort((a, b) => a.name.localeCompare(b.name));
+                if (cryptidsInThisRarity.length > 0) {
+                    const rarityGroupDiv = document.createElement("div");
+                    rarityGroupDiv.className = `collection-rarity-group ${rarity}`;
+                    const heading = document.createElement("h2");
+                    heading.innerText = `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Cryptids`;
+                    rarityGroupDiv.appendChild(heading);
+                    const cardsGrid = document.createElement("div");
+                    cardsGrid.className = "cards-grid";
+                    cryptidsInThisRarity.forEach(cryptid => {
+                        const isCollected = collectedCardIds.has(cryptid.id);
+                        const cardWrapper = createCardElement(cryptid, isCollected, true);
+                        cardWrapper.classList.add("show");
+                        cardsGrid.appendChild(cardWrapper);
                     });
+                    rarityGroupDiv.appendChild(cardsGrid);
+                    container.appendChild(rarityGroupDiv);
                 }
             });
         }
 
+        // --- DECK BUILDER ---
         function renderDeckBuilderCards() {
             const container = document.getElementById("deckBuilderCardsContainer");
             container.innerHTML = "";
-            allCryptids.filter(c => collectedCardIds.has(c.id)).sort((a,b) => a.name.localeCompare(b.name)).forEach(cryptid => {
+            const collectedCryptids = allCryptids.filter(c => collectedCardIds.has(c.id)).sort((a,b) => a.name.localeCompare(b.name));
+            
+            collectedCryptids.forEach(cryptid => {
                 const cardWrapper = createCardElement(cryptid, true, true);
-                if (playerDeckIds.includes(cryptid.id)) cardWrapper.classList.add("selected");
+                cardWrapper.classList.add("deck-builder-card");
+                if (playerDeckIds.includes(cryptid.id)) {
+                    cardWrapper.classList.add("selected");
+                }
                 cardWrapper.onclick = () => toggleCardInDeck(cryptid.id);
                 container.appendChild(cardWrapper);
             });
-            updateDeckSizeDisplay();
+             updateDeckSizeDisplay();
         }
 
         function toggleCardInDeck(cryptidId) {
             const index = playerDeckIds.indexOf(cryptidId);
             if (index > -1) {
                 playerDeckIds.splice(index, 1);
-            } else if (playerDeckIds.length < MAX_DECK_SIZE) {
-                playerDeckIds.push(cryptidId);
             } else {
-                showMessage(`Deck is full! Max ${MAX_DECK_SIZE} cards.`, "warning", true);
+                if (playerDeckIds.length < MAX_DECK_SIZE) {
+                    playerDeckIds.push(cryptidId);
+                } else {
+                    showMessage("Deck is full! Max " + MAX_DECK_SIZE + " cards.", "warning", true);
+                }
             }
-            document.querySelector(`.card-wrapper[data-cryptid-id="${cryptidId}"]`).classList.toggle('selected', playerDeckIds.includes(cryptidId));
+            document.querySelector(`.deck-builder-card[data-cryptid-id="${cryptidId}"]`).classList.toggle('selected', playerDeckIds.includes(cryptidId));
             updateDeckSizeDisplay();
         }
 
-        function saveDeck() {
+        async function saveDeck() {
             if (playerDeckIds.length === MAX_DECK_SIZE) {
-                saveGameData();
-                showMessage("Deck saved!", "success", true);
+                await saveGameData();
+                showMessage("Deck saved successfully!", "success", true);
             } else {
-                showMessage(`Deck must have ${MAX_DECK_SIZE} cards.`, "warning", true);
+                showMessage("Your deck must contain exactly " + MAX_DECK_SIZE + " cards.", "warning", true);
             }
         }
 
+        // --- GAME LOGIC ---
         function tryStartGame() {
             if (playerDeckIds.length !== MAX_DECK_SIZE) {
-                return showMessage(`Please build a deck of ${MAX_DECK_SIZE} cards!`, "error", true);
+                showMessage("Please build and save a deck of " + MAX_DECK_SIZE + " cards first!", "error", true);
+                return;
             }
             startGame();
         }
 
         function startGame() {
-            showView(views.game, 'nav-battle');
+            showView(gameView, 'nav-battle');
             showMessage("Game Started! Select a card to play.", "info");
-            playerHP = 100; botHP = 100; currentTurn = 1;
-            playerCardInPlay = null; botCardInPlay = null;
-            selectedPlayerCardData = null; selectedPlayerCardElement = null;
+
+            playerHP = 100;
+            botHP = 100;
+            currentTurn = 1;
+            playerCardInPlay = null;
+            botCardInPlay = null;
+            selectedPlayerCardData = null;
+            selectedPlayerCardElement = null;
+
             playerDeck = playerDeckIds.map(id => ({...allCryptids.find(c => c.id === id)}));
             shuffleArray(playerDeck);
-            botDeck = allCryptids.map(c => ({...c}));
+            
+            // Bot difficulty scaling
+            const botCardPool = gamesPlayed < 10 
+                ? allCryptids.filter(c => c.rarity === 'common' || c.rarity === 'rare')
+                : allCryptids;
+
+            botDeck = [...botCardPool].map(c => ({...c}));
             shuffleArray(botDeck);
             botDeck = botDeck.slice(0, MAX_DECK_SIZE);
-            playerHand = []; botHand = [];
+
+            playerHand = [];
+            botHand = [];
             for (let i = 0; i < 3; i++) {
                 if (playerDeck.length > 0) playerHand.push(playerDeck.shift());
                 if (botDeck.length > 0) botHand.push(botDeck.shift());
             }
+
             updateGameUI();
             document.getElementById('playCardBtn').disabled = false;
             document.getElementById('nextTurnBtn').disabled = true;
         }
-        
+
         function updateGameUI() {
             document.getElementById('playerHP').innerText = playerHP;
             document.getElementById('botHP').innerText = botHP;
             document.getElementById('turnCounter').innerText = `${currentTurn} / ${MAX_TURNS}`;
+
             const playerHandContainer = document.getElementById('playerHand');
             playerHandContainer.innerHTML = '';
             playerHand.forEach(card => {
                 const cardEl = createCardElement(card, true, true);
                 cardEl.onclick = () => selectPlayerCard(card, cardEl);
-                if(selectedPlayerCardData && selectedPlayerCardData.id === card.id) cardEl.classList.add('selected');
+                if(selectedPlayerCardData && selectedPlayerCardData.id === card.id) {
+                    cardEl.classList.add('selected');
+                }
                 playerHandContainer.appendChild(cardEl);
             });
+
             const botHandContainer = document.getElementById('botHand');
             botHandContainer.innerHTML = '';
-            botHand.forEach(card => botHandContainer.appendChild(createCardElement(card, true, false)));
-            document.getElementById('battlefield').innerHTML = playerCardInPlay ? createCardElement(playerCardInPlay, true, true).outerHTML : '';
-            document.getElementById('botInPlay').innerHTML = botCardInPlay ? createCardElement(botCardInPlay, true, true).outerHTML : '';
+            botHand.forEach(card => {
+                const cardEl = createCardElement(card, true, false);
+                botHandContainer.appendChild(cardEl);
+            });
+
+            const battlefield = document.getElementById('battlefield');
+            battlefield.innerHTML = '';
+            if (playerCardInPlay) {
+                battlefield.appendChild(createCardElement(playerCardInPlay, true, true));
+            }
+
+            const botInPlayContainer = document.getElementById('botInPlay');
+            botInPlayContainer.innerHTML = '';
+            if (botCardInPlay) {
+                botInPlayContainer.appendChild(createCardElement(botCardInPlay, true, true));
+            }
         }
 
         function selectPlayerCard(cardData, cardElement) {
-            if (selectedPlayerCardElement) selectedPlayerCardElement.classList.remove('selected');
+            if (selectedPlayerCardElement) {
+                selectedPlayerCardElement.classList.remove('selected');
+            }
             selectedPlayerCardData = cardData;
             selectedPlayerCardElement = cardElement;
             selectedPlayerCardElement.classList.add('selected');
         }
 
         function playPlayerCard() {
-            if (!selectedPlayerCardData) return showMessage("Select a card to play!", "warning");
+            if (!selectedPlayerCardData) {
+                showMessage("Please select a card from your hand to play!", "warning");
+                return;
+            }
+
             playerCardInPlay = selectedPlayerCardData;
             playerHand = playerHand.filter(card => card.id !== selectedPlayerCardData.id);
             selectedPlayerCardData = null;
             selectedPlayerCardElement = null;
-            if (botHand.length > 0) botCardInPlay = botHand.shift();
+
+            if (botHand.length > 0) {
+                botCardInPlay = botHand.shift();
+            } else {
+                botCardInPlay = null;
+            }
+            
             performCombat();
             updateGameUI();
+
             document.getElementById('playCardBtn').disabled = true;
             document.getElementById('nextTurnBtn').disabled = false;
         }
@@ -948,48 +1627,62 @@
             if (playerCardInPlay && botCardInPlay) {
                 botHP -= playerCardInPlay.attack.damage;
                 playerHP -= botCardInPlay.attack.damage;
-                message = `${playerCardInPlay.name} deals ${playerCardInPlay.attack.damage} damage! ${botCardInPlay.name} deals ${botCardInPlay.attack.damage} damage!`;
+                message = `${playerCardInPlay.name} uses ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage! ${botCardInPlay.name} uses ${botCardInPlay.attack.name} for ${botCardInPlay.attack.damage} damage!`;
             } else if (playerCardInPlay) {
                 botHP -= playerCardInPlay.attack.damage;
-                message = `${playerCardInPlay.name} attacks directly for ${playerCardInPlay.attack.damage} damage!`;
+                message = `${playerCardInPlay.name} attacks the Bot directly with ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage!`;
             }
             showMessage(message, "info");
         }
 
         function endTurn() {
             currentTurn++;
-            playerCardInPlay = null; botCardInPlay = null;
+            playerCardInPlay = null;
+            botCardInPlay = null;
+
             if (playerDeck.length > 0 && playerHand.length < 5) playerHand.push(playerDeck.shift());
             if (botDeck.length > 0 && botHand.length < 5) botHand.push(botDeck.shift());
+            
             if(checkGameEnd()) return;
+
             updateGameUI();
             showMessage(`Turn ${currentTurn} begins!`, "info");
             document.getElementById('playCardBtn').disabled = false;
             document.getElementById('nextTurnBtn').disabled = true;
         }
 
-        function checkGameEnd() {
-            let title = "Game Over!", message = "", modalClass = "", isVictory = false;
+        async function checkGameEnd() {
+            let gameIsOver = false;
+            let finalMessage = "";
+            let modalClass = "";
+            let title = "Game Over!";
+            let isVictory = false;
+
             if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
-                if (playerHP <= 0 && botHP <= 0) { message = "It's a draw!"; modalClass = "draw"; } 
-                else if (playerHP <= 0) { message = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
-                else if (botHP <= 0) { message = "You are victorious!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
+                gameIsOver = true;
+                gamesPlayed++; // Increment games played counter
+                
+                if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
+                else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
+                else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
                 else if (currentTurn > MAX_TURNS) {
-                    message = "Max turns reached. ";
-                    if (playerHP > botHP) { message += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
-                    else if (botHP > playerHP) { message += "Bot wins by HP advantage!"; modalClass = "defeat"; title = "Defeat!"; } 
-                    else { message += "It's a draw!"; modalClass = "draw"; }
+                    finalMessage = "Max turns reached. ";
+                    if (playerHP > botHP) { finalMessage += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
+                    else if (botHP > playerHP) { finalMessage += "Bot wins by HP advantage!"; modalClass = "defeat"; title = "Defeat!"; } 
+                    else { finalMessage += "It's a draw!"; modalClass = "draw"; }
                 }
+
                 if(isVictory){
                     cryptidCoins += WIN_REWARD;
-                    message += ` You earned ${WIN_REWARD} Cryptid Coins!`;
-                    saveGameData();
+                    finalMessage += ` You earned ${WIN_REWARD} Cryptid Coins!`;
                     updateCoinDisplay();
                 }
-                showGameEndModal(title, message, modalClass);
-                return true;
+                
+                await saveGameData(); // Save game progress (coins, games played)
+                showGameEndModal(title, finalMessage, modalClass);
+                return true; // Game has ended
             }
-            return false;
+            return false; // Game continues
         }
 
         function showGameEndModal(title, message, outcomeClass) {
@@ -997,25 +1690,116 @@
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalMessage').innerText = message;
             modal.querySelector('.modal-content').className = 'modal-content ' + outcomeClass;
+            
             document.getElementById('modalPlayAgain').onclick = () => { modal.classList.remove('show'); startGame(); };
             document.getElementById('modalMainMenu').onclick = () => { modal.classList.remove('show'); showPackView(); };
+
             modal.classList.add('show');
         }
+        
+        // --- AUTHENTICATION FUNCTIONS (GOOGLE SIGN-IN) ---
 
-        document.addEventListener('DOMContentLoaded', () => {
-            showView(document.getElementById('homeView'));
-        });
+        /**
+         * This function is the callback that Google calls after a user successfully signs in.
+         * It receives the user's credential as a JWT (JSON Web Token).
+         * @param {object} response - The credential response object from Google.
+         */
+        async function handleCredentialResponse(response) {
+            const decodedToken = JSON.parse(atob(response.credential.split('.')[1]));
+            
+            currentUserId = decodedToken.sub; // Google User ID
+            currentUsername = decodedToken.name; // Google User Name
 
-        window.onload = function () {
-          google.accounts.id.initialize({
-            client_id: "736869974803-67gmolnoitirougo0fkpp06vfetpgndl.apps.googleusercontent.com",
-            callback: handleCredentialResponse
-          });
-          google.accounts.id.renderButton(
-            document.getElementById("googleSignInButton"),
-            { theme: "outline", size: "large", text: "signin_with" }
-          );
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            
+            // Check if user is new
+            if (!allUsers[currentUserId]) {
+                // Create a new user profile
+                allUsers[currentUserId] = { 
+                    username: currentUsername,
+                    collectedCardIds: [],
+                    playerDeckIds: [],
+                    cryptidCoins: 200, // New player bonus
+                    packsOpened: 0,
+                    gamesPlayed: 0
+                };
+                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+                showMessage(`Welcome, ${currentUsername}! Enjoy your starting bonus!`, 'success', true);
+            }
+
+            // Proceed with loading the game
+            showView(loadingView);
+            await preloadImages();
+            loadGameData(currentUserId);
+            updateDeckSizeDisplay();
+            updateCoinDisplay();
+            showPackView();
         }
+
+        window.logout = () => {
+            if (typeof google !== 'undefined') {
+                google.accounts.id.disableAutoSelect();
+            }
+            currentUserId = null;
+            currentUsername = null;
+            document.getElementById('packCardContainer').innerHTML = ''; // Clear pack view on logout
+            showAuthView();
+            showMessage('You have been logged out.', 'success', true);
+        };
+
+        window.showDeleteModal = () => {
+            document.getElementById('deleteAccountModal').classList.add('show');
+        };
+
+        window.confirmDeleteAccount = () => {
+            if (!currentUserId) return;
+
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            
+            if (allUsers[currentUserId]) {
+                delete allUsers[currentUserId];
+                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+                document.getElementById('deleteAccountModal').classList.remove('show');
+                logout();
+                showMessage('Account deleted successfully.', 'success', true);
+            } else {
+                showMessage('Could not find user data to delete.', 'error', true);
+            }
+        };
+        
+        // --- INITIALIZATION ---
+        window.onload = function () {
+            // Initialize Google Sign-In
+            google.accounts.id.initialize({
+                client_id: "736869974803-67gmolnoitirougo0fkpp06vfetpgndl.apps.googleusercontent.com",
+                callback: handleCredentialResponse
+            });
+
+            // Render the Google Sign-In button
+            google.accounts.id.renderButton(
+                document.getElementById("googleSignInButton"),
+                { theme: "outline", size: "large", text: "signin_with" } 
+            );
+
+            // Optionally, prompt for automatic sign-in
+            google.accounts.id.prompt(); 
+
+            // Show the initial authentication view
+            showView(document.getElementById('authView'));
+        };
+        
+        // Make functions globally available
+        window.showPackView = showPackView;
+        window.showCollectionView = showCollectionView;
+        window.showDeckBuilderView = showDeckBuilderView;
+        window.showSettingsView = showSettingsView;
+        window.tryStartGame = tryStartGame;
+        window.openPack = openPack;
+        window.saveDeck = saveDeck;
+        window.toggleCardInDeck = toggleCardInDeck;
+        window.playPlayerCard = playPlayerCard;
+        window.endTurn = endTurn;
+        window.selectPlayerCard = selectPlayerCard;
     </script>
 </body>
 </html>
