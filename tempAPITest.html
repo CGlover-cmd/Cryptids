@@ -45,7 +45,7 @@
         }
 
         /* --- Background Image for Main Views --- */
-        #packView, #collectionView, #deckBuilderView, #gameView {
+        #packView, #collectionView, #deckBuilderView, #gameView, #settingsView {
             background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png');
             background-size: cover;
             background-position: center;
@@ -93,6 +93,16 @@
             background: #555;
             cursor: not-allowed;
             opacity: 0.6;
+        }
+
+        .btn.btn-danger {
+            background: linear-gradient(135deg, #a03d3d, #dc3545);
+            border-color: #dc3545;
+            box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+        }
+
+        .btn.btn-danger:hover {
+             box-shadow: 0 4px 12px rgba(220, 53, 69, 0.7);
         }
         
         .currency-display {
@@ -395,6 +405,73 @@
         .nav-btn.active {
             color: var(--nav-icon-active-color);
         }
+
+        /* --- Settings View --- */
+        .settings-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+            padding: 25px;
+            background-color: var(--game-ui-bg);
+            border-radius: 10px;
+            text-align: left;
+        }
+        .settings-container h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+        .info-row {
+            font-size: 1.1rem;
+        }
+        .info-row span {
+            font-weight: bold;
+            color: var(--pack-border);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100dvh;
+            background-color: rgba(0,0,0,0.7);
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background-color: var(--bg-dark);
+            margin: auto;
+            padding: 25px;
+            border: 2px solid var(--pack-border);
+            border-radius: 15px;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .modal-content input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-light);
+            font-size: 1rem;
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -433,16 +510,13 @@
             <span class="turn-counter">Turn: <span id="turnCounter">1</span> / 20</span>
             <span class="bot-hp">Bot HP: <span id="botHP">100</span></span>
         </div>
-
         <div class="game-field">
             <div class="bot-area">
                 <h3>Bot's Field</h3>
                 <div class="in-play-card-container" id="botInPlay"></div>
                 <div class="bot-hand" id="botHand"></div>
             </div>
-
             <div class="in-play-card-container" id="battlefield"></div>
-
             <div class="player-area">
                 <h3>Your Hand</h3>
                 <div class="player-hand" id="playerHand"></div>
@@ -455,6 +529,16 @@
         <div class="game-message" id="gameMessage"></div>
     </div>
 
+    <!-- NEW: Settings View -->
+    <div id="settingsView" class="view">
+        <div class="settings-container">
+            <h2>Settings</h2>
+            <div class="info-row">Player Name: <span id="settings-username"></span></div>
+            <div class="info-row">User ID: <span id="settings-userid"></span></div>
+            <button class="btn btn-danger" onclick="showDeleteModal()">Delete Account</button>
+        </div>
+    </div>
+
     <div id="gameEndModal" class="modal">
         <div class="modal-content">
             <h2 id="modalTitle"></h2>
@@ -462,6 +546,18 @@
             <div class="modal-buttons">
                 <button class="btn" id="modalPlayAgain">Play Again</button>
                 <button class="btn" id="modalMainMenu">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Delete Account Confirmation Modal -->
+    <div id="deleteAccountModal" class="modal">
+        <div class="modal-content">
+            <h2>Delete Account</h2>
+            <p>This action is irreversible and will permanently delete all your cards and progress. Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteAccount()">Confirm Delete</button>
             </div>
         </div>
     </div>
@@ -482,6 +578,11 @@
         <button id="nav-battle" class="nav-btn" onclick="tryStartGame()">
             <svg viewBox="0 0 24 24"><path d="M19.8,2.4l-2.2,2.2C16.2,3.2,14.2,2.5,12,2.5c-4.6,0-8.6,3.3-9.7,7.7c-0.1,0.5,0.2,1,0.7,1.1c0.5,0.1,1-0.2,1.1-0.7C5.2,6.5,8.3,4.5,12,4.5c1.7,0,3.3,0.5,4.7,1.4l-2.1,2.1c-0.4,0.4-0.4,1,0,1.4C14.8,9.6,15,9.7,15.2,9.7s0.4-0.1,0.5-0.2l4.5-4.5c0.4-0.4,0.4-1,0-1.4C20.1,2.5,19.9,2.4,19.8,2.4z M4.2,21.6l2.2-2.2c1.4,1.4,3.4,2.2,5.6,2.2c4.6,0,8.6-3.3,9.7-7.7c0.1-0.5-0.2-1-0.7-1.1c-0.5-0.1-1,0.2-1.1,0.7c-1.1,4.1-4.2,6.1-7.9,6.1c-1.7,0-3.3-0.5-4.7-1.4l2.1-2.1c0.4-0.4,0.4-1,0-1.4s-1-0.4-1.4,0l-4.5,4.5c-0.4,0.4-0.4-1,0,1.4C3.7,21.5,3.9,21.6,4.2,21.6z"></path></svg>
             <span>Battle</span>
+        </button>
+        <!-- NEW: Settings Button -->
+        <button id="nav-settings" class="nav-btn" onclick="showSettingsView()">
+            <svg viewBox="0 0 24 24"><path d="M19.4,12.9c0.1-0.3,0.1-0.6,0.1-0.9s0-0.6-0.1-0.9l2.1-1.6c0.2-0.1,0.2-0.4,0.1-0.6l-2-3.5c-0.1-0.2-0.4-0.3-0.6-0.2l-2.5,1c-0.5-0.4-1-0.7-1.6-0.9L14.4,2.4c-0.1-0.3-0.3-0.4-0.6-0.4h-4c-0.3,0-0.5,0.2-0.6,0.4l-0.4,2.9c-0.6,0.2-1.1,0.5-1.6,0.9l-2.5-1c-0.2-0.1-0.5,0-0.6,0.2l-2,3.5c-0.1,0.2-0.1,0.5,0.1,0.6l2.1,1.6C4.6,11.4,4.5,11.7,4.5,12s0,0.6,0.1,0.9l-2.1,1.6c-0.2,0.1-0.2,0.4-0.1,0.6l2,3.5c0.1,0.2,0.4,0.3,0.6,0.2l2.5-1c0.5,0.4,1,0.7,1.6,0.9l0.4,2.9c0.1,0.3,0.3,0.4,0.6,0.4h4c0.3,0,0.5-0.2,0.6-0.4l0.4-2.9c0.6-0.2,1.1-0.5,1.6-0.9l2.5,1c0.2,0.1,0.5,0,0.6-0.2l2-3.5c0.1-0.2,0.1-0.5-0.1-0.6L19.4,12.9z M12,15.5c-1.9,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5s3.5,1.6,3.5,3.5S13.9,15.5,12,15.5z"></path></svg>
+            <span>Settings</span>
         </button>
         <button id="nav-sign-out" class="nav-btn" onclick="signOut()">
             <svg viewBox="0 0 24 24"><path d="M17,8l-1.4,1.4l1.6,1.6H9v2h8.2l-1.6,1.6L17,16l4-4L17,8z M5,5h7V3H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h7v-2H5V5z"></path></svg>
@@ -658,7 +759,8 @@
             pack: document.getElementById('packView'),
             collection: document.getElementById('collectionView'),
             deck: document.getElementById('deckBuilderView'),
-            game: document.getElementById('gameView')
+            game: document.getElementById('gameView'),
+            settings: document.getElementById('settingsView')
         };
         const bottomNav = document.getElementById('bottom-nav');
 
@@ -671,6 +773,7 @@
 
             if (viewElement === views.collection) showCollection();
             else if (viewElement === views.deck) renderDeckBuilderCards();
+            else if (viewElement === views.settings) showSettings();
             else if (viewElement === views.pack) {
                 updateCoinDisplay();
                 document.getElementById('pack-opening-title').innerText = packsOpened < 2 ? `Starter Pack (${packsOpened + 1}/2)` : 'Cryptid Pack Opening';
@@ -680,6 +783,25 @@
         function showPackView() { showView(views.pack, 'nav-packs'); }
         function showCollectionView() { showView(views.collection, 'nav-collection'); }
         function showDeckBuilderView() { showView(views.deck, 'nav-deck'); }
+        function showSettingsView() { showView(views.settings, 'nav-settings'); }
+
+        function showSettings() {
+            document.getElementById('settings-username').innerText = currentUser.name || 'N/A';
+            document.getElementById('settings-userid').innerText = currentUser.id || 'N/A';
+        }
+
+        function showDeleteModal() {
+            document.getElementById('deleteAccountModal').classList.add('show');
+        }
+
+        function confirmDeleteAccount() {
+            if (!currentUser) return;
+            const userSaveDataKey = `cryptid_save_${currentUser.id}`;
+            localStorage.removeItem(userSaveDataKey);
+            document.getElementById('deleteAccountModal').classList.remove('show');
+            signOut();
+            showMessage('Account deleted successfully.', 'success', true);
+        }
 
         function openPack() {
             if (cryptidCoins < PACK_COST) {
