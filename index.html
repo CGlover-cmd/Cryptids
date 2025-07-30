@@ -1063,8 +1063,10 @@
     <div id="deleteAccountModal" class="modal">
         <div class="modal-content">
             <h2>Delete Account</h2>
-            <p>This action is irreversible. Please enter your password to confirm.</p>
-            <input type="password" id="delete-password" placeholder="Password">
+            <p id="delete-confirmation-message"></p>
+            <div id="delete-password-container">
+                <input type="password" id="delete-password" placeholder="Password">
+            </div>
             <div class="modal-buttons" style="flex-direction: row;">
                 <button class="btn" onclick="document.getElementById('deleteAccountModal').classList.remove('show')">Cancel</button>
                 <button class="btn btn-danger" onclick="window.confirmDeleteAccount()">Confirm Delete</button>
@@ -1400,16 +1402,6 @@
         function showSettings() {
             document.getElementById('settings-username').innerText = currentUsername || 'N/A';
             document.getElementById('settings-userid').innerText = currentUserId || 'N/A';
-            
-            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            const currentUserData = allUsers[currentUsername];
-            const deleteButton = document.querySelector('#settingsView .btn-danger');
-
-            if (currentUserData && currentUserData.googleId) {
-                deleteButton.style.display = 'none'; // Hide delete for Google users
-            } else {
-                deleteButton.style.display = 'block';
-            }
         }
 
         // --- PACK OPENING ---
@@ -1861,21 +1853,66 @@
         };
 
         window.showDeleteModal = () => {
-            document.getElementById('deleteAccountModal').classList.add('show');
+            const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
+            const currentUserData = allUsers[currentUsername];
+            const modal = document.getElementById('deleteAccountModal');
+            const messageEl = document.getElementById('delete-confirmation-message');
+            const passwordContainer = document.getElementById('delete-password-container');
+
+            if (currentUserData && currentUserData.googleId) {
+                // Google User
+                messageEl.innerText = "This action is irreversible. It will permanently delete all your game data and revoke this game's access to your Google Account. Are you sure you want to continue?";
+                passwordContainer.style.display = 'none';
+                document.getElementById('delete-password').value = ''; // Clear password field
+            } else {
+                // Password User
+                messageEl.innerText = 'This action is irreversible. Please enter your password to confirm.';
+                passwordContainer.style.display = 'block';
+                document.getElementById('delete-password').value = ''; // Clear password field
+            }
+
+            modal.classList.add('show');
         };
 
         window.confirmDeleteAccount = () => {
-            const password = document.getElementById('delete-password').value;
             const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-            
-            if (currentUsername && allUsers[currentUsername] && allUsers[currentUsername].password === password) {
-                delete allUsers[currentUsername];
-                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
-                document.getElementById('deleteAccountModal').classList.remove('show');
-                logout();
-                showMessage('Account deleted successfully.', 'success', true);
+            const currentUserData = allUsers[currentUsername];
+
+            if (!currentUserData) {
+                showMessage('Could not find user data. Please try again.', 'error', true);
+                return;
+            }
+
+            if (currentUserData.googleId) {
+                // Google User Deletion Flow
+                google.accounts.id.revoke(currentUserData.googleId, done => {
+                    if (done.successful) {
+                        // Find the key (username) of the user to delete
+                        const userKeyToDelete = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
+                        if (userKeyToDelete) {
+                            delete allUsers[userKeyToDelete];
+                            localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+                        }
+                        document.getElementById('deleteAccountModal').classList.remove('show');
+                        logout(); // This already handles logging out and showing the auth screen
+                        showMessage('Account successfully deleted and permissions revoked.', 'success', true);
+                    } else {
+                        console.error('Google token revocation failed:', done.error);
+                        showMessage('Could not revoke Google permissions. Please try again or remove access manually from your Google account settings.', 'error', true);
+                    }
+                });
             } else {
-                showMessage('Incorrect password. Account not deleted.', 'error', true);
+                // Password User Deletion Flow
+                const password = document.getElementById('delete-password').value;
+                if (currentUsername && currentUserData.password === password) {
+                    delete allUsers[currentUsername];
+                    localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+                    document.getElementById('deleteAccountModal').classList.remove('show');
+                    logout();
+                    showMessage('Account deleted successfully.', 'success', true);
+                } else {
+                    showMessage('Incorrect password. Account not deleted.', 'error', true);
+                }
             }
         };
         
