@@ -76,7 +76,17 @@ async function registerUser() {
     }
 
     try {
-        // Create the user in Firebase Authentication
+        // Check if the email is already linked to an existing account (especially Google)
+        const signInMethods = await auth.fetchSignInMethodsForEmail(email);
+
+        if (signInMethods.includes('google.com')) {
+            // If the email is registered with Google, block password account creation.
+            showMessage("This email is already registered with a Google account. Please go back and sign in with Google.", "error");
+            return; // Stop the registration process
+        }
+
+        // If no Google account is found, proceed with creating the email/password user.
+        // This will still throw an error if an email/password account already exists, which is handled by the catch block.
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
@@ -91,7 +101,7 @@ async function registerUser() {
         }, 2000);
 
     } catch (error) {
-        // Handle potential errors (e.g., email already in use)
+        // Handle other potential errors (e.g., auth/email-already-in-use for a password account)
         console.error("Error during registration:", error);
         showMessage(error.message, "error");
     }
