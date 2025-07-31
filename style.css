@@ -76,7 +76,7 @@ h1 {
     text-align: center;
 }
 
-/* Global Button Styles */
+/* Global Button Styles (excluding the special home screen button) */
 .btn {
     background: linear-gradient(135deg, #444, #666);
     border: 2px solid #a2c8c8;
@@ -111,6 +111,12 @@ h1 {
 
 .btn.btn-danger:hover {
     box-shadow: 0 4px 12px rgba(220, 53, 69, 0.7);
+}
+
+/* Keyframes for the special home screen button */
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,0,0,0.2); }
+    50% { box-shadow: 0 0 18px rgba(255,0,0,0.4); }
 }
 
 .currency-display {
@@ -325,26 +331,6 @@ h1 {
     justify-content: center; /* Center content vertically */
     padding-top: 0; /* No top padding needed */
 }
-
-/* New Enter Game button styles */
-#homeView .btn {
-    all: unset;
-    font-family: 'Special Elite', cursive;
-    font-size: 1.3rem;
-    padding: 0.8em 1.6em;
-    background: #4a1c1c;
-    color: #ddd;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(255,0,0,0.2);
-    animation: pulse 2.8s infinite;
-    cursor: pointer;
-}
-
-@keyframes pulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(255,0,0,0.2); }
-    50% { box-shadow: 0 0 18px rgba(255,0,0,0.4); }
-}
-
 
 #packView {
     padding-top: 15px; 
