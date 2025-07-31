@@ -51,6 +51,7 @@ let playerDeckIds = [];
 let cryptidCoins = 0;
 let packsOpened = 0;
 let gamesPlayed = 0;
+let isInitialLoad = true; // Flag to handle initial asset loading
 
 const PACK_COST = 50;
 const WIN_REWARD = 10;
@@ -66,25 +67,35 @@ let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
-// This is the main function that runs when the page loads.
+// [REVISED] This is the main function that runs when the page loads.
+// It now handles the initial asset loading only once.
 auth.onAuthStateChanged(async (user) => {
+    if (isInitialLoad) {
+        isInitialLoad = false;
+        // This is the first time the function is running on page load.
+        // The loading screen is already visible from window.onload.
+        // Now, we preload all game assets.
+        await preloadAllGameAssets();
+    }
+
     if (user) {
+        // This block runs on initial load (if logged in) OR after a successful login.
+        const loadingText = document.getElementById('loading-text');
+        loadingText.innerText = 'Loading your profile...';
+        showView(loadingView); // Ensure loading view is shown during data fetch
+        
         currentUser = user;
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
+        // This block runs on initial load (if logged out) OR after a logout.
         currentUser = null;
-        await preloadImages();
         showView(authView);
-        resetAuthView(); // Ensure auth view is in its initial state
+        resetAuthView();
     }
 });
 
-/**
- * [FIXED] This function checks the sign-in methods for an email.
- * It prevents users from being redirected to registration if their email
- * is already associated with a Google account.
- */
+// New function to check if an email exists
 async function checkEmail() {
     const email = document.getElementById('email').value.trim();
     if (!email) {
@@ -213,9 +224,15 @@ function logout() {
 }
 
 // --- ASSET PRELOADING ---
-async function preloadImages() {
+/**
+ * [NEW] Preloads all essential UI images and all card images at the start of the application.
+ * This ensures a smoother experience after the initial load.
+ */
+async function preloadAllGameAssets() {
     const loadingText = document.getElementById('loading-text');
-    loadingText.innerText = 'Loading essential assets...';
+    loadingText.innerText = 'Loading game assets...';
+
+    // Start with essential UI images
     const imageUrls = [
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
@@ -223,8 +240,18 @@ async function preloadImages() {
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
     ];
 
+    // Add all cryptid card images to the list for preloading
+    allCryptids.forEach(cryptid => {
+        if (cryptid.image) {
+            imageUrls.push(cryptid.image);
+        }
+    });
+
     let loadedCount = 0;
     const totalImages = imageUrls.length;
+    
+    // Update loading text to show progress, which is more user-friendly
+    loadingText.innerText = `Loading 0/${totalImages} assets...`;
 
     return new Promise((resolve) => {
         if (totalImages === 0) {
@@ -236,6 +263,7 @@ async function preloadImages() {
             img.src = url;
             img.onload = img.onerror = () => {
                 loadedCount++;
+                loadingText.innerText = `Loading ${loadedCount}/${totalImages} assets...`;
                 if (loadedCount === totalImages) {
                     resolve();
                 }
@@ -758,6 +786,8 @@ async function confirmDeleteAccount() {
 }
 
 // --- INITIALIZATION ---
-window.onload = async function () {
+// [REVISED] This now just shows the initial loading screen.
+// The onAuthStateChanged listener will handle all subsequent logic.
+window.onload = function () {
     showView(loadingView);
 };
