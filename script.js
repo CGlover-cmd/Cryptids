@@ -83,7 +83,7 @@ function preloadImages() {
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.jpg',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_scsreen_mobile.jpg',
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.jpg',
         'https://i.imgur.com/8i1a2Vp.jpg'
     ];
 
@@ -843,7 +843,35 @@ function enterGame() {
     }
 }
 
+function createEnterGameButton() {
+    const homeViewContainer = document.getElementById('homeView');
+    if (!homeViewContainer) return;
+
+    const btn = document.createElement("button");
+    btn.textContent = "Enter Game";
+    // Setting styles via cssText as requested
+    btn.style.cssText = `
+        font-family: 'Special Elite', cursive;
+        font-size: 1.3rem;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 12px;
+        background: #4a1c1c;
+        color: #dddddd;
+        cursor: pointer;
+        box-shadow: 0 0 10px rgba(255,0,0,0.3);
+        animation: pulse 2.8s infinite;
+    `;
+    // Assign the click event
+    btn.onclick = enterGame;
+    
+    homeViewContainer.appendChild(btn);
+}
+
 window.onload = function () {
+    // Create the special "Enter Game" button
+    createEnterGameButton();
+
     // Initialize Google Sign-In
     if (typeof google !== 'undefined') {
         google.accounts.id.initialize({
