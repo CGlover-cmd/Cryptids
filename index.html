@@ -948,10 +948,9 @@
                 <div class="bot-hand" id="botHand"></div>
             </div>
 
-            <div class="in-play-card-container" id="battlefield">
-                </div>
-
             <div class="player-area">
+                <h3>Your Field</h3>
+                <div class="in-play-card-container" id="playerInPlay"></div>
                 <h3>Your Hand</h3>
                 <div class="player-hand" id="playerHand"></div>
                 <div class="game-controls">
@@ -1542,10 +1541,10 @@
                 botHandContainer.appendChild(cardEl);
             });
 
-            const battlefield = document.getElementById('battlefield');
-            battlefield.innerHTML = '';
+            const playerInPlayContainer = document.getElementById('playerInPlay');
+            playerInPlayContainer.innerHTML = '';
             if (playerCardInPlay) {
-                battlefield.appendChild(createCardElement(playerCardInPlay, true, true));
+                playerInPlayContainer.appendChild(createCardElement(playerCardInPlay, true, true));
             }
 
             const botInPlayContainer = document.getElementById('botInPlay');
