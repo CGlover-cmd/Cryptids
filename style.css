@@ -20,6 +20,10 @@
     --defeat-color: #dc3545; /* Red for defeat */
 }
 
+#homeView {
+  visibility: hidden;
+}
+
 body {
     background: var(--bg-dark);
     color: var(--text-light);
