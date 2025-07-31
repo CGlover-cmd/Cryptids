@@ -1,13 +1,3 @@
-// PRELOAD title-screen image then reveal #homeView
-document.addEventListener('DOMContentLoaded', () => {
-  const img = new Image();
-  img.src = 'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png';
-  img.onload = () => {
-    document.getElementById('homeView').style.visibility = 'visible';
-  };
-});
-
-
 // --- DATA ---
 const allCryptids = [
     { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: { name: "Sonic Screech", damage: 10 }, effect: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/moth_man.png" },
@@ -92,9 +82,9 @@ function preloadImages() {
     const imageUrls = [
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.jpg',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.jpg',
-        'https://i.imgur.com/8i1a2Vp.jpg'
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png',
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png',
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png' // Auth background
     ];
 
     let loadedCount = 0;
