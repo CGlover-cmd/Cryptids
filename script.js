@@ -90,20 +90,18 @@ async function checkEmail() {
 
     try {
         const methods = await auth.fetchSignInMethodsForEmail(email);
-        if (methods.length > 0) {
-            // Email exists. Check if it's Google or standard password.
-            if (methods.includes('google.com')) {
-                showMessage('This email is registered with Google. Please use the "Sign in with Google" button.', 'warning', true);
-                // Optionally, you could trigger the Google sign-in flow here directly.
-            } else if (methods.includes('password')) {
-                // Email exists with a password, show password step.
-                document.getElementById('email-step').style.display = 'none';
-                document.getElementById('password-step').style.display = 'block';
-                document.getElementById('password').focus();
-            }
+
+        if (methods.includes('google.com')) {
+            // Case 1: Account exists with Google. Instruct user to use Google Sign-In.
+            showMessage('This email is registered with Google. Please use the "Sign in with Google" button.', 'warning', true);
+            return; // Stop further execution
+        } else if (methods.includes('password')) {
+            // Case 2: Account exists with password. Show password field.
+            document.getElementById('email-step').style.display = 'none';
+            document.getElementById('password-step').style.display = 'block';
+            document.getElementById('password').focus();
         } else {
-            // Email does not exist, redirect to registration page
-            // We pass the email in the URL so the user doesn't have to re-type it
+            // Case 3: No account exists. Redirect to registration.
             window.location.href = `register.html?email=${encodeURIComponent(email)}`;
         }
     } catch (error) {
