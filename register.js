@@ -1,0 +1,132 @@
+// --- FIREBASE CONFIGURATION ---
+// This configuration must match the one in your main script.js and account_portal.js files.
+const firebaseConfig = {
+    apiKey: "AIzaSyA7HORw-_RGWxhyo9eGD3fvGL4ub8WH1O0",
+    authDomain: "cryptids-be430.firebaseapp.com",
+    projectId: "cryptids-be430",
+    storageBucket: "cryptids-be430.firebasestorage.app",
+    messagingSenderId: "197995808355",
+    appId: "1:197995808355:web:5a2534f516a9efe2d15a56",
+    measurementId: "G-FTBG99PW84"
+};
+
+// Initialize Firebase services
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// --- DOM ELEMENTS ---
+const emailInput = document.getElementById('email');
+const displayEmailSpan = document.getElementById('display-email');
+const passwordInput = document.getElementById('password');
+const registerBtn = document.getElementById('registerBtn');
+
+// --- MESSAGE DISPLAY ---
+let globalMessageTimeout;
+function showMessage(message, type = "info") {
+    const messageEl = document.getElementById('globalMessage');
+    if (!messageEl) return;
+
+    messageEl.innerText = message;
+    messageEl.className = `global-message ${type} show`;
+
+    clearTimeout(globalMessageTimeout);
+    globalMessageTimeout = setTimeout(() => {
+        messageEl.classList.remove('show');
+    }, 4000);
+}
+
+// --- CORE REGISTRATION LOGIC ---
+
+/**
+ * Creates a new user document in the Firestore 'users' collection with default values.
+ * @param {string} userId - The UID of the newly created user.
+ * @param {string} email - The email of the newly created user.
+ */
+async function createNewUserDocument(userId, email) {
+    const userRef = db.collection('users').doc(userId);
+    const newUser = {
+        uid: userId,
+        email: email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        collectedCardIds: [],
+        playerDeckIds: [],
+        cryptidCoins: 200, // Starting coins for new players
+        packsOpened: 0,
+        gamesPlayed: 0
+    };
+    await userRef.set(newUser);
+}
+
+/**
+ * Handles the user registration process.
+ */
+async function registerUser() {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    if (!password) {
+        showMessage("Please enter a password.", "warning");
+        return;
+    }
+    // Basic password length check
+    if (password.length < 6) {
+        showMessage("Password should be at least 6 characters long.", "error");
+        return;
+    }
+
+    try {
+        // Create the user in Firebase Authentication
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        // Create the corresponding user document in Firestore
+        await createNewUserDocument(user.uid, user.email);
+
+        showMessage("Account created successfully! Redirecting to the game...", "success");
+
+        // Redirect to the main game page after a short delay
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+
+    } catch (error) {
+        // Handle potential errors (e.g., email already in use)
+        console.error("Error during registration:", error);
+        showMessage(error.message, "error");
+    }
+}
+
+// --- INITIALIZATION ---
+
+/**
+ * This function runs when the page loads. It checks for an email in the URL
+ * and sets up the form.
+ */
+window.onload = function() {
+    // Get the email from the URL query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+
+    if (emailFromUrl) {
+        const decodedEmail = decodeURIComponent(emailFromUrl);
+        // Populate the input field and the display text
+        emailInput.value = decodedEmail;
+        displayEmailSpan.innerText = decodedEmail;
+    } else {
+        // If no email is provided, inform the user and suggest going back.
+        showMessage("No email specified. Please start from the sign-in page.", "error");
+        registerBtn.disabled = true;
+    }
+
+    // Add event listener to the register button
+    registerBtn.addEventListener('click', registerUser);
+
+    // Allow pressing Enter in the password field to submit
+    passwordInput.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            registerUser();
+        }
+    });
+};
