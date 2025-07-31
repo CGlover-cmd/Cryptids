@@ -1,18 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cryptid Card Game</title>
-    <!-- Google Identity Services Library -->
-    <script src="https://accounts.google.com/gsi/client" async></script>
-    <!-- Google Font for the Enter Game button -->
-    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
-    <!-- Link to the external stylesheet -->
-    <link rel="stylesheet" href="style.css">
-    <!-- preload title screen -->
-    <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png">
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+  <title>Cryptid Chronicles</title>
 
+  <!-- 1. Preload the title‐screen image to warm up the CDN cache -->
+  <link
+    rel="preload"
+    as="image"
+    href="https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png"
+  >
+
+  <!-- 2. Main stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- 3. Preload helper (blocks #homeView until the image is loaded) -->
+  <script defer src="js/preload.js"></script>
+
+  <!-- 4. Your main application script -->
+  <script defer src="js/main.js"></script>
 </head>
 <body>
     <!-- Global Message Container -->
