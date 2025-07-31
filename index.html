@@ -1,34 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  >
-  <title>Cryptid Chronicles</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Cryptids</title>
 
-  <!-- 1. Preload the title‐screen image to warm up the CDN cache -->
-  <link
-    rel="preload"
-    as="image"
-    href="https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png"
-  >
+    <!-- 1. Preload the title-screen image to warm up the CDN cache -->
+    <link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png" />
 
-  <!-- 2. Main stylesheet -->
-  <link rel="stylesheet" href="style.css">
+    <!-- 2. Main stylesheet -->
+    <link rel="stylesheet" href="style.css" />
 
-  <!-- 3. Preload helper (blocks #homeView until the image is loaded) -->
-  <script defer src="js/preload.js"></script>
+    <!-- 3. Google Font for the Enter Game button -->
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+    
+    <!-- 4. Google Identity Services Library -->
+    <script src="https://accounts.google.com/gsi/client" async></script>
 
-  <!-- 4. Your main application script -->
-  <script defer src="js/main.js"></script>
+    <!-- 5. Your application scripts -->
+    <script src="js/preload.js"></script>
+    <script src="js/main.js"></script>
 </head>
 <body>
     <!-- Global Message Container -->
     <div id="globalMessage" class="global-message"></div>
 
-    <!-- Home screen view (will be activated by script.js after loading) -->
+    <!-- Home screen view (button will be added by main.js) -->
     <div id="homeView" class="view"></div>
 
     <!-- Authentication view -->
@@ -167,7 +164,5 @@
         </button>
     </nav>
 
-    <!-- Link to the external JavaScript file -->
-    <script src="script.js"></script>
 </body>
 </html>
