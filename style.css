@@ -326,10 +326,25 @@ h1 {
     padding-top: 0; /* No top padding needed */
 }
 
+/* New Enter Game button styles */
 #homeView .btn {
-    padding: 15px 40px;
-    font-size: 1.5rem;
+    all: unset;
+    font-family: 'Special Elite', cursive;
+    font-size: 1.3rem;
+    padding: 0.8em 1.6em;
+    background: #4a1c1c;
+    color: #ddd;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(255,0,0,0.2);
+    animation: pulse 2.8s infinite;
+    cursor: pointer;
 }
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,0,0,0.2); }
+    50% { box-shadow: 0 0 18px rgba(255,0,0,0.4); }
+}
+
 
 #packView {
     padding-top: 15px; 
