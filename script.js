@@ -45,7 +45,6 @@ const allCryptids = [
 ];
 
 // --- STATE MANAGEMENT ---
-// These variables will hold the player's data once they are logged in.
 let currentUser = null;
 let collectedCardIds = new Set();
 let playerDeckIds = [];
@@ -68,21 +67,51 @@ let messageTimeout, globalMessageTimeout;
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
 // This is the main function that runs when the page loads.
-// It checks if a user is already logged in.
 auth.onAuthStateChanged(async (user) => {
     if (user) {
-        // User is signed in.
         currentUser = user;
         await loadUserData(user.uid);
-        showView(packView, 'nav-packs'); // Go to the main game view
+        showView(packView, 'nav-packs');
     } else {
-        // No user is signed in.
         currentUser = null;
-        // Preload images for the auth screen and then show it.
         await preloadImages();
         showView(authView);
+        resetAuthView(); // Ensure auth view is in its initial state
     }
 });
+
+// New function to check if an email exists
+async function checkEmail() {
+    const email = document.getElementById('email').value.trim();
+    if (!email) {
+        showMessage('Please enter an email address.', 'error', true);
+        return;
+    }
+
+    try {
+        const methods = await auth.fetchSignInMethodsForEmail(email);
+        if (methods.length > 0) {
+            // Email exists, show password step
+            document.getElementById('email-step').style.display = 'none';
+            document.getElementById('password-step').style.display = 'block';
+            document.getElementById('password').focus();
+        } else {
+            // Email does not exist, redirect to registration page
+            // We pass the email in the URL so the user doesn't have to re-type it
+            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
+        }
+    } catch (error) {
+        showMessage(error.message, 'error', true);
+    }
+}
+
+// New function to reset the auth view to the email step
+function resetAuthView() {
+    document.getElementById('email-step').style.display = 'block';
+    document.getElementById('password-step').style.display = 'none';
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+}
 
 // Loads user data from Firestore
 async function loadUserData(userId) {
@@ -97,14 +126,14 @@ async function loadUserData(userId) {
             packsOpened = data.packsOpened || 0;
             gamesPlayed = data.gamesPlayed || 0;
             
-            // Update UI elements with loaded data
             updateCoinDisplay();
             updateDeckSizeDisplay();
             showSettings();
         } else {
-            console.log("No such document! Creating one for new user.");
-            // This case handles a new user (e.g., first Google sign-in)
-            await createNewUserDocument(userId);
+            console.log("No such document! This should be created on registration.");
+            // This case might happen if a user is authenticated but their data doc was deleted.
+            // We can create a new one to prevent errors.
+            await createNewUserDocument(userId, auth.currentUser.email);
         }
     } catch (error) {
         console.error("Error loading user data:", error);
@@ -113,6 +142,7 @@ async function loadUserData(userId) {
 }
 
 // Creates a new user document in Firestore with default values
+// This will now primarily be called from the new register.js
 async function createNewUserDocument(userId, email) {
     const userRef = db.collection('users').doc(userId);
     const newUser = {
@@ -121,53 +151,28 @@ async function createNewUserDocument(userId, email) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         collectedCardIds: [],
         playerDeckIds: [],
-        cryptidCoins: 200, // Starting bonus
+        cryptidCoins: 200,
         packsOpened: 0,
         gamesPlayed: 0
     };
     await userRef.set(newUser);
-    // Load these default values into the game state
     await loadUserData(userId);
 }
 
-// Register a new user with email and password
-function register() {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    if (!email || !password) {
-        showMessage('Please enter both email and password.', 'error', true);
-        return;
-    }
-
-    auth.createUserWithEmailAndPassword(email, password)
-        .then(async (userCredential) => {
-            // Signed in
-            showMessage('Registration successful! Welcome!', 'success', true);
-            // Create their data document in Firestore
-            await createNewUserDocument(userCredential.user.uid, email);
-            // The onAuthStateChanged listener will handle showing the game view.
-        })
-        .catch((error) => {
-            showMessage(error.message, 'error', true);
-        });
-}
-
-// Login with email and password
+// Login with email and password (now called from password step)
 function login() {
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value; // Email is still in the (now hidden) input
     const password = document.getElementById('password').value;
 
     if (!email || !password) {
-        showMessage('Please enter both email and password.', 'error', true);
+        showMessage('An error occurred. Please try again.', 'error', true);
         return;
     }
 
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            // Signed in
-            // The onAuthStateChanged listener will handle loading data and showing the view.
             showMessage('Login successful!', 'success', true);
+            // onAuthStateChanged will handle loading data and showing the view.
         })
         .catch((error) => {
             showMessage(error.message, 'error', true);
@@ -179,15 +184,12 @@ function signInWithGoogle() {
     auth.signInWithPopup(googleProvider)
         .then(async (result) => {
             const user = result.user;
-            // Check if this is a new user
             const userRef = db.collection('users').doc(user.uid);
             const doc = await userRef.get();
             if (!doc.exists) {
-                // If it's a new user, create their document
                 await createNewUserDocument(user.uid, user.email);
             }
             showMessage('Signed in with Google!', 'success', true);
-            // onAuthStateChanged will handle the rest
         }).catch((error) => {
             showMessage(error.message, 'error', true);
         });
@@ -196,11 +198,8 @@ function signInWithGoogle() {
 // Logout the current user
 function logout() {
     auth.signOut().then(() => {
-        // Sign-out successful.
-        // onAuthStateChanged will show the auth view
         showMessage('You have been logged out.', 'success', true);
     }).catch((error) => {
-        // An error happened.
         showMessage(error.message, 'error', true);
     });
 }
@@ -265,7 +264,6 @@ function getRarity() {
 function getRandomCryptid(desiredRarity) {
     const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
     if (availableCryptids.length === 0) {
-        console.warn(`No cryptids found for rarity: ${desiredRarity}. Returning a random cryptid.`);
         return allCryptids[Math.floor(Math.random() * allCryptids.length)];
     }
     return availableCryptids[Math.floor(Math.random() * availableCryptids.length)];
@@ -280,11 +278,7 @@ function shuffleArray(array) {
 
 function createCardElement(cryptid, isCollected = true, showFrontImmediately = false) {
     const cardWrapper = document.createElement("div");
-    if (isCollected && cryptid) {
-        cardWrapper.className = `card-wrapper ${cryptid.rarity}`;
-    } else {
-        cardWrapper.className = 'card-wrapper';
-    }
+    cardWrapper.className = `card-wrapper ${cryptid ? cryptid.rarity : ''}`;
     cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
 
     const cardInner = document.createElement("div");
@@ -303,18 +297,12 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
 
         const hpDisplay = document.createElement('div');
         hpDisplay.className = 'stat-display hp-display';
-        hpDisplay.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="#f56565"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            <span>${cryptid.hp}</span>
-        `;
+        hpDisplay.innerHTML = `<svg viewBox="0 0 24 24" fill="#f56565"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>${cryptid.hp}</span>`;
         cardContent.appendChild(hpDisplay);
 
         const attackDisplay = document.createElement('div');
         attackDisplay.className = 'stat-display attack-display';
-        attackDisplay.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="#63b3ed"><path d="M20.7,5.3l-2-2c-0.4-0.4-1-0.4-1.4,0L12,8.6L6.7,3.3c-0.4-0.4-1-0.4-1.4,0l-2,2c-0.4,0.4-0.4,1,0,1.4L8.6,12l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4l2,2c0.4,0.4,1,0.4,1.4,0L12,15.4l5.3,5.3c0.4,0.4,1,0.4,1.4,0l2-2c0.4-0.4,0.4-1,0-1.4L15.4,12l5.3-5.3C21.1,6.3,21.1,5.7,20.7,5.3z"/></svg>
-            <span>${cryptid.attack.damage}</span>
-        `;
+        attackDisplay.innerHTML = `<svg viewBox="0 0 24 24" fill="#63b3ed"><path d="M20.7,5.3l-2-2c-0.4-0.4-1-0.4-1.4,0L12,8.6L6.7,3.3c-0.4-0.4-1-0.4-1.4,0l-2,2c-0.4,0.4-0.4,1,0,1.4L8.6,12l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4l2,2c0.4,0.4,1,0.4,1.4,0L12,15.4l5.3,5.3c0.4,0.4,1,0.4,1.4,0l2-2c0.4-0.4,0.4-1,0-1.4L15.4,12l5.3-5.3C21.1,6.3,21.1,5.7,20.7,5.3z"/></svg><span>${cryptid.attack.damage}</span>`;
         cardContent.appendChild(attackDisplay);
 
         const namePlate = document.createElement('div');
@@ -323,7 +311,6 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
         cardContent.appendChild(namePlate);
 
         cardFront.appendChild(cardContent);
-
         cardInner.appendChild(cardBack);
         cardInner.appendChild(cardFront);
 
@@ -432,7 +419,6 @@ async function openPack() {
     const newCardIds = cardsInPack.map(c => c.id);
     const updatedCollectedCardIds = Array.from(new Set([...collectedCardIds, ...newCardIds]));
 
-    // Update Firestore
     const userRef = db.collection('users').doc(currentUser.uid);
     try {
         await userRef.update({
@@ -440,7 +426,6 @@ async function openPack() {
             packsOpened: newPacksOpened,
             collectedCardIds: updatedCollectedCardIds
         });
-        // Update local state on success
         cryptidCoins = newCoins;
         packsOpened = newPacksOpened;
         collectedCardIds = new Set(updatedCollectedCardIds);
@@ -451,7 +436,6 @@ async function openPack() {
         return;
     }
 
-    // Display the cards
     cardsInPack.forEach((cryptid, i) => {
         const cardWrapper = createCardElement(cryptid, true, false);
         container.appendChild(cardWrapper);
@@ -713,14 +697,12 @@ async function checkGameEnd() {
             finalMessage += ` You earned ${WIN_REWARD} Cryptid Coins!`;
         }
         
-        // Save game results to Firestore
         const userRef = db.collection('users').doc(currentUser.uid);
         try {
             await userRef.update({
                 gamesPlayed: newGamesPlayed,
                 cryptidCoins: newCoinTotal
             });
-            // Update local state
             gamesPlayed = newGamesPlayed;
             cryptidCoins = newCoinTotal;
             updateCoinDisplay();
@@ -755,13 +737,10 @@ async function confirmDeleteAccount() {
 
     const userRef = db.collection('users').doc(currentUser.uid);
     try {
-        // First, delete the user's data from Firestore
         await userRef.delete();
-        // Then, delete the user from Firebase Authentication
         await currentUser.delete();
         
         showMessage("Account deleted successfully.", "success", true);
-        // onAuthStateChanged will handle showing the auth view
     } catch (error) {
         console.error("Error deleting account:", error);
         showMessage("Error deleting account. You may need to log out and log back in again before retrying.", "error", true);
@@ -773,6 +752,4 @@ async function confirmDeleteAccount() {
 // --- INITIALIZATION ---
 window.onload = async function () {
     showView(loadingView);
-    // The onAuthStateChanged listener handles the initial logic,
-    // so we just need to preload images for the home screen if no user is found.
 };
