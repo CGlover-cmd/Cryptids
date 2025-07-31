@@ -1035,7 +1035,10 @@
             { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: { name: "Petrifying Strike", damage: 23 }, effect: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/basilisk.png" },
             { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: { name: "Sky Assault", damage: 20 }, effect: "Sky Guardian: All friendly cards gain +5 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/griffin.png" },
             { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: { name: "Frost Punch", damage: 10 }, effect: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/yeti.png" },
-            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: { name: "Terrifying Charge", damage: 35 }, effect: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/woodsdevil.png" }
+            { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: { name: "Terrifying Charge", damage: 35 }, effect: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/woodsdevil.png" },
+            { id: 'thunderbird', name: "Thunderbird", rarity: "legendary", hp: 65, attack: { name: "Lightning Strike", damage: 32 }, effect: "Chain Lightning: Deals 10 damage to two other random enemy cards.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/thunderbird.png" },
+            { id: 'ropen', name: "Ropen", rarity: "rare", hp: 35, attack: { name: "Diving Strike", damage: 26 }, effect: "Bioluminescence: The next card the opponent plays has its attack reduced by half.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/ropen.png" },
+            { id: 'almas', name: "Almas", rarity: "common", hp: 48, attack: { name: "Feral Swipe", damage: 14 }, effect: "Hardy: If this card survives combat, it gains +5 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/almas.png" }
         ];
 
         // --- STATE MANAGEMENT ---
@@ -1141,7 +1144,7 @@
             const roll = Math.random();
             if (roll < 0.05) return "legendary"; // 5% chance
             if (roll < 0.25) return "rare";     // 20% chance
-            return "common";                     // 75% chance
+            return "common";                      // 75% chance
         }
         
         function getNewRandomCryptid(rarity, currentlyDrawnIds) {
