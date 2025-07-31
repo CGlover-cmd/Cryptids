@@ -52,7 +52,13 @@
             background-attachment: fixed;
         }
         
-        #homeView, #authView {
+        #homeView {
+             background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/title_screen.png');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        #authView {
              background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://i.imgur.com/8i1a2Vp.jpg');
             background-size: cover;
             background-position: center;
@@ -1038,7 +1044,8 @@
             { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: { name: "Terrifying Charge", damage: 35 }, effect: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/woodsdevil.png" },
             { id: 'thunderbird', name: "Thunderbird", rarity: "legendary", hp: 65, attack: { name: "Lightning Strike", damage: 32 }, effect: "Chain Lightning: Deals 10 damage to two other random enemy cards.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/thunderbird.png" },
             { id: 'ropen', name: "Ropen", rarity: "rare", hp: 35, attack: { name: "Diving Strike", damage: 26 }, effect: "Bioluminescence: The next card the opponent plays has its attack reduced by half.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/ropen.png" },
-            { id: 'almas', name: "Almas", rarity: "common", hp: 48, attack: { name: "Feral Swipe", damage: 14 }, effect: "Hardy: If this card survives combat, it gains +5 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/almas.png" }
+            { id: 'almas', name: "Almas", rarity: "common", hp: 48, attack: { name: "Feral Swipe", damage: 14 }, effect: "Hardy: If this card survives combat, it gains +5 HP.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/almas.png" },
+            { id: 'mokele-mbembe', name: "Mokele-mbembe", rarity: "rare", hp: 75, attack: { name: "River Charge", damage: 16 }, effect: "Amphibious Hide: Reduces incoming damage from 'common' cards by 5.", image: "https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/mokele-mbembe.png" }
         ];
 
         // --- STATE MANAGEMENT ---
@@ -1098,6 +1105,7 @@
             const imageUrls = [
                 'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/background.png',
                 'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/back_of_card.png',
+                'https://raw.githubusercontent.com/cglover-cmd/cryptids/main/photos/title_screen.png',
                 'https://i.imgur.com/8i1a2Vp.jpg'
             ];
 
