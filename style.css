@@ -62,7 +62,7 @@ body {
 }
 
 #authView {
-    background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://i.imgur.com/8i1a2Vp.jpg');
+    background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
     background-size: cover;
     background-position: center;
 }
