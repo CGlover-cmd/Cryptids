@@ -358,14 +358,15 @@ h1 {
 .collection-rarity-group {
     width: 100%;
     margin-bottom: 20px;
+    text-align: center; /* Added to center child elements */
 }
 
 .collection-rarity-group h2 {
     font-size: 1.5rem;
     margin-bottom: 10px;
     text-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
-    text-align: left;
-    padding-left: 15px;
+    text-align: center; /* Changed from left */
+    padding-left: 0; /* Removed left padding */
 }
 
 /* Rarity heading colors */
@@ -374,12 +375,13 @@ h1 {
 .collection-rarity-group.common h2 { color: var(--common-color); }
 
 .cards-grid {
-    display: flex;
+    display: inline-flex; /* Changed from flex to allow centering */
+    max-width: 100%; /* Ensure it doesn't overflow parent */
     overflow-x: auto;
     overflow-y: hidden;
     gap: 15px;
     padding: 10px 15px;
-    justify-content: flex-start;
+    justify-content: flex-start; /* Keep this for correct scroll behavior */
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: var(--pack-border) var(--game-ui-bg);
@@ -857,7 +859,7 @@ h1 {
         font-size: 2rem;
         margin-bottom: 15px;
         text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
-        padding-left: 20px;
+        padding-left: 0; /* Removed left padding */
     }
     .collection-rarity-group .cards-grid {
         gap: 20px;
