@@ -376,7 +376,7 @@ h1 {
 
 .cards-grid {
     display: inline-flex; /* Changed from flex to allow centering */
-    max-width: 100%; /* Ensure it doesn't overflow parent */
+    /* max-width: 100%; REMOVED: This was preventing the centering */
     overflow-x: auto;
     overflow-y: hidden;
     gap: 15px;
