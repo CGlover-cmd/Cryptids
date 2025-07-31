@@ -80,7 +80,11 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// New function to check if an email exists
+/**
+ * [FIXED] This function checks the sign-in methods for an email.
+ * It prevents users from being redirected to registration if their email
+ * is already associated with a Google account.
+ */
 async function checkEmail() {
     const email = document.getElementById('email').value.trim();
     if (!email) {
