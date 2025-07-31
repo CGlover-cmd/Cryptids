@@ -657,7 +657,7 @@ function generateUniqueId() {
 async function onLoginSuccess(userId) {
     localStorage.setItem('cryptid_lastUser', userId);
     currentUserId = userId;
-    showView(loadingView);
+    // We are already on the loading screen, so we just load data
     await preloadImages();
     loadGameData(userId);
     updateDeckSizeDisplay();
@@ -836,10 +836,14 @@ function confirmDeleteAccount() {
 // --- INITIALIZATION ---
 function enterGame() {
     const lastUserId = localStorage.getItem('cryptid_lastUser');
+    showView(loadingView); // Show loading screen before checking for user
     if (lastUserId) {
         onLoginSuccess(lastUserId);
     } else {
-        showAuthView();
+        // If no last user, we still need to preload images for the auth screen
+        preloadImages().then(() => {
+            showAuthView();
+        });
     }
 }
 
@@ -868,7 +872,13 @@ function createEnterGameButton() {
     homeViewContainer.appendChild(btn);
 }
 
-window.onload = function () {
+window.onload = async function () {
+    // Show loading screen immediately
+    showView(document.getElementById('loadingView'));
+
+    // Preload all essential images
+    await preloadImages();
+
     // Create the special "Enter Game" button
     createEnterGameButton();
 
@@ -878,7 +888,6 @@ window.onload = function () {
             client_id: "736869974803-67gmolnoitirougo0fkpp06vfetpgndl.apps.googleusercontent.com",
             callback: handleCredentialResponse
         });
-        // Render the button in the auth view (it's hidden initially)
         google.accounts.id.renderButton(
             document.getElementById("googleSignInButton"),
             { theme: "outline", size: "large", text: "signin_with" } 
@@ -886,6 +895,7 @@ window.onload = function () {
     } else {
         console.error("Google GSI script failed to load.");
     }
-    // Start the game logic by showing the home screen
+
+    // Now that everything is loaded, show the home screen
     showView(document.getElementById('homeView'));
 };
