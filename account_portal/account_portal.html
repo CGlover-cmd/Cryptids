@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Portal - Cryptids</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --text-light: #f0f0f0;
+            --pack-border: #a2c8c8;
+            --pack-shadow: #a2c8c8;
+            --uncollected-card-bg: #1f1f1f;
+            --uncollected-card-border: #444;
+            --selected-card-border: #00ff00; /* Green for selected cards */
+            --game-ui-bg: #2a2a2a;
+            --nav-bg: #1a1a1a;
+            --nav-icon-color: #888;
+            --nav-icon-active-color: #a2c8c8;
+            --coin-color: #ffd700; /* Gold color for coins */
+
+            /* Rarity Colors */
+            --common-color: #a0aec0; /* Gray */
+            --rare-color: #3b82f6;   /* Blue */
+            --legendary-color: #eab308; /* Yellow/Gold */
+            --victory-color: #28a745; /* Green for victory */
+            --defeat-color: #dc3545; /* Red for defeat */
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100dvh;
+            margin: 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #444, #666);
+            border: 2px solid #a2c8c8;
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--text-light);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 0 8px rgba(162, 200, 200, 0.5);
+            margin: 10px 5px 0 5px;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(162, 200, 200, 0.7);
+        }
+        
+        .view {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1; /* This makes the view fill the available space */
+            padding: 20px; /* Moved padding from body to here */
+            box-sizing: border-box;
+        }
+        
+        .global-message {
+            position: fixed;
+            top: -100px; /* Start off-screen */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(241, 196, 15, 0.95); /* Yellowish warning color */
+            color: #121212;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 2000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease;
+        }
+        .global-message.show {
+            opacity: 1;
+            visibility: visible;
+            top: 30px;
+        }
+        .global-message.error { background-color: rgba(220, 53, 69, 0.95); color: white; }
+        .global-message.success { background-color: rgba(40, 167, 69, 0.95); color: white; }
+        .global-message.warning { background-color: rgba(241, 196, 15, 0.95); color: #121212; }
+
+        .info-row {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        .info-row span {
+            font-weight: bold;
+            color: var(--pack-border);
+        }
+
+        /* --- Account Portal Styles --- */
+        #accountView {
+            background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        .account-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 500px;
+            padding: 25px;
+            background-color: var(--game-ui-bg);
+            border-radius: 10px;
+            text-align: left;
+        }
+        .account-container h1 {
+            text-align: center;
+            margin-top: 0;
+        }
+        .account-container h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            color: var(--pack-border);
+        }
+        .info-section, .action-section, .navigation-section {
+            width: 100%;
+        }
+        .account-container input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-light);
+            font-size: 1rem;
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+        }
+        .navigation-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .navigation-section .btn {
+            text-decoration: none; /* For the <a> tag */
+            display: inline-block;
+            width: auto;
+        }
+        #lookup-section p {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Global Message Container -->
+    <div id="globalMessage" class="global-message"></div>
+
+    <!-- Main container for the account portal -->
+    <div id="accountView" class="view active">
+        <div class="account-container">
+            
+            <!-- This section is shown first to find the user's account -->
+            <div id="lookup-section">
+                <h1>Account Management</h1>
+                <p>Please enter the email address associated with your account to proceed.</p>
+                <input type="email" id="lookup-email" placeholder="Enter your email">
+                <button class="btn" id="lookupBtn">Find Account</button>
+            </div>
+
+            <!-- This section is hidden until an account is found -->
+            <div id="management-section" style="display: none;">
+                <h1>Manage Account</h1>
+                
+                <div class="info-section">
+                    <h2>Account Information</h2>
+                    <div class="info-row"><strong>Username:</strong> <span id="account-username"></span></div>
+                    <div class="info-row"><strong>Email:</strong> <span id="account-email"></span></div>
+                </div>
+
+                <div class="action-section" id="email-change-section">
+                    <h2>Update Email Address</h2>
+                    <input type="email" id="new-email" placeholder="New Email Address">
+                    <input type="password" id="password-for-email-change" placeholder="Enter Password to Confirm">
+                    <button class="btn" id="changeEmailBtn">Update Email</button>
+                </div>
+
+                <div class="action-section" id="password-change-section">
+                    <h2>Change Password</h2>
+                    <input type="password" id="current-password" placeholder="Current Password">
+                    <input type="password" id="new-password" placeholder="New Password">
+                    <button class="btn" id="changePasswordBtn">Update Password</button>
+                </div>
+            </div>
+            
+            <div class="navigation-section">
+                 <a href="index.html" class="btn">Back to Game</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link to the new JavaScript file for this page -->
+    <script src="account_portal.js"></script>
+</body>
+</html>
