@@ -56,7 +56,7 @@ body {
 @media (orientation: portrait) {
     #homeView {
         /* Switch to portrait image on tall screens */
-        background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_scsreen_mobile.jpg');
+        background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.jpg');
         background-size: cover; /* Cover works better for portrait full-screen */
     }
 }
