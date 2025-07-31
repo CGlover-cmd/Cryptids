@@ -37,7 +37,6 @@
             justify-content: flex-start;
             min-height: 100dvh;
             margin: 0;
-            padding: 20px;
             box-sizing: border-box;
             overflow-x: hidden;
         }
@@ -76,7 +75,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100%;
+            flex-grow: 1; /* This makes the view fill the available space */
+            padding: 20px; /* Moved padding from body to here */
             box-sizing: border-box;
         }
         
