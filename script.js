@@ -1,3 +1,22 @@
+// --- FIREBASE CONFIGURATION ---
+// This is the configuration object you provided.
+const firebaseConfig = {
+    apiKey: "AIzaSyA7HORw-_RGWxhyo9eGD3fvGL4ub8WH1O0",
+    authDomain: "cryptids-be430.firebaseapp.com",
+    projectId: "cryptids-be430",
+    storageBucket: "cryptids-be430.firebasestorage.app",
+    messagingSenderId: "197995808355",
+    appId: "1:197995808355:web:5a2534f516a9efe2d15a56",
+    measurementId: "G-FTBG99PW84"
+};
+
+// Initialize Firebase services
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+
 // --- DATA ---
 const allCryptids = [
     { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: { name: "Sonic Screech", damage: 10 }, effect: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/moth_man.png" },
@@ -26,65 +45,175 @@ const allCryptids = [
 ];
 
 // --- STATE MANAGEMENT ---
-let collectedCardIds;
-let playerDeckIds;
-let cryptidCoins;
-let packsOpened;
-let gamesPlayed;
-let currentUserId = null;
-let currentUsername = null;
+// These variables will hold the player's data once they are logged in.
+let currentUser = null;
+let collectedCardIds = new Set();
+let playerDeckIds = [];
+let cryptidCoins = 0;
+let packsOpened = 0;
+let gamesPlayed = 0;
 
 const PACK_COST = 50;
 const WIN_REWARD = 10;
 const MAX_DECK_SIZE = 10;
 const MAX_TURNS = 20;
 
-// Game State Variables (declared globally)
+// Game State Variables
 let playerHP, botHP, currentTurn, playerCardInPlay, botCardInPlay;
 let playerDeck, botDeck, playerHand, botHand;
 let selectedPlayerCardData = null;
 let selectedPlayerCardElement = null;
 let messageTimeout, globalMessageTimeout;
 
-function loadGameData(userId) {
-    const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-    const userData = Object.values(allUsers).find(u => u.id === userId);
+// --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
-    if (userData) {
-        const username = Object.keys(allUsers).find(key => allUsers[key].id === userId);
-        currentUsername = username;
-        collectedCardIds = new Set(userData.collectedCardIds || []);
-        playerDeckIds = userData.playerDeckIds || [];
-        cryptidCoins = userData.cryptidCoins || 0;
-        packsOpened = userData.packsOpened || 0;
-        gamesPlayed = userData.gamesPlayed || 0;
+// This is the main function that runs when the page loads.
+// It checks if a user is already logged in.
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        // User is signed in.
+        currentUser = user;
+        await loadUserData(user.uid);
+        showView(packView, 'nav-packs'); // Go to the main game view
+    } else {
+        // No user is signed in.
+        currentUser = null;
+        // Preload images for the auth screen and then show it.
+        await preloadImages();
+        showView(authView);
+    }
+});
+
+// Loads user data from Firestore
+async function loadUserData(userId) {
+    const userRef = db.collection('users').doc(userId);
+    try {
+        const doc = await userRef.get();
+        if (doc.exists) {
+            const data = doc.data();
+            collectedCardIds = new Set(data.collectedCardIds || []);
+            playerDeckIds = data.playerDeckIds || [];
+            cryptidCoins = data.cryptidCoins || 0;
+            packsOpened = data.packsOpened || 0;
+            gamesPlayed = data.gamesPlayed || 0;
+            
+            // Update UI elements with loaded data
+            updateCoinDisplay();
+            updateDeckSizeDisplay();
+            showSettings();
+        } else {
+            console.log("No such document! Creating one for new user.");
+            // This case handles a new user (e.g., first Google sign-in)
+            await createNewUserDocument(userId);
+        }
+    } catch (error) {
+        console.error("Error loading user data:", error);
+        showMessage("Could not load your game data. Please try again.", "error", true);
     }
 }
 
-function saveGameData() {
-    if (!currentUserId || !currentUsername) return;
-    const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-    
-    if (allUsers[currentUsername]) {
-        allUsers[currentUsername].collectedCardIds = Array.from(collectedCardIds);
-        allUsers[currentUsername].playerDeckIds = playerDeckIds;
-        allUsers[currentUsername].cryptidCoins = cryptidCoins;
-        allUsers[currentUsername].packsOpened = packsOpened;
-        allUsers[currentUsername].gamesPlayed = gamesPlayed;
-        localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+// Creates a new user document in Firestore with default values
+async function createNewUserDocument(userId, email) {
+    const userRef = db.collection('users').doc(userId);
+    const newUser = {
+        uid: userId,
+        email: email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        collectedCardIds: [],
+        playerDeckIds: [],
+        cryptidCoins: 200, // Starting bonus
+        packsOpened: 0,
+        gamesPlayed: 0
+    };
+    await userRef.set(newUser);
+    // Load these default values into the game state
+    await loadUserData(userId);
+}
+
+// Register a new user with email and password
+function register() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+        showMessage('Please enter both email and password.', 'error', true);
+        return;
     }
+
+    auth.createUserWithEmailAndPassword(email, password)
+        .then(async (userCredential) => {
+            // Signed in
+            showMessage('Registration successful! Welcome!', 'success', true);
+            // Create their data document in Firestore
+            await createNewUserDocument(userCredential.user.uid, email);
+            // The onAuthStateChanged listener will handle showing the game view.
+        })
+        .catch((error) => {
+            showMessage(error.message, 'error', true);
+        });
+}
+
+// Login with email and password
+function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+        showMessage('Please enter both email and password.', 'error', true);
+        return;
+    }
+
+    auth.signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            // Signed in
+            // The onAuthStateChanged listener will handle loading data and showing the view.
+            showMessage('Login successful!', 'success', true);
+        })
+        .catch((error) => {
+            showMessage(error.message, 'error', true);
+        });
+}
+
+// Sign in with Google
+function signInWithGoogle() {
+    auth.signInWithPopup(googleProvider)
+        .then(async (result) => {
+            const user = result.user;
+            // Check if this is a new user
+            const userRef = db.collection('users').doc(user.uid);
+            const doc = await userRef.get();
+            if (!doc.exists) {
+                // If it's a new user, create their document
+                await createNewUserDocument(user.uid, user.email);
+            }
+            showMessage('Signed in with Google!', 'success', true);
+            // onAuthStateChanged will handle the rest
+        }).catch((error) => {
+            showMessage(error.message, 'error', true);
+        });
+}
+
+// Logout the current user
+function logout() {
+    auth.signOut().then(() => {
+        // Sign-out successful.
+        // onAuthStateChanged will show the auth view
+        showMessage('You have been logged out.', 'success', true);
+    }).catch((error) => {
+        // An error happened.
+        showMessage(error.message, 'error', true);
+    });
 }
 
 // --- ASSET PRELOADING ---
-function preloadImages() {
+async function preloadImages() {
     const loadingText = document.getElementById('loading-text');
     loadingText.innerText = 'Loading essential assets...';
     const imageUrls = [
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png' // Auth background
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
     ];
 
     let loadedCount = 0;
@@ -132,24 +261,6 @@ function getRarity() {
     if (roll < 0.25) return "rare";     // 20% chance
     return "common";                    // 75% chance
 }
-
-function getNewRandomCryptid(rarity, currentlyDrawnIds) {
-    // Find cards of the desired rarity that are NOT yet collected AND not already in the current pack being drawn
-    let available = allCryptids.filter(c => c.rarity === rarity && !collectedCardIds.has(c.id) && !currentlyDrawnIds.includes(c.id));
-    
-    // If no uncollected cards of this rarity are left, fall back to any card of this rarity not in the current pack
-    if (available.length === 0) {
-        available = allCryptids.filter(c => c.rarity === rarity && !currentlyDrawnIds.includes(c.id));
-    }
-
-    // If still no cards (highly unlikely unless the card pool is tiny), just return a random one of the rarity
-    if (available.length === 0) {
-        available = allCryptids.filter(c => c.rarity === rarity);
-    }
-
-    return available[Math.floor(Math.random() * available.length)];
-}
-
 
 function getRandomCryptid(desiredRarity) {
     const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
@@ -269,114 +380,86 @@ function showView(viewElement, navBtnId) {
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     viewElement.classList.add('active');
 
-    // Show or hide nav bar
     if(viewElement === authView || viewElement === loadingView || viewElement === homeView){
         bottomNav.style.display = 'none';
     } else {
         bottomNav.style.display = 'flex';
     }
 
-    // Update active state on nav buttons
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     if(navBtnId){
         document.getElementById(navBtnId).classList.add('active');
     }
 
-    // Run view-specific logic
     if (viewElement === collectionView) showCollection();
     else if (viewElement === deckBuilderView) renderDeckBuilderCards();
     else if (viewElement === settingsView) showSettings();
-    else if (viewElement === packView) {
-        updateCoinDisplay();
-        const titleEl = document.getElementById('pack-opening-title');
-        if (packsOpened < 2) {
-            titleEl.innerText = `Starter Pack (${packsOpened + 1}/2)`;
-        } else {
-            titleEl.innerText = 'Cryptid Pack Opening';
-        }
-    }
+    else if (viewElement === packView) updateCoinDisplay();
 }
 
-function showAuthView() { 
-    showView(authView, null);
-    if (typeof google !== 'undefined') {
-        google.accounts.id.prompt(); // Show one-tap prompt if available
-    }
-}
 function showPackView() { showView(packView, 'nav-packs'); }
 function showCollectionView() { showView(collectionView, 'nav-collection'); }
 function showDeckBuilderView() { showView(deckBuilderView, 'nav-deck'); }
 function showSettingsView() { showView(settingsView, 'nav-settings'); }
 
 function showSettings() {
-    document.getElementById('settings-username').innerText = currentUsername || 'N/A';
-    document.getElementById('settings-userid').innerText = currentUserId || 'N/A';
+    if (!currentUser) return;
+    document.getElementById('settings-email').innerText = currentUser.email || 'N/A';
+    document.getElementById('settings-userid').innerText = currentUser.uid || 'N/A';
 }
 
 // --- PACK OPENING ---
 async function openPack() {
+    if (!currentUser) return;
     if (cryptidCoins < PACK_COST) {
         showMessage(`You need ${PACK_COST} Cryptid Coins to open a pack!`, "error", true);
         return;
     }
 
-    cryptidCoins -= PACK_COST;
-    updateCoinDisplay();
+    const newCoins = cryptidCoins - PACK_COST;
+    const newPacksOpened = packsOpened + 1;
 
     const container = document.getElementById("packCardContainer");
     container.innerHTML = ""; 
     
     let cardsInPack = [];
-    
-    if (packsOpened < 2) {
-        // Starter pack logic
-        let drawnIds = [];
-        for(let i=0; i<2; i++) {
-            const card = getNewRandomCryptid('rare', drawnIds);
-            if(card) {
-                cardsInPack.push(card);
-                drawnIds.push(card.id);
-            }
-        }
-        for(let i=0; i<3; i++) {
-            const card = getNewRandomCryptid('common', drawnIds);
-            if(card) {
-                cardsInPack.push(card);
-                drawnIds.push(card.id);
-            }
-        }
-        shuffleArray(cardsInPack);
-
-    } else {
-        // Regular pack logic
-        for (let i = 0; i < 5; i++) {
-            const rarity = getRarity();
-            const cryptid = getRandomCryptid(rarity);
-            cardsInPack.push(cryptid);
-        }
+    for (let i = 0; i < 5; i++) {
+        const rarity = getRarity();
+        const cryptid = getRandomCryptid(rarity);
+        cardsInPack.push(cryptid);
     }
     
-    cardsInPack.forEach(cryptid => collectedCardIds.add(cryptid.id));
-    packsOpened++;
-    await saveGameData(); // Save immediately
+    const newCardIds = cardsInPack.map(c => c.id);
+    const updatedCollectedCardIds = Array.from(new Set([...collectedCardIds, ...newCardIds]));
 
-    // Display the cards from the generated pack
+    // Update Firestore
+    const userRef = db.collection('users').doc(currentUser.uid);
+    try {
+        await userRef.update({
+            cryptidCoins: newCoins,
+            packsOpened: newPacksOpened,
+            collectedCardIds: updatedCollectedCardIds
+        });
+        // Update local state on success
+        cryptidCoins = newCoins;
+        packsOpened = newPacksOpened;
+        collectedCardIds = new Set(updatedCollectedCardIds);
+        updateCoinDisplay();
+    } catch (error) {
+        console.error("Error opening pack:", error);
+        showMessage("Failed to open pack. Please try again.", "error", true);
+        return;
+    }
+
+    // Display the cards
     cardsInPack.forEach((cryptid, i) => {
         const cardWrapper = createCardElement(cryptid, true, false);
         container.appendChild(cardWrapper);
-
         setTimeout(() => {
             cardWrapper.classList.add("show");
-            setTimeout(() => {
-                cardWrapper.classList.add("flipped");
-            }, 500);
+            setTimeout(() => cardWrapper.classList.add("flipped"), 500);
         }, 200 * i);
     });
-    
-    // Update the title if starter packs are finished
-    if (packsOpened >= 2) {
-        document.getElementById('pack-opening-title').innerText = 'Cryptid Pack Opening';
-    }
 }
 
 // --- COLLECTION VIEW ---
@@ -444,11 +527,19 @@ function toggleCardInDeck(cryptidId) {
 }
 
 async function saveDeck() {
-    if (playerDeckIds.length === MAX_DECK_SIZE) {
-        await saveGameData();
-        showMessage("Deck saved successfully!", "success", true);
-    } else {
+    if (!currentUser) return;
+    if (playerDeckIds.length !== MAX_DECK_SIZE) {
         showMessage("Your deck must contain exactly " + MAX_DECK_SIZE + " cards.", "warning", true);
+        return;
+    }
+    
+    const userRef = db.collection('users').doc(currentUser.uid);
+    try {
+        await userRef.update({ playerDeckIds: playerDeckIds });
+        showMessage("Deck saved successfully!", "success", true);
+    } catch (error) {
+        console.error("Error saving deck: ", error);
+        showMessage("Failed to save deck. Please try again.", "error", true);
     }
 }
 
@@ -476,7 +567,6 @@ function startGame() {
     playerDeck = playerDeckIds.map(id => ({...allCryptids.find(c => c.id === id)}));
     shuffleArray(playerDeck);
     
-    // Bot difficulty scaling
     const botCardPool = gamesPlayed < 10 
         ? allCryptids.filter(c => c.rarity === 'common' || c.rarity === 'rare')
         : allCryptids;
@@ -558,16 +648,12 @@ function playPlayerCard() {
         botCardInPlay = null;
     }
     
-    // Disable the play button immediately to prevent multiple plays
     document.getElementById('playCardBtn').disabled = true;
 
     performCombat();
     updateGameUI();
     
-    // After a delay, proceed to the next turn automatically
-    setTimeout(() => {
-        endTurn();
-    }, 2500); // 2.5 second delay to see combat results
+    setTimeout(() => endTurn(), 2500);
 }
 
 function performCombat() {
@@ -584,10 +670,8 @@ function performCombat() {
 }
 
 function endTurn() {
-    // First, check if the game ended from the last combat
     if (checkGameEnd()) return;
 
-    // If not, proceed with the turn
     currentTurn++;
     playerCardInPlay = null;
     botCardInPlay = null;
@@ -595,7 +679,6 @@ function endTurn() {
     if (playerDeck.length > 0 && playerHand.length < 5) playerHand.push(playerDeck.shift());
     if (botDeck.length > 0 && botHand.length < 5) botHand.push(botDeck.shift());
     
-    // Check if the game ends due to turn limit or other conditions *after* advancing the turn
     if(checkGameEnd()) return;
 
     updateGameUI();
@@ -612,8 +695,9 @@ async function checkGameEnd() {
 
     if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
         gameIsOver = true;
-        gamesPlayed++; // Increment games played counter
-        
+        const newGamesPlayed = gamesPlayed + 1;
+        let newCoinTotal = cryptidCoins;
+
         if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
         else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
         else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
@@ -625,16 +709,29 @@ async function checkGameEnd() {
         }
 
         if(isVictory){
-            cryptidCoins += WIN_REWARD;
+            newCoinTotal += WIN_REWARD;
             finalMessage += ` You earned ${WIN_REWARD} Cryptid Coins!`;
-            updateCoinDisplay();
         }
         
-        await saveGameData(); // Save game progress (coins, games played)
+        // Save game results to Firestore
+        const userRef = db.collection('users').doc(currentUser.uid);
+        try {
+            await userRef.update({
+                gamesPlayed: newGamesPlayed,
+                cryptidCoins: newCoinTotal
+            });
+            // Update local state
+            gamesPlayed = newGamesPlayed;
+            cryptidCoins = newCoinTotal;
+            updateCoinDisplay();
+        } catch (error) {
+            console.error("Error saving game results:", error);
+        }
+
         showGameEndModal(title, finalMessage, modalClass);
-        return true; // Game has ended
+        return true;
     }
-    return false; // Game continues
+    return false;
 }
 
 function showGameEndModal(title, message, outcomeClass) {
@@ -649,253 +746,33 @@ function showGameEndModal(title, message, outcomeClass) {
     modal.classList.add('show');
 }
 
-// --- AUTHENTICATION FUNCTIONS (LOCAL STORAGE & GOOGLE) ---
-function generateUniqueId() {
-    return Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8);
-}
-
-async function onLoginSuccess(userId) {
-    localStorage.setItem('cryptid_lastUser', userId);
-    currentUserId = userId;
-    // We are already on the loading screen, so we just load data
-    await preloadImages();
-    loadGameData(userId);
-    updateDeckSizeDisplay();
-    updateCoinDisplay();
-    showPackView();
-}
-
-function handleCredentialResponse(response) {
-    const decodedToken = JSON.parse(atob(response.credential.split('.')[1]));
-    const googleId = decodedToken.sub;
-    const googleName = decodedToken.name;
-
-    const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-    let userData = Object.values(allUsers).find(u => u.googleId === googleId);
-    
-    if (userData) {
-        // Existing Google user logs in
-        onLoginSuccess(userData.id);
-    } else {
-        // New Google user registration
-        let newUsername = googleName.replace(/\s/g, ''); // Remove spaces
-        let counter = 1;
-        while (allUsers[newUsername]) {
-            newUsername = `${googleName.replace(/\s/g, '')}${counter}`;
-            counter++;
-        }
-        
-        const newUserId = generateUniqueId();
-        allUsers[newUsername] = { 
-            id: newUserId,
-            googleId: googleId,
-            password: null, // No password for Google-linked accounts
-            collectedCardIds: [],
-            playerDeckIds: [],
-            cryptidCoins: 200,
-            packsOpened: 0,
-            gamesPlayed: 0
-        };
-        localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
-        onLoginSuccess(newUserId);
-    }
-}
-
-function register() {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-
-    if (!username || !password) {
-        showMessage('Username and password cannot be empty.', 'error', true);
-        return;
-    }
-    if (username === password) {
-        showMessage('Username and password cannot be the same.', 'error', true);
-        return;
-    }
-
-    const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-    if (allUsers[username]) {
-        showMessage('An account with this username already exists.', 'error', true);
-        return;
-    }
-
-    allUsers[username] = { 
-        id: generateUniqueId(),
-        password: password,
-        collectedCardIds: [],
-        playerDeckIds: [],
-        cryptidCoins: 200, // New player bonus
-        packsOpened: 0,
-        gamesPlayed: 0
-    };
-    localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
-    showMessage('Registration successful! Please log in.', 'success', true);
-};
-
-async function login() {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-
-    if (!username || !password) {
-        showMessage('Please enter both username and password.', 'error', true);
-        return;
-    }
-
-    const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-    const userData = allUsers[username];
-
-    if (userData && userData.googleId) {
-        showMessage('This account is linked with Google. Please use Google Sign-In.', 'error', true);
-        return;
-    }
-
-    if (userData && userData.password === password) {
-        onLoginSuccess(userData.id);
-    } else {
-        showMessage('Invalid username or password.', 'error', true);
-    }
-};
-
-function logout() {
-    if (typeof google !== 'undefined') {
-        google.accounts.id.disableAutoSelect();
-    }
-    localStorage.removeItem('cryptid_lastUser');
-    currentUserId = null;
-    currentUsername = null;
-    document.getElementById('packCardContainer').innerHTML = ''; // Clear pack view on logout
-    showAuthView();
-    showMessage('You have been logged out.', 'success', true);
-};
-
 function showDeleteModal() {
-    const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-    const currentUserData = allUsers[currentUsername];
-    const modal = document.getElementById('deleteAccountModal');
-    const messageEl = document.getElementById('delete-confirmation-message');
-    const passwordContainer = document.getElementById('delete-password-container');
+    document.getElementById('deleteAccountModal').classList.add('show');
+}
 
-    if (currentUserData && currentUserData.googleId) {
-        // Google User
-        messageEl.innerText = "This action is irreversible. It will permanently delete all your game data and revoke this game's access to your Google Account. Are you sure you want to continue?";
-        passwordContainer.style.display = 'none';
-        document.getElementById('delete-password').value = ''; // Clear password field
-    } else {
-        // Password User
-        messageEl.innerText = 'This action is irreversible. Please enter your password to confirm.';
-        passwordContainer.style.display = 'block';
-        document.getElementById('delete-password').value = ''; // Clear password field
+async function confirmDeleteAccount() {
+    if (!currentUser) return;
+
+    const userRef = db.collection('users').doc(currentUser.uid);
+    try {
+        // First, delete the user's data from Firestore
+        await userRef.delete();
+        // Then, delete the user from Firebase Authentication
+        await currentUser.delete();
+        
+        showMessage("Account deleted successfully.", "success", true);
+        // onAuthStateChanged will handle showing the auth view
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        showMessage("Error deleting account. You may need to log out and log back in again before retrying.", "error", true);
+    } finally {
+        document.getElementById('deleteAccountModal').classList.remove('show');
     }
-
-    modal.classList.add('show');
-};
-
-function confirmDeleteAccount() {
-    const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
-    const currentUserData = allUsers[currentUsername];
-
-    if (!currentUserData) {
-        showMessage('Could not find user data. Please try again.', 'error', true);
-        return;
-    }
-
-    if (currentUserData.googleId) {
-        // Google User Deletion Flow
-        google.accounts.id.revoke(currentUserData.googleId, done => {
-            if (done.successful) {
-                // Find the key (username) of the user to delete
-                const userKeyToDelete = Object.keys(allUsers).find(key => allUsers[key].id === currentUserId);
-                if (userKeyToDelete) {
-                    delete allUsers[userKeyToDelete];
-                    localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
-                }
-                document.getElementById('deleteAccountModal').classList.remove('show');
-                logout(); // This already handles logging out and showing the auth screen
-                showMessage('Account successfully deleted and permissions revoked.', 'success', true);
-            } else {
-                console.error('Google token revocation failed:', done.error);
-                showMessage('Could not revoke Google permissions. Please try again or remove access manually from your Google account settings.', 'error', true);
-            }
-        });
-    } else {
-        // Password User Deletion Flow
-        const password = document.getElementById('delete-password').value;
-        if (currentUsername && currentUserData.password === password) {
-            delete allUsers[currentUsername];
-            localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
-            document.getElementById('deleteAccountModal').classList.remove('show');
-            logout();
-            showMessage('Account deleted successfully.', 'success', true);
-        } else {
-            showMessage('Incorrect password. Account not deleted.', 'error', true);
-        }
-    }
-};
+}
 
 // --- INITIALIZATION ---
-function enterGame() {
-    const lastUserId = localStorage.getItem('cryptid_lastUser');
-    showView(loadingView); // Show loading screen before checking for user
-    if (lastUserId) {
-        onLoginSuccess(lastUserId);
-    } else {
-        // If no last user, we still need to preload images for the auth screen
-        preloadImages().then(() => {
-            showAuthView();
-        });
-    }
-}
-
-function createEnterGameButton() {
-    const homeViewContainer = document.getElementById('homeView');
-    if (!homeViewContainer) return;
-
-    const btn = document.createElement("button");
-    btn.textContent = "Enter Game";
-    // Setting styles via cssText as requested
-    btn.style.cssText = `
-        font-family: 'Special Elite', cursive;
-        font-size: 1.3rem;
-        padding: 14px 28px;
-        border: none;
-        border-radius: 12px;
-        background: #4a1c1c;
-        color: #dddddd;
-        cursor: pointer;
-        box-shadow: 0 0 10px rgba(255,0,0,0.3);
-        animation: pulse 2.8s infinite;
-    `;
-    // Assign the click event
-    btn.onclick = enterGame;
-    
-    homeViewContainer.appendChild(btn);
-}
-
 window.onload = async function () {
-    // Show loading screen immediately
-    showView(document.getElementById('loadingView'));
-
-    // Preload all essential images
-    await preloadImages();
-
-    // Create the special "Enter Game" button
-    createEnterGameButton();
-
-    // Initialize Google Sign-In
-    if (typeof google !== 'undefined') {
-        google.accounts.id.initialize({
-            client_id: "736869974803-67gmolnoitirougo0fkpp06vfetpgndl.apps.googleusercontent.com",
-            callback: handleCredentialResponse
-        });
-        google.accounts.id.renderButton(
-            document.getElementById("googleSignInButton"),
-            { theme: "outline", size: "large", text: "signin_with" } 
-        );
-    } else {
-        console.error("Google GSI script failed to load.");
-    }
-
-    // Now that everything is loaded, show the home screen
-    showView(document.getElementById('homeView'));
+    showView(loadingView);
+    // The onAuthStateChanged listener handles the initial logic,
+    // so we just need to preload images for the home screen if no user is found.
 };
