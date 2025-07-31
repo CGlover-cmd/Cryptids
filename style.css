@@ -32,6 +32,7 @@ body {
     margin: 0;
     padding-bottom: 80px; /* Space for bottom nav bar */
     overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 /* --- Background Image for Main Views --- */
@@ -319,7 +320,7 @@ h1 {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    min-height: calc(100dvh - 80px); /* Adjust for nav bar */
+    flex-grow: 1; /* This makes the view fill the parent's height */
     padding: 15px;
     box-sizing: border-box;
 }
@@ -382,13 +383,6 @@ h1 {
 
 .collection-rarity-group h2::after {
     right: -50px;
-}
-
-.collection-rarity-group .cards-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
 }
 
 /* Rarity heading colors */
