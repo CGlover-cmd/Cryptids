@@ -59,34 +59,37 @@ async function createNewUserDocument(userId, email) {
 }
 
 /**
- * Handles the user registration process.
+ * [FIXED] Handles the user registration process.
+ * This function now explicitly checks if an email is already in use by ANY
+ * provider (especially Google) before attempting to create a new password account.
  */
 async function registerUser() {
     const email = emailInput.value;
     const password = passwordInput.value;
 
-    if (!password) {
-        showMessage("Please enter a password.", "warning");
-        return;
-    }
     // Basic password length check
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
         showMessage("Password should be at least 6 characters long.", "error");
         return;
     }
 
     try {
-        // Check if the email is already linked to an existing account (especially Google)
+        // First, check if any account (Google, password, etc.) already exists for this email.
         const signInMethods = await auth.fetchSignInMethodsForEmail(email);
 
-        if (signInMethods.includes('google.com')) {
-            // If the email is registered with Google, block password account creation.
-            showMessage("This email is already registered with a Google account. Please go back and sign in with Google.", "error");
-            return; // Stop the registration process
+        // If the array is not empty, an account already exists.
+        if (signInMethods && signInMethods.length > 0) {
+            // Provide a specific message if it's a Google account.
+            if (signInMethods.includes('google.com')) {
+                showMessage("This email is already registered with a Google account. Please go back and sign in with Google.", "error");
+            } else {
+                // For any other existing method (like 'password'), give a generic error.
+                showMessage("An account with this email already exists. Please use the sign-in page.", "error");
+            }
+            return; // IMPORTANT: Stop the function to prevent registration.
         }
 
-        // If no Google account is found, proceed with creating the email/password user.
-        // This will still throw an error if an email/password account already exists, which is handled by the catch block.
+        // If signInMethods is empty, it's a new user. Proceed with creating the account.
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
@@ -101,11 +104,13 @@ async function registerUser() {
         }, 2000);
 
     } catch (error) {
-        // Handle other potential errors (e.g., auth/email-already-in-use for a password account)
+        // This catch block is a fallback for other errors, like network issues or
+        // rare race conditions where an account is created between our check and this call.
         console.error("Error during registration:", error);
         showMessage(error.message, "error");
     }
 }
+
 
 // --- INITIALIZATION ---
 
