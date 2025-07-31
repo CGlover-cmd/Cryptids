@@ -59,7 +59,7 @@ async function createNewUserDocument(userId, email) {
 }
 
 /**
- * [FIXED] Handles the user registration process.
+ * Handles the user registration process.
  * This function now explicitly checks if an email is already in use by ANY
  * provider (especially Google) before attempting to create a new password account.
  */
@@ -115,33 +115,66 @@ async function registerUser() {
 // --- INITIALIZATION ---
 
 /**
- * This function runs when the page loads. It checks for an email in the URL
- * and sets up the form.
+ * [REVISED] This function runs when the page loads. It now checks if the email
+ * from the URL is already associated with an account (especially Google)
+ * BEFORE showing the registration form. If an account exists, it redirects
+ * the user back to the sign-in page.
  */
-window.onload = function() {
+window.onload = async function() {
     // Get the email from the URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
     const emailFromUrl = urlParams.get('email');
 
-    if (emailFromUrl) {
-        const decodedEmail = decodeURIComponent(emailFromUrl);
-        // Populate the input field and the display text
+    if (!emailFromUrl) {
+        // If no email is provided, inform the user and redirect back.
+        showMessage("No email specified. Redirecting to the sign-in page.", "error");
+        setTimeout(() => { window.location.href = 'index.html'; }, 3000);
+        registerBtn.disabled = true;
+        return;
+    }
+    
+    const decodedEmail = decodeURIComponent(emailFromUrl);
+    
+    try {
+        const signInMethods = await auth.fetchSignInMethodsForEmail(decodedEmail);
+        
+        // If sign-in methods exist, the user should not be on this page.
+        if (signInMethods && signInMethods.length > 0) {
+            let message = "An account with this email already exists. Redirecting to the sign-in page...";
+            if (signInMethods.includes('google.com')) {
+                message = "This email is registered with Google. Please use the 'Sign in with Google' button. Redirecting...";
+            }
+            showMessage(message, "error");
+            
+            // Hide the form to prevent interaction and disable the button
+            document.querySelector('.register-container').style.display = 'none';
+            registerBtn.disabled = true;
+
+            // Redirect back to the main page after a delay
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 4000); // Increased delay to allow user to read the message
+            return; // Stop further execution
+        }
+
+        // --- If no account exists, proceed to set up the registration form ---
         emailInput.value = decodedEmail;
         displayEmailSpan.innerText = decodedEmail;
-    } else {
-        // If no email is provided, inform the user and suggest going back.
-        showMessage("No email specified. Please start from the sign-in page.", "error");
+
+        // Add event listener to the register button
+        registerBtn.addEventListener('click', registerUser);
+
+        // Allow pressing Enter in the password field to submit
+        passwordInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                registerUser();
+            }
+        });
+
+    } catch (error) {
+        console.error("Error checking email on registration page:", error);
+        showMessage("An error occurred. Please go back and try again.", "error");
         registerBtn.disabled = true;
     }
-
-    // Add event listener to the register button
-    registerBtn.addEventListener('click', registerUser);
-
-    // Allow pressing Enter in the password field to submit
-    passwordInput.addEventListener('keyup', function(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            registerUser();
-        }
-    });
 };
