@@ -62,7 +62,7 @@
         }
         
         #authView {
-             background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://i.imgur.com/8i1a2Vp.jpg');
+            background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://i.imgur.com/8i1a2Vp.jpg');
             background-size: cover;
             background-position: center;
         }
@@ -110,7 +110,7 @@
         }
 
         .btn.btn-danger:hover {
-             box-shadow: 0 4px 12px rgba(220, 53, 69, 0.7);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.7);
         }
         
         .currency-display {
@@ -620,7 +620,7 @@
         }
         
         .modal-content input {
-             padding: 10px;
+            padding: 10px;
             border-radius: 5px;
             border: 1px solid #555;
             background-color: #333;
@@ -913,7 +913,7 @@
     </div>
 
     <div id="packView" class="view">
-         <div class="currency-display">Cryptid Coins: <span id="coinBalance">0</span></div>
+        <div class="currency-display">Cryptid Coins: <span id="coinBalance">0</span></div>
         <h1 id="pack-opening-title">Cryptid Pack Opening</h1>
         <div class="pack" onclick="window.openPack()">Open Pack (50 Coins)</div>
         <div class="cards-container" id="packCardContainer"></div>
@@ -955,7 +955,7 @@
                 <div class="player-hand" id="playerHand"></div>
                 <div class="game-controls">
                     <button class="btn" id="playCardBtn" onclick="window.playPlayerCard()">Play Card</button>
-                    <button class="btn" id="nextTurnBtn" onclick="window.endTurn()" disabled>Next Turn</button>
+                    <!-- "Next Turn" button has been removed for automated flow -->
                 </div>
             </div>
         </div>
@@ -1088,12 +1088,12 @@
             const allUsers = JSON.parse(localStorage.getItem('cryptid_users') || '{}');
             
             if (allUsers[currentUsername]) {
-                 allUsers[currentUsername].collectedCardIds = Array.from(collectedCardIds);
-                 allUsers[currentUsername].playerDeckIds = playerDeckIds;
-                 allUsers[currentUsername].cryptidCoins = cryptidCoins;
-                 allUsers[currentUsername].packsOpened = packsOpened;
-                 allUsers[currentUsername].gamesPlayed = gamesPlayed;
-                 localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
+                allUsers[currentUsername].collectedCardIds = Array.from(collectedCardIds);
+                allUsers[currentUsername].playerDeckIds = playerDeckIds;
+                allUsers[currentUsername].cryptidCoins = cryptidCoins;
+                allUsers[currentUsername].packsOpened = packsOpened;
+                allUsers[currentUsername].gamesPlayed = gamesPlayed;
+                localStorage.setItem('cryptid_users', JSON.stringify(allUsers));
             }
         }
 
@@ -1151,7 +1151,7 @@
             const roll = Math.random();
             if (roll < 0.05) return "legendary"; // 5% chance
             if (roll < 0.25) return "rare";     // 20% chance
-            return "common";                      // 75% chance
+            return "common";                    // 75% chance
         }
         
         function getNewRandomCryptid(rarity, currentlyDrawnIds) {
@@ -1160,12 +1160,12 @@
             
             // If no uncollected cards of this rarity are left, fall back to any card of this rarity not in the current pack
             if (available.length === 0) {
-                 available = allCryptids.filter(c => c.rarity === rarity && !currentlyDrawnIds.includes(c.id));
+                available = allCryptids.filter(c => c.rarity === rarity && !currentlyDrawnIds.includes(c.id));
             }
 
             // If still no cards (highly unlikely unless the card pool is tiny), just return a random one of the rarity
             if (available.length === 0) {
-                 available = allCryptids.filter(c => c.rarity === rarity);
+                available = allCryptids.filter(c => c.rarity === rarity);
             }
 
             return available[Math.floor(Math.random() * available.length)];
@@ -1222,7 +1222,7 @@
                 const attackDisplay = document.createElement('div');
                 attackDisplay.className = 'stat-display attack-display';
                 attackDisplay.innerHTML = `
-                     <svg viewBox="0 0 24 24" fill="#63b3ed"><path d="M20.7,5.3l-2-2c-0.4-0.4-1-0.4-1.4,0L12,8.6L6.7,3.3c-0.4-0.4-1-0.4-1.4,0l-2,2c-0.4,0.4-0.4,1,0,1.4L8.6,12l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4l2,2c0.4,0.4,1,0.4,1.4,0L12,15.4l5.3,5.3c0.4,0.4,1,0.4,1.4,0l2-2c0.4-0.4,0.4-1,0-1.4L15.4,12l5.3-5.3C21.1,6.3,21.1,5.7,20.7,5.3z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="#63b3ed"><path d="M20.7,5.3l-2-2c-0.4-0.4-1-0.4-1.4,0L12,8.6L6.7,3.3c-0.4-0.4-1-0.4-1.4,0l-2,2c-0.4,0.4-0.4,1,0,1.4L8.6,12l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4l2,2c0.4,0.4,1,0.4,1.4,0L12,15.4l5.3,5.3c0.4,0.4,1,0.4,1.4,0l2-2c0.4-0.4,0.4-1,0-1.4L15.4,12l5.3-5.3C21.1,6.3,21.1,5.7,20.7,5.3z"/></svg>
                     <span>${cryptid.attack.damage}</span>
                 `;
                 cardContent.appendChild(attackDisplay);
@@ -1360,10 +1360,10 @@
                     }
                 }
                 for(let i=0; i<3; i++) {
-                     const card = getNewRandomCryptid('common', drawnIds);
-                     if(card) {
-                         cardsInPack.push(card);
-                         drawnIds.push(card.id);
+                    const card = getNewRandomCryptid('common', drawnIds);
+                    if(card) {
+                        cardsInPack.push(card);
+                        drawnIds.push(card.id);
                     }
                 }
                 shuffleArray(cardsInPack);
@@ -1383,20 +1383,20 @@
 
             // Display the cards from the generated pack
             cardsInPack.forEach((cryptid, i) => {
-                 const cardWrapper = createCardElement(cryptid, true, false);
-                 container.appendChild(cardWrapper);
+                const cardWrapper = createCardElement(cryptid, true, false);
+                container.appendChild(cardWrapper);
 
-                 setTimeout(() => {
-                     cardWrapper.classList.add("show");
-                     setTimeout(() => {
-                         cardWrapper.classList.add("flipped");
-                     }, 500);
-                 }, 200 * i);
+                setTimeout(() => {
+                    cardWrapper.classList.add("show");
+                    setTimeout(() => {
+                        cardWrapper.classList.add("flipped");
+                    }, 500);
+                }, 200 * i);
             });
             
             // Update the title if starter packs are finished
             if (packsOpened >= 2) {
-                 document.getElementById('pack-opening-title').innerText = 'Cryptid Pack Opening';
+                document.getElementById('pack-opening-title').innerText = 'Cryptid Pack Opening';
             }
         }
 
@@ -1515,7 +1515,6 @@
 
             updateGameUI();
             document.getElementById('playCardBtn').disabled = false;
-            document.getElementById('nextTurnBtn').disabled = true;
         }
 
         function updateGameUI() {
@@ -1580,11 +1579,16 @@
                 botCardInPlay = null;
             }
             
+            // Disable the play button immediately to prevent multiple plays
+            document.getElementById('playCardBtn').disabled = true;
+
             performCombat();
             updateGameUI();
-
-            document.getElementById('playCardBtn').disabled = true;
-            document.getElementById('nextTurnBtn').disabled = false;
+            
+            // After a delay, proceed to the next turn automatically
+            setTimeout(() => {
+                endTurn();
+            }, 2500); // 2.5 second delay to see combat results
         }
 
         function performCombat() {
@@ -1601,6 +1605,10 @@
         }
 
         function endTurn() {
+            // First, check if the game ended from the last combat
+            if (checkGameEnd()) return;
+
+            // If not, proceed with the turn
             currentTurn++;
             playerCardInPlay = null;
             botCardInPlay = null;
@@ -1608,12 +1616,12 @@
             if (playerDeck.length > 0 && playerHand.length < 5) playerHand.push(playerDeck.shift());
             if (botDeck.length > 0 && botHand.length < 5) botHand.push(botDeck.shift());
             
+            // Check if the game ends due to turn limit or other conditions *after* advancing the turn
             if(checkGameEnd()) return;
 
             updateGameUI();
             showMessage(`Turn ${currentTurn} begins!`, "info");
             document.getElementById('playCardBtn').disabled = false;
-            document.getElementById('nextTurnBtn').disabled = true;
         }
 
         async function checkGameEnd() {
