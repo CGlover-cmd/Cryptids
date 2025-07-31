@@ -44,7 +44,6 @@ body {
 }
 
 #homeView {
-    visibility: hidden; /* Hide by default, made visible by preload.js */
     /* Default to landscape image */
     background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
     background-size: contain;
