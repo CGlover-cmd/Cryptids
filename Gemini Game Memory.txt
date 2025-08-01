@@ -12,5 +12,5 @@ The project is a card collecting game called Cryptids, which is hosted on GitHub
 When coding, only add the specific piece of code or feature that is requested. Do not alter the rest of the code whatsoever. If you are unsure about any piece of the request or need clarification, ask before implementing. 
 
 
-Cloud console link:  https://console.firebase.google.com/u/3/project/cryptids-be430/authentication/users
+Cloud console link:  https://console.cloud.google.com/apis/credentials?authuser=3&inv=1&invt=Ab4RNg&project=cryptidsapi
 Firebase Link:  https://console.firebase.google.com/u/3/project/cryptids-be430/authentication/users
