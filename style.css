@@ -16,6 +16,7 @@
     --common-color: #a0aec0; /* Gray */
     --rare-color: #3b82f6;   /* Blue */
     --legendary-color: #eab308; /* Yellow/Gold */
+    --mythic-color: #dc3545; /* Red for the new Mythic rarity */
     --victory-color: #28a745; /* Green for victory */
     --defeat-color: #dc3545; /* Red for defeat */
 }
@@ -206,6 +207,22 @@ h1 {
     box-shadow: 0 0 12px var(--legendary-color), 0 5px 15px rgba(0,0,0,0.5);
 }
 
+.card-wrapper.mythic {
+    box-shadow: 0 0 12px var(--mythic-color), 0 5px 15px rgba(0,0,0,0.5);
+}
+
+/* Mythic Card Animation */
+@keyframes mythic-card-animation {
+    0% { box-shadow: 0 0 12px var(--mythic-color), 0 0 15px rgba(0,0,0,0.5); }
+    50% { box-shadow: 0 0 25px var(--mythic-color), 0 0 30px rgba(220, 53, 69, 0.7), 0 0 15px rgba(0,0,0,0.5); }
+    100% { box-shadow: 0 0 12px var(--mythic-color), 0 0 15px rgba(0,0,0,0.5); }
+}
+
+.mythic-animation {
+    animation: mythic-card-animation 2s infinite;
+}
+
+
 .collection-view .card-wrapper,
 .deck-builder-view .card-wrapper,
 .player-area .card-wrapper,
@@ -368,6 +385,7 @@ h1 {
 }
 
 /* Rarity heading colors */
+.collection-rarity-group.mythic h2 { color: var(--mythic-color); }
 .collection-rarity-group.legendary h2 { color: var(--legendary-color); }
 .collection-rarity-group.rare h2 { color: var(--rare-color); }
 .collection-rarity-group.common h2 { color: var(--common-color); }
