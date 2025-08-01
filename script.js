@@ -41,7 +41,8 @@ const allCryptids = [
     { id: 'thunderbird', name: "Thunderbird", rarity: "legendary", hp: 65, attack: { name: "Lightning Strike", damage: 32 }, effect: "Chain Lightning: Deals 10 damage to two other random enemy cards.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/thunderbird.png" },
     { id: 'ropen', name: "Ropen", rarity: "rare", hp: 35, attack: { name: "Diving Strike", damage: 26 }, effect: "Bioluminescence: The next card the opponent plays has its attack reduced by half.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/ropen.png" },
     { id: 'almas', name: "Almas", rarity: "common", hp: 48, attack: { name: "Feral Swipe", damage: 14 }, effect: "Hardy: If this card survives combat, it gains +5 HP.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/almas.png" },
-    { id: 'mokele-mbembe', name: "Mokele-mbembe", rarity: "rare", hp: 75, attack: { name: "River Charge", damage: 16 }, effect: "Amphibious Hide: Reduces incoming damage from 'common' cards by 5.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/mokele-mbembe.png" }
+    { id: 'mokele-mbembe', name: "Mokele-mbembe", rarity: "rare", hp: 75, attack: { name: "River Charge", damage: 16 }, effect: "Amphibious Hide: Reduces incoming damage from 'common' cards by 5.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/mokele-mbembe.png" },
+    { id: 'snallygaster', name: "Snallygaster", rarity: "mythic", hp: 90, attack: { name: "Apocalypse", damage: 50 }, effect: "Apex Predator: Instantly defeats any non-mythic card it battles. Pierces all defenses.", image: "https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/snallygaster.png" }
 ];
 
 // --- STATE MANAGEMENT ---
@@ -67,33 +68,35 @@ let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
-// This is the main function that runs when the page loads.
+// [REVISED] This is the main function that runs when the page loads.
+// It now handles the initial asset loading only once.
 auth.onAuthStateChanged(async (user) => {
     if (isInitialLoad) {
         isInitialLoad = false;
+        // This is the first time the function is running on page load.
+        // The loading screen is already visible from window.onload.
+        // Now, we preload all game assets.
         await preloadAllGameAssets();
     }
 
     if (user) {
+        // This block runs on initial load (if logged in) OR after a successful login.
         const loadingText = document.getElementById('loading-text');
         loadingText.innerText = 'Loading your profile...';
-        showView(loadingView); 
+        showView(loadingView); // Ensure loading view is shown during data fetch
         
         currentUser = user;
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
+        // This block runs on initial load (if logged out) OR after a logout.
         currentUser = null;
         showView(authView);
         resetAuthView();
     }
 });
 
-/**
- * [FIXED] This function checks the sign-in methods for an email.
- * It now correctly identifies existing password accounts and directs
- * them to the password prompt instead of the registration page.
- */
+// New function to check if an email exists
 async function checkEmail() {
     const email = document.getElementById('email').value.trim();
     if (!email) {
@@ -104,32 +107,23 @@ async function checkEmail() {
     try {
         const methods = await auth.fetchSignInMethodsForEmail(email);
 
-        // Case 1: The user is new.
-        if (methods.length === 0) {
-            // No account exists, redirect to registration.
-            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
-            return; // Exit the function
-        }
-
-        // Case 2: An account exists. Determine which kind.
-        if (methods.includes('password')) {
-            // Account exists with password. Show password field.
+        if (methods.includes('google.com')) {
+            // Case 1: Account exists with Google. Instruct user to use Google Sign-In.
+            showMessage('This email is registered with Google. Please use the "Sign in with Google" button.', 'warning', true);
+            return; // Stop further execution
+        } else if (methods.includes('password')) {
+            // Case 2: Account exists with password. Show password field.
             document.getElementById('email-step').style.display = 'none';
             document.getElementById('password-step').style.display = 'block';
             document.getElementById('password').focus();
-        } else if (methods.includes('google.com')) {
-            // Account exists with Google. Instruct user to use Google Sign-In.
-            showMessage('This email is registered with Google. Please use the "Sign in with Google" button.', 'warning', true);
         } else {
-            // A fallback for any other unexpected sign-in methods
-            showMessage('An account with this email already exists. Please try a different sign-in method.', 'warning', true);
+            // Case 3: No account exists. Redirect to registration.
+            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
         }
     } catch (error) {
-        // Handle potential Firebase errors (e.g., invalid email format)
         showMessage(error.message, 'error', true);
     }
 }
-
 
 // New function to reset the auth view to the email step
 function resetAuthView() {
@@ -157,6 +151,8 @@ async function loadUserData(userId) {
             showSettings();
         } else {
             console.log("No such document! This should be created on registration.");
+            // This case might happen if a user is authenticated but their data doc was deleted.
+            // We can create a new one to prevent errors.
             await createNewUserDocument(userId, auth.currentUser.email);
         }
     } catch (error) {
@@ -166,6 +162,7 @@ async function loadUserData(userId) {
 }
 
 // Creates a new user document in Firestore with default values
+// This will now primarily be called from the new register.js
 async function createNewUserDocument(userId, email) {
     const userRef = db.collection('users').doc(userId);
     const newUser = {
@@ -182,9 +179,9 @@ async function createNewUserDocument(userId, email) {
     await loadUserData(userId);
 }
 
-// Login with email and password
+// Login with email and password (now called from password step)
 function login() {
-    const email = document.getElementById('email').value; 
+    const email = document.getElementById('email').value; // Email is still in the (now hidden) input
     const password = document.getElementById('password').value;
 
     if (!email || !password) {
@@ -195,6 +192,7 @@ function login() {
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
             showMessage('Login successful!', 'success', true);
+            // onAuthStateChanged will handle loading data and showing the view.
         })
         .catch((error) => {
             showMessage(error.message, 'error', true);
@@ -227,10 +225,15 @@ function logout() {
 }
 
 // --- ASSET PRELOADING ---
+/**
+ * [NEW] Preloads all essential UI images and all card images at the start of the application.
+ * This ensures a smoother experience after the initial load.
+ */
 async function preloadAllGameAssets() {
     const loadingText = document.getElementById('loading-text');
     loadingText.innerText = 'Loading game assets...';
 
+    // Start with essential UI images
     const imageUrls = [
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
@@ -238,6 +241,7 @@ async function preloadAllGameAssets() {
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
     ];
 
+    // Add all cryptid card images to the list for preloading
     allCryptids.forEach(cryptid => {
         if (cryptid.image) {
             imageUrls.push(cryptid.image);
@@ -247,6 +251,7 @@ async function preloadAllGameAssets() {
     let loadedCount = 0;
     const totalImages = imageUrls.length;
     
+    // Update loading text to show progress, which is more user-friendly
     loadingText.innerText = `Loading 0/${totalImages} assets...`;
 
     return new Promise((resolve) => {
@@ -288,14 +293,16 @@ function updateDeckSizeDisplay() {
 
 function getRarity() {
     const roll = Math.random();
-    if (roll < 0.05) return "legendary"; // 5% chance
-    if (roll < 0.25) return "rare";     // 20% chance
-    return "common";                    // 75% chance
+    if (roll < 0.005) return "mythic";    // 0.5% chance
+    if (roll < 0.05) return "legendary"; // 4.5% chance
+    if (roll < 0.25) return "rare";      // 20% chance
+    return "common";                     // 75% chance
 }
 
 function getRandomCryptid(desiredRarity) {
     const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
     if (availableCryptids.length === 0) {
+        // Fallback if a rarity has no cards (shouldn't happen with current setup)
         return allCryptids[Math.floor(Math.random() * allCryptids.length)];
     }
     return availableCryptids[Math.floor(Math.random() * availableCryptids.length)];
@@ -312,6 +319,11 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
     const cardWrapper = document.createElement("div");
     cardWrapper.className = `card-wrapper ${cryptid ? cryptid.rarity : ''}`;
     cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
+
+    // Add mythic animation if the card is mythic
+    if (cryptid && cryptid.rarity === 'mythic') {
+        cardWrapper.classList.add('mythic-animation');
+    }
 
     const cardInner = document.createElement("div");
     cardInner.className = `card-inner`;
@@ -482,12 +494,21 @@ async function openPack() {
 function showCollection() {
     const container = document.getElementById("collectionCardContainer");
     container.innerHTML = "";
-    const rarityOrder = ["legendary", "rare", "common"];
-    const cryptidsByRarity = { legendary: [], rare: [], common: [] };
+    const rarityOrder = ["mythic", "legendary", "rare", "common"];
+    const cryptidsByRarity = { mythic: [], legendary: [], rare: [], common: [] };
 
-    allCryptids.forEach(c => cryptidsByRarity[c.rarity].push(c));
+    allCryptids.forEach(c => {
+        if (cryptidsByRarity[c.rarity]) {
+            cryptidsByRarity[c.rarity].push(c);
+        }
+    });
 
     rarityOrder.forEach(rarity => {
+        // Conditionally skip creating the mythic section if the card isn't owned
+        if (rarity === 'mythic' && !collectedCardIds.has('snallygaster')) {
+            return; 
+        }
+
         const cryptidsInThisRarity = cryptidsByRarity[rarity].sort((a, b) => a.name.localeCompare(b.name));
         if (cryptidsInThisRarity.length > 0) {
             const rarityGroupDiv = document.createElement("div");
@@ -585,7 +606,7 @@ function startGame() {
     
     const botCardPool = gamesPlayed < 10 
         ? allCryptids.filter(c => c.rarity === 'common' || c.rarity === 'rare')
-        : allCryptids;
+        : allCryptids.filter(c => c.rarity !== 'mythic'); // Bot can't use mythic cards
 
     botDeck = [...botCardPool].map(c => ({...c}));
     shuffleArray(botDeck);
@@ -675,9 +696,15 @@ function playPlayerCard() {
 function performCombat() {
     let message = "";
     if (playerCardInPlay && botCardInPlay) {
-        botHP -= playerCardInPlay.attack.damage;
-        playerHP -= botCardInPlay.attack.damage;
-        message = `${playerCardInPlay.name} uses ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage! ${botCardInPlay.name} uses ${botCardInPlay.attack.name} for ${botCardInPlay.attack.damage} damage!`;
+        // Mythic card special effect
+        if (playerCardInPlay.rarity === 'mythic' && botCardInPlay.rarity !== 'mythic') {
+            botHP = 0; // Instantly defeat the bot
+            message = `${playerCardInPlay.name}'s Apex Predator ability instantly defeats ${botCardInPlay.name}!`;
+        } else {
+            botHP -= playerCardInPlay.attack.damage;
+            playerHP -= botCardInPlay.attack.damage;
+            message = `${playerCardInPlay.name} uses ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage! ${botCardInPlay.name} uses ${botCardInPlay.attack.name} for ${botCardInPlay.attack.damage} damage!`;
+        }
     } else if (playerCardInPlay) {
         botHP -= playerCardInPlay.attack.damage;
         message = `${playerCardInPlay.name} attacks the Bot directly with ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage!`;
@@ -782,6 +809,8 @@ async function confirmDeleteAccount() {
 }
 
 // --- INITIALIZATION ---
+// [REVISED] This now just shows the initial loading screen.
+// The onAuthStateChanged listener will handle all subsequent logic.
 window.onload = function () {
     showView(loadingView);
 };
