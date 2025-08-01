@@ -67,35 +67,33 @@ let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
-// [REVISED] This is the main function that runs when the page loads.
-// It now handles the initial asset loading only once.
+// This is the main function that runs when the page loads.
 auth.onAuthStateChanged(async (user) => {
     if (isInitialLoad) {
         isInitialLoad = false;
-        // This is the first time the function is running on page load.
-        // The loading screen is already visible from window.onload.
-        // Now, we preload all game assets.
         await preloadAllGameAssets();
     }
 
     if (user) {
-        // This block runs on initial load (if logged in) OR after a successful login.
         const loadingText = document.getElementById('loading-text');
         loadingText.innerText = 'Loading your profile...';
-        showView(loadingView); // Ensure loading view is shown during data fetch
+        showView(loadingView); 
         
         currentUser = user;
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
-        // This block runs on initial load (if logged out) OR after a logout.
         currentUser = null;
         showView(authView);
         resetAuthView();
     }
 });
 
-// New function to check if an email exists
+/**
+ * [FIXED] This function checks the sign-in methods for an email.
+ * It now correctly identifies existing password accounts and directs
+ * them to the password prompt instead of the registration page.
+ */
 async function checkEmail() {
     const email = document.getElementById('email').value.trim();
     if (!email) {
@@ -106,23 +104,32 @@ async function checkEmail() {
     try {
         const methods = await auth.fetchSignInMethodsForEmail(email);
 
-        if (methods.includes('google.com')) {
-            // Case 1: Account exists with Google. Instruct user to use Google Sign-In.
-            showMessage('This email is registered with Google. Please use the "Sign in with Google" button.', 'warning', true);
-            return; // Stop further execution
-        } else if (methods.includes('password')) {
-            // Case 2: Account exists with password. Show password field.
+        // Case 1: The user is new.
+        if (methods.length === 0) {
+            // No account exists, redirect to registration.
+            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
+            return; // Exit the function
+        }
+
+        // Case 2: An account exists. Determine which kind.
+        if (methods.includes('password')) {
+            // Account exists with password. Show password field.
             document.getElementById('email-step').style.display = 'none';
             document.getElementById('password-step').style.display = 'block';
             document.getElementById('password').focus();
+        } else if (methods.includes('google.com')) {
+            // Account exists with Google. Instruct user to use Google Sign-In.
+            showMessage('This email is registered with Google. Please use the "Sign in with Google" button.', 'warning', true);
         } else {
-            // Case 3: No account exists. Redirect to registration.
-            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
+            // A fallback for any other unexpected sign-in methods
+            showMessage('An account with this email already exists. Please try a different sign-in method.', 'warning', true);
         }
     } catch (error) {
+        // Handle potential Firebase errors (e.g., invalid email format)
         showMessage(error.message, 'error', true);
     }
 }
+
 
 // New function to reset the auth view to the email step
 function resetAuthView() {
@@ -150,8 +157,6 @@ async function loadUserData(userId) {
             showSettings();
         } else {
             console.log("No such document! This should be created on registration.");
-            // This case might happen if a user is authenticated but their data doc was deleted.
-            // We can create a new one to prevent errors.
             await createNewUserDocument(userId, auth.currentUser.email);
         }
     } catch (error) {
@@ -161,7 +166,6 @@ async function loadUserData(userId) {
 }
 
 // Creates a new user document in Firestore with default values
-// This will now primarily be called from the new register.js
 async function createNewUserDocument(userId, email) {
     const userRef = db.collection('users').doc(userId);
     const newUser = {
@@ -178,9 +182,9 @@ async function createNewUserDocument(userId, email) {
     await loadUserData(userId);
 }
 
-// Login with email and password (now called from password step)
+// Login with email and password
 function login() {
-    const email = document.getElementById('email').value; // Email is still in the (now hidden) input
+    const email = document.getElementById('email').value; 
     const password = document.getElementById('password').value;
 
     if (!email || !password) {
@@ -191,7 +195,6 @@ function login() {
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
             showMessage('Login successful!', 'success', true);
-            // onAuthStateChanged will handle loading data and showing the view.
         })
         .catch((error) => {
             showMessage(error.message, 'error', true);
@@ -224,15 +227,10 @@ function logout() {
 }
 
 // --- ASSET PRELOADING ---
-/**
- * [NEW] Preloads all essential UI images and all card images at the start of the application.
- * This ensures a smoother experience after the initial load.
- */
 async function preloadAllGameAssets() {
     const loadingText = document.getElementById('loading-text');
     loadingText.innerText = 'Loading game assets...';
 
-    // Start with essential UI images
     const imageUrls = [
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
@@ -240,7 +238,6 @@ async function preloadAllGameAssets() {
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
     ];
 
-    // Add all cryptid card images to the list for preloading
     allCryptids.forEach(cryptid => {
         if (cryptid.image) {
             imageUrls.push(cryptid.image);
@@ -250,7 +247,6 @@ async function preloadAllGameAssets() {
     let loadedCount = 0;
     const totalImages = imageUrls.length;
     
-    // Update loading text to show progress, which is more user-friendly
     loadingText.innerText = `Loading 0/${totalImages} assets...`;
 
     return new Promise((resolve) => {
@@ -786,8 +782,6 @@ async function confirmDeleteAccount() {
 }
 
 // --- INITIALIZATION ---
-// [REVISED] This now just shows the initial loading screen.
-// The onAuthStateChanged listener will handle all subsequent logic.
 window.onload = function () {
     showView(loadingView);
 };
