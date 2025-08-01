@@ -92,46 +92,8 @@ auth.onAuthStateChanged(async (user) => {
         // This block runs on initial load (if logged out) OR after a logout.
         currentUser = null;
         showView(authView);
-        resetAuthView();
     }
 });
-
-// New function to check if an email exists
-async function checkEmail() {
-    const email = document.getElementById('email').value.trim();
-    if (!email) {
-        showMessage('Please enter an email address.', 'error', true);
-        return;
-    }
-
-    try {
-        const methods = await auth.fetchSignInMethodsForEmail(email);
-
-        if (methods.includes('google.com')) {
-            // Case 1: Account exists with Google. Instruct user to use Google Sign-In.
-            showMessage('This email is registered with Google. Please use the "Sign in with Google" button.', 'warning', true);
-            return; // Stop further execution
-        } else if (methods.includes('password')) {
-            // Case 2: Account exists with password. Show password field.
-            document.getElementById('email-step').style.display = 'none';
-            document.getElementById('password-step').style.display = 'block';
-            document.getElementById('password').focus();
-        } else {
-            // Case 3: No account exists. Redirect to registration.
-            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
-        }
-    } catch (error) {
-        showMessage(error.message, 'error', true);
-    }
-}
-
-// New function to reset the auth view to the email step
-function resetAuthView() {
-    document.getElementById('email-step').style.display = 'block';
-    document.getElementById('password-step').style.display = 'none';
-    document.getElementById('email').value = '';
-    document.getElementById('password').value = '';
-}
 
 // Loads user data from Firestore
 async function loadUserData(userId) {
@@ -177,26 +139,6 @@ async function createNewUserDocument(userId, email) {
     };
     await userRef.set(newUser);
     await loadUserData(userId);
-}
-
-// Login with email and password (now called from password step)
-function login() {
-    const email = document.getElementById('email').value; // Email is still in the (now hidden) input
-    const password = document.getElementById('password').value;
-
-    if (!email || !password) {
-        showMessage('An error occurred. Please try again.', 'error', true);
-        return;
-    }
-
-    auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            showMessage('Login successful!', 'success', true);
-            // onAuthStateChanged will handle loading data and showing the view.
-        })
-        .catch((error) => {
-            showMessage(error.message, 'error', true);
-        });
 }
 
 // Sign in with Google
@@ -293,10 +235,10 @@ function updateDeckSizeDisplay() {
 
 function getRarity() {
     const roll = Math.random();
-    if (roll < 0.005) return "mythic";    // 0.5% chance
+    if (roll < 0.005) return "mythic";   // 0.5% chance
     if (roll < 0.05) return "legendary"; // 4.5% chance
-    if (roll < 0.25) return "rare";      // 20% chance
-    return "common";                     // 75% chance
+    if (roll < 0.25) return "rare";     // 20% chance
+    return "common";                    // 75% chance
 }
 
 function getRandomCryptid(desiredRarity) {
