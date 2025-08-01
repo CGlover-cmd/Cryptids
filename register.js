@@ -72,7 +72,7 @@ async function registerUser() {
     }
 
     try {
-        // No need to check for existing email here again, as window.onload already did it.
+        // No need to check for existing email here again, as the page load check already did it.
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
@@ -93,11 +93,12 @@ async function registerUser() {
 // --- INITIALIZATION ---
 
 /**
- * [FIXED] This function runs when the page loads. It checks if the email
- * from the URL is already associated with an account (especially Google)
- * BEFORE showing the registration form. If an account exists, it redirects.
+ * [REVISED] This function runs when the page's DOM is fully loaded.
+ * It reliably checks if the email from the URL is already associated
+ * with an account (especially Google) BEFORE showing the registration form.
+ * If an account exists, it redirects.
  */
-window.onload = async function() {
+document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const emailFromUrl = urlParams.get('email');
 
@@ -111,7 +112,9 @@ window.onload = async function() {
     const decodedEmail = decodeURIComponent(emailFromUrl);
     
     try {
+        console.log(`Checking sign-in methods for ${decodedEmail}...`);
         const signInMethods = await auth.fetchSignInMethodsForEmail(decodedEmail);
+        console.log('Sign-in methods found:', signInMethods);
         
         if (signInMethods && signInMethods.length > 0) {
             let message = "An account with this email already exists. Redirecting...";
@@ -134,6 +137,7 @@ window.onload = async function() {
         }
 
         // If no account exists, proceed to set up the registration form
+        console.log('No existing account found. Setting up registration form.');
         emailInput.value = decodedEmail;
         displayEmailSpan.innerText = decodedEmail;
         registerBtn.addEventListener('click', registerUser);
@@ -146,7 +150,7 @@ window.onload = async function() {
 
     } catch (error) {
         console.error("Error checking email on registration page:", error);
-        showMessage("An error occurred. Please go back and try again.", "error");
+        showMessage(`An error occurred while checking the email. Please go back and try again.`, "error");
         registerBtn.disabled = true;
     }
-};
+});
