@@ -1,100 +1,257 @@
-/* General Body Styles */
+:root {
+    --bg-dark: #121212;
+    --text-light: #f0f0f0;
+    --pack-border: #a2c8c8;
+    --pack-shadow: #a2c8c8;
+    --uncollected-card-bg: #1f1f1f;
+    --uncollected-card-border: #444;
+    --selected-card-border: #00ff00; /* Green for selected cards */
+    --game-ui-bg: #2a2a2a;
+    --nav-bg: #1a1a1a;
+    --nav-icon-color: #888;
+    --nav-icon-active-color: #a2c8c8;
+    --coin-color: #ffd700; /* Gold color for coins */
+
+    /* Rarity Colors */
+    --common-color: #a0aec0; /* Gray */
+    --rare-color: #3b82f6;   /* Blue */
+    --legendary-color: #eab308; /* Yellow/Gold */
+    --mythic-color: #dc3545; /* Red for the new Mythic rarity */
+    --victory-color: #28a745; /* Green for victory */
+    --defeat-color: #dc3545; /* Red for defeat */
+}
+
 body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    background-color: #222222; /* Dark Gray Background */
-    color: #fff;
-    /* overflow: hidden; is now controlled by JS */
-}
-
-/* --- STAGE 1: THE PRE-LOADER --- */
-#pre-loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #222222; /* Dark Gray Background */
-    z-index: 2000;
+    background: var(--bg-dark);
+    color: var(--text-light);
+    font-family: 'Segoe UI', sans-serif;
     display: flex;
-    flex-direction: column; /* Stack animation and text vertically */
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    transition: opacity 0.5s ease;
+    justify-content: flex-start;
+    min-height: 100dvh;
+    margin: 0;
+    padding-bottom: 80px; /* Space for bottom nav bar */
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
-/* New CSS Bouncing Loader */
-.bouncing-loader {
-    display: flex;
-    justify-content: center;
+/* --- Background Image for Main Views --- */
+#packView, #collectionView, #deckBuilderView, #gameView, #settingsView {
+    background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
-.bouncing-loader > div {
-    width: 16px;
-    height: 16px;
-    margin: 3px 6px;
-    border-radius: 50%;
-    background-color: #fff;
-    opacity: 1;
-    animation: bouncing-loader 0.6s infinite alternate;
+#homeView {
+    /* Default to landscape image */
+    background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    justify-content: flex-end; /* Push content to the bottom */
+    padding-bottom: 10vh; /* Add some space from the bottom edge */
 }
 
-@keyframes bouncing-loader {
-    to {
-        opacity: 0.1;
-        transform: translateY(-16px);
+@media (orientation: portrait) {
+    #homeView {
+        /* Switch to portrait image on tall screens */
+        background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png');
+        background-size: cover; /* Cover works better for portrait full-screen */
     }
 }
 
-.bouncing-loader > div:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.bouncing-loader > div:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-
-.loading-text {
-    color: white;
-    margin-top: 20px;
-    font-size: 1.2rem;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+#authView {
+    background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* This line fixes the issue */
 }
 
 
-/* --- STAGE 2: THE MAIN LOADER --- */
-#main-loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #222222; /* Dark Gray Background */
-    z-index: 1999;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    perspective: 1000px;
-    opacity: 1;
+/* --- Mobile-First Base Styles (Default for small screens) --- */
+h1 {
+    margin-bottom: 20px;
+    font-size: 2rem;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+/* Global Button Styles (excluding the special home screen button) */
+.btn {
+    background: linear-gradient(135deg, #444, #666);
+    border: 2px solid #a2c8c8;
+    border-radius: 8px;
+    padding: 10px 15px;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--text-light);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 0 8px rgba(162, 200, 200, 0.5);
+    margin: 0 5px;
+    white-space: nowrap;
 }
 
-#main-loader p {
-    color: white;
-    margin-top: 25px;
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(162, 200, 200, 0.7);
+}
+
+.btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn.btn-danger {
+    background: linear-gradient(135deg, #a03d3d, #dc3545);
+    border-color: #dc3545;
+    box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+}
+
+.btn.btn-danger:hover {
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.7);
+}
+
+/* Keyframes for the special home screen button */
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255,0,0,0.2); }
+    50% { box-shadow: 0 0 18px rgba(255,0,0,0.4); }
+}
+
+.currency-display {
     font-size: 1.2rem;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-    transition: opacity 0.4s ease; /* Add transition for the text */
+    font-weight: bold;
+    color: var(--coin-color);
+    margin-bottom: 20px;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
 }
 
-.card {
+/* Pack Specific Styles */
+.pack {
+    background: linear-gradient(135deg, #333, #555);
+    border: 3px solid var(--pack-border);
+    border-radius: 15px;
+    padding: 20px 30px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    font-weight: bold;
+    transition: transform 0.3s ease, box-shadow 0.6s ease-in-out;
+    box-shadow: 0 0 15px var(--pack-shadow);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    text-align: center;
+    letter-spacing: 1px;
+    color: var(--text-light);
+    margin-top: 15px;
+}
+
+.pack::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: pack-pulse 2s infinite alternate;
+    opacity: 0.7;
+    z-index: -1;
+}
+
+@keyframes pack-pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.05); opacity: 0.9; }
+}
+
+.pack:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px var(--pack-shadow), 0 0 50px rgba(162, 200, 200, 0.4);
+}
+
+.cards-container {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    padding-bottom: 30px;
+}
+
+/* --- NEW CARD STYLES --- */
+.card-wrapper {
     width: 120px;
-    height: 168px;
+    height: 180px;
     position: relative;
     transform-style: preserve-3d;
-    animation: classic-flip 2.5s infinite ease-in-out;
+    transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease, box-shadow 0.3s ease-in-out;
+    opacity: 0;
+    transform: translateY(20px) rotateY(0deg);
+    flex-shrink: 0;
+    flex-grow: 0;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.card-wrapper.rare {
+    box-shadow: 0 0 12px var(--rare-color), 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.card-wrapper.legendary {
+    box-shadow: 0 0 12px var(--legendary-color), 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.card-wrapper.mythic {
+    box-shadow: 0 0 12px var(--mythic-color), 0 5px 15px rgba(0,0,0,0.5);
+}
+
+/* Mythic Card Animation */
+@keyframes mythic-card-animation {
+    0% { box-shadow: 0 0 12px var(--mythic-color), 0 0 15px rgba(0,0,0,0.5); }
+    50% { box-shadow: 0 0 25px var(--mythic-color), 0 0 30px rgba(220, 53, 69, 0.7), 0 0 15px rgba(0,0,0,0.5); }
+    100% { box-shadow: 0 0 12px var(--mythic-color), 0 0 15px rgba(0,0,0,0.5); }
+}
+
+.mythic-animation {
+    animation: mythic-card-animation 2s infinite;
+}
+
+
+.collection-view .card-wrapper,
+.deck-builder-view .card-wrapper,
+.player-area .card-wrapper,
+.in-play-card-container .card-wrapper {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.card-wrapper.show {
+    opacity: 1;
+    transform: translateY(0) rotateY(0deg);
+}
+
+.card-wrapper.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card-wrapper.selected .card-inner {
+    border: 3px solid var(--selected-card-border);
+    box-shadow: 0 0 15px var(--selected-card-border);
+}
+
+.card-inner {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    border-radius: 10px;
 }
 
 .card-face {
@@ -103,83 +260,660 @@ body {
     height: 100%;
     backface-visibility: hidden;
     border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 60px;
-    color: white;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
     overflow: hidden;
-    background-color: #4527a0; /* Fallback color */
-}
-
-.card-face img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .card-back {
+    background-image: url("https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png");
+    background-size: cover;
+    background-position: center;
+}
+
+.card-front {
     transform: rotateY(180deg);
+    background-size: cover;
+    background-position: center;
 }
 
-@keyframes classic-flip {
-    from { transform: rotateY(0deg); }
-    to { transform: rotateY(360deg); }
+.card-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
 }
 
-/* --- ZOOM-OUT ANIMATION --- */
-#main-loader.hiding .card {
-    /* Stop the flip and apply the zoom-out animation */
-    animation: zoom-out 0.7s ease-in forwards;
+.stat-display {
+    position: absolute;
+    top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 3px 6px;
+    text-shadow: 0 0 5px black, 0 0 3px black;
 }
-#main-loader.hiding p {
-    opacity: 0;
+.stat-display svg {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0 0 2px black);
 }
+.hp-display { left: 5px; }
+.attack-display { right: 5px; }
 
-@keyframes zoom-out {
-    from {
-        transform: scale(1);
-        opacity: 1;
-    }
-    to {
-        transform: scale(15);
-        opacity: 0;
-    }
-}
-
-/* Original Styles from GitHub */
-header {
-    background: #333;
-    color: #fff;
-    padding: 1rem 0;
+.name-plate {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 8px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
     text-align: center;
+    font-size: 1rem;
+    font-weight: bold;
+    color: white;
 }
 
-main {
-    padding: 1rem;
+.uncollected-card .card-inner {
+    background-color: var(--uncollected-card-bg);
+    border: 3px dashed var(--uncollected-card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5em;
+    color: var(--uncollected-card-border);
+    box-shadow: none;
+    transform: none !important;
+}
+.uncollected-card .card-inner::after {
+    content: '?';
 }
 
-#card-container {
+
+/* --- VIEW MANAGEMENT --- */
+.view {
+    width: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    flex-grow: 1; /* This makes the view fill the parent's height */
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.view.active {
+    display: flex;
+}
+
+#homeView, #authView, #loadingView {
+    justify-content: center; /* Center content vertically */
+    padding-top: 0; /* No top padding needed */
+}
+
+#packView {
+    padding-top: 15px; 
+}
+
+#collectionView {
+    padding-top: 15px;
+    align-items: center; 
+}
+
+#collectionView .cards-container {
+    margin-top: 15px;
+    padding: 0;
+    gap: 15px;
+    max-width: 100%;
+    width: 100%;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.collection-rarity-group {
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center; 
+}
+
+.collection-rarity-group h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+    text-align: center; 
+    padding-left: 0; 
+}
+
+/* Rarity heading colors */
+.collection-rarity-group.mythic h2 { color: var(--mythic-color); }
+.collection-rarity-group.legendary h2 { color: var(--legendary-color); }
+.collection-rarity-group.rare h2 { color: var(--rare-color); }
+.collection-rarity-group.common h2 { color: var(--common-color); }
+
+.cards-grid {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1rem;
+    gap: 15px;
+    padding: 10px 0;
 }
 
-.pack {
-    border: 1px solid #ccc;
-    padding: 1rem;
-    width: 200px;
-    text-align: center;
-    background: #444;
+.cards-grid .card-wrapper {
+    flex-shrink: 0;
 }
 
-footer {
-    text-align: center;
-    padding: 1rem 0;
-    background: #333;
-    color: #fff;
-    position: relative; /* Changed from fixed */
+
+/* --- Deck Builder View Styles --- */
+#deckBuilderView {
+    padding-top: 15px;
+}
+#deckBuilderView .cards-container {
+    margin-top: 20px;
+    padding: 0;
+    gap: 15px;
+    max-width: 100%;
     width: 100%;
+    justify-content: center;
+}
+.deck-builder-controls {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+.deck-builder-controls span {
+    font-size: 1.1rem;
+    font-weight: bold;
+    align-self: center;
+}
+.deck-builder-card.selected .card-inner {
+    border: 3px solid var(--selected-card-border);
+    box-shadow: 0 0 15px var(--selected-card-border);
+}
+.deck-builder-card .card-front img {
+    filter: brightness(0.8); /* Dim unselected cards */
+}
+.deck-builder-card.selected .card-front img {
+    filter: brightness(1); /* Full brightness for selected */
+}
+.deck-builder-card.uncollected-card {
+    pointer-events: none; /* Cannot select uncollected cards */
+    opacity: 0.5;
+}
+
+
+/* --- Game View Styles --- */
+#gameView {
+    padding-top: 15px;
+    justify-content: space-between; /* Push elements to top/bottom */
+    flex-grow: 1; /* Allow game view to take available space */
+}
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    max-width: 800px;
+    margin-bottom: 10px; /* Reduced margin */
+    font-size: 1.2rem;
+    font-weight: bold;
+    background-color: var(--game-ui-bg);
+    padding: 8px 12px; /* Reduced padding */
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.game-info .player-hp, .game-info .bot-hp {
+    color: #e74c3c; /* Red HP */
+}
+.game-info .turn-counter {
+    color: #f1c40f; /* Yellow turn counter */
+}
+
+.game-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px; /* Reduced gap */
+    width: 100%;
+    max-width: 800px;
+    flex-grow: 1; /* Allow field to take available space */
+    justify-content: center;
+}
+
+.bot-area, .player-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 8px; /* Reduced padding */
+    box-sizing: border-box;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.bot-area h3, .player-area h3 {
+    margin-top: 0;
+    margin-bottom: 8px; /* Reduced margin */
+    font-size: 1.2rem; /* Reduced font size */
+    color: #bbb;
+}
+
+.in-play-card-container {
+    min-height: 180px; /* Adjusted min-height for played card area */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Reduced gap */
+    width: 100%;
+    flex-grow: 1; /* Allow in-play area to grow */
+}
+.in-play-card-container .card-wrapper {
+    width: 45%; /* Make cards in play take 45% of container width */
+    height: auto; /* Auto height to maintain aspect ratio */
+    max-width: 140px; /* Max size for larger screens */
+    max-height: 200px; /* Max height for larger screens */
+    opacity: 1; /* Always visible when in play */
+    transform: none;
+    transition: none; /* No entry animation for in-play */
+    flex-shrink: 1; /* Allow shrinking if needed */
+}
+
+.player-hand, .bot-hand {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px; /* Reduced gap */
+    min-height: 130px; /* Adjusted min-height for hand to accommodate 2 rows of cards */
+    padding: 8px 0; /* Reduced padding */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.player-hand .card-wrapper,
+.bot-hand .card-wrapper {
+    width: 80px; /* Fixed width for cards in hand */
+    height: 120px; /* Fixed height for cards in hand */
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+.player-hand .card-wrapper:hover {
+    transform: translateY(-5px);
+}
+.bot-hand .card-wrapper .card-front {
+    transform: rotateY(0deg); /* Bot cards remain face down */
+}
+.bot-hand .card-wrapper .card-back {
+    transform: rotateY(0deg); /* Ensure bot card backs are visible */
+}
+.bot-hand .card-wrapper.flipped .card-inner {
+    transform: rotateY(0deg); /* Prevent bot cards from flipping */
+}
+
+.game-controls {
+    margin-top: 10px; /* Reduced margin */
+    margin-bottom: 10px; /* Reduced margin */
+    display: flex;
+    gap: 10px; /* Reduced gap */
+    justify-content: center;
+    width: 100%;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.game-message {
+    margin-top: 8px; /* Reduced margin */
+    font-size: 1rem; /* Reduced font size */
+    font-weight: bold;
+    color: #f1c40f;
+    text-align: center;
+    min-height: 1.2em; /* Reserve space to prevent layout shift */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100dvh; /* Use dvh for dynamic viewport height */
+    background-color: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden; /* Hidden by default */
+    opacity: 0;
+    transition: visibility 0s 0.3s, opacity 0.3s ease;
+}
+
+.modal.show {
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0s, opacity 0.3s ease;
+}
+
+.modal-content {
+    background-color: var(--bg-dark);
+    margin: auto;
+    padding: 25px; /* Reduced padding */
+    border: 2px solid var(--pack-border);
+    border-radius: 15px;
+    width: 85%; /* Increased width for mobile */
+    max-width: 350px; /* Max width for larger screens */
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    transform: scale(0.8); /* Start smaller for animation */
+    opacity: 0;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.modal.show .modal-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 12px; /* Reduced margin */
+    font-size: 1.6rem; /* Reduced font size */
+}
+.modal-content.victory h2 { color: var(--victory-color); }
+.modal-content.defeat h2 { color: var(--defeat-color); }
+.modal-content.draw h2 { color: #f1c40f; } /* Yellow for draw */
+
+
+.modal-content p {
+    font-size: 1rem; /* Reduced font size */
+    margin-bottom: 20px; /* Reduced margin */
+    line-height: 1.4;
+}
+
+.modal-content input {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: var(--text-light);
+    font-size: 1rem;
+    width: calc(100% - 22px);
+    margin-bottom: 15px;
+}
+
+.modal-buttons {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically on mobile */
+    justify-content: center;
+    gap: 10px; /* Reduced gap */
+}
+.modal-buttons .btn {
+    width: 100%; /* Full width buttons */
+}
+
+/* New Global Message Style */
+.global-message {
+    position: fixed;
+    top: -100px; /* Start off-screen */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(241, 196, 15, 0.95); /* Yellowish warning color */
+    color: #121212;
+    padding: 15px 25px;
+    border-radius: 8px;
+    z-index: 2000;
+    font-size: 1.1rem;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease;
+}
+.global-message.show {
+    opacity: 1;
+    visibility: visible;
+    top: 30px;
+}
+.global-message.error { background-color: rgba(220, 53, 69, 0.95); color: white; }
+.global-message.success { background-color: rgba(40, 167, 69, 0.95); color: white; }
+.global-message.warning { background-color: rgba(241, 196, 15, 0.95); color: #121212; }
+
+/* --- Bottom Navigation Bar --- */
+#bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background-color: var(--nav-bg);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+    z-index: 500;
+    display: none; /* Hidden by default, shown with views */
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--nav-icon-color);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 5px;
+    transition: color 0.2s ease;
+}
+.nav-btn svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
+}
+.nav-btn:hover {
+    color: var(--text-light);
+}
+.nav-btn.active {
+    color: var(--nav-icon-active-color);
+}
+
+/* --- Auth View Styles --- */
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center all direct children */
+    gap: 15px;
+    width: 100%;
+    max-width: 350px;
+    padding: 20px;
+    background-color: rgba(42, 42, 42, 0.9);
+    border-radius: 10px;
+}
+
+/* Container for the email input and continue button */
+#email-step {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 280px; /* Give a consistent width to the form elements */
+}
+
+.auth-container input {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: var(--text-light);
+    font-size: 1rem;
+    width: 100%; /* Make input fill its container */
+    box-sizing: border-box;
+}
+
+#email-step .btn {
+    width: 100%; /* Make the continue button fill the container */
+    margin: 0; /* Reset margin */
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+.auth-buttons .btn {
+    flex-grow: 1;
+}
+
+/* The Google button was unstyled, let's style it */
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background-color: #fff;
+    color: #444;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    width: 100%;
+    max-width: 280px; /* Match the other elements */
+    box-sizing: border-box;
+}
+
+.google-btn:hover {
+    background-color: #f7f7f7;
+}
+
+/* --- Loading View Styles --- */
+#loadingView {
+    font-size: 1.5rem;
+    text-align: center;
+}
+.loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid var(--pack-border);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+    margin-bottom: 20px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- Settings View --- */
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 400px;
+    padding: 25px;
+    background-color: var(--game-ui-bg);
+    border-radius: 10px;
+    text-align: left;
+}
+.settings-container h2 {
+    text-align: center;
+    margin-top: 0;
+}
+.info-row {
+    font-size: 1.1rem;
+}
+.info-row span {
+    font-weight: bold;
+    color: var(--pack-border);
+}
+
+
+/* --- Desktop/Tablet Overrides (min-width for larger screens) --- */
+@media (min-width: 769px) {
+    h1 {
+        margin-bottom: 30px;
+        font-size: 2.5rem;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    .btn {
+        padding: 12px 25px;
+        font-size: 1.2rem;
+        margin: 0 8px;
+        box-shadow: 0 0 10px rgba(162, 200, 200, 0.5);
+    }
+    .btn:hover {
+        box-shadow: 0 4px 15px rgba(162, 200, 200, 0.7);
+    }
+    .pack {
+        padding: 25px 50px;
+        font-size: 1.8rem;
+        box-shadow: 0 0 20px var(--pack-shadow);
+        margin-top: 20px;
+    }
+    .pack:hover {
+        box-shadow: 0 0 30px var(--pack-shadow), 0 0 60px rgba(162, 200, 200, 0.4);
+    }
+    .cards-container {
+        gap: 25px;
+        margin-top: 50px;
+        padding-bottom: 50px;
+    }
+    .card-wrapper {
+        width: 150px;
+        height: 220px;
+    }
+    .stat-display {
+        font-size: 1.2rem;
+        padding: 5px 8px;
+    }
+    .stat-display svg {
+        width: 20px;
+        height: 20px;
+    }
+    .name-plate {
+        font-size: 1.2rem;
+    }
+    
+    .uncollected-card .card-inner {
+        font-size: 3em;
+    }
+    .view {
+        padding: 20px;
+    }
+    #collectionView {
+        padding-top: 20px;
+    }
+    #collectionView .cards-container {
+        margin-top: 20px;
+        gap: 20px;
+        max-width: 1200px;
+    }
+    .collection-rarity-group {
+        margin-bottom: 40px;
+    }
+    .collection-rarity-group h2 {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+        padding-left: 0; /* Removed left padding */
+    }
+    .cards-grid {
+        gap: 20px;
+        padding: 15px 0;
+    }
+    .game-info {
+        font-size: 1.5rem;
+        padding: 15px 25px;
+    }
+    .in-play-card-container .card-wrapper {
+        width: 180px; /* Larger for desktop in-play */
+        height: 260px;
+    }
+    .modal-buttons {
+        flex-direction: row; /* Buttons side-by-side on desktop */
+    }
 }
