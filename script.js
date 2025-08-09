@@ -51,6 +51,7 @@ let playerDeckIds = [];
 let cryptidCoins = 0;
 let packsOpened = 0;
 let gamesPlayed = 0;
+let assetsLoaded = false; // Flag to track if assets are loaded
 
 const PACK_COST = 50;
 const WIN_REWARD = 10;
@@ -65,16 +66,30 @@ let selectedPlayerCardElement = null;
 let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
-auth.onAuthStateChanged(async (user) => {
+
+/**
+ * [NEW] This function contains the logic for handling the user's authentication state.
+ * It's called both by the auth listener and after the loading screen.
+ * @param {firebase.User | null} user - The current user object from Firebase auth.
+ */
+async function handleAuthState(user) {
+    if (!assetsLoaded) return; // Don't do anything until assets are loaded and the game is ready
+
     if (user) {
         currentUser = user;
         await loadUserData(user.uid);
+        // After loading user data, show the main game view.
         showView(packView, 'nav-packs');
     } else {
         currentUser = null;
+        // If no user, show the authentication screen.
         showView(authView);
     }
-});
+}
+
+// Set up the authentication state listener to use our new handler function.
+auth.onAuthStateChanged(handleAuthState);
+
 
 // Loads user data from Firestore
 async function loadUserData(userId) {
@@ -128,6 +143,7 @@ function signInWithGoogle() {
             if (!doc.exists) {
                 await createNewUserDocument(user.uid, user.email);
             }
+            // The onAuthStateChanged listener will handle the view change automatically
         }).catch((error) => {
             showMessage(error.message, 'error', true);
         });
@@ -137,10 +153,93 @@ function signInWithGoogle() {
 function logout() {
     auth.signOut().then(() => {
         showMessage('You have been logged out.', 'success', true);
+        // The onAuthStateChanged listener will handle the view change automatically
     }).catch((error) => {
         showMessage(error.message, 'error', true);
     });
 }
+
+// --- NEW ASSET & LOADING SCREEN LOGIC ---
+
+/**
+ * Creates and loads an image, returning a promise.
+ * @param {string} src - The source URL of the image.
+ * @param {HTMLElement} container - The element to append the loaded image to.
+ */
+const loadImage = (src, container) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            if (container) {
+                container.innerHTML = '';
+                container.appendChild(img);
+            }
+            resolve();
+        };
+        img.onerror = () => {
+            console.error(`Failed to load image: ${src}`);
+            if (container) {
+                container.innerHTML = `<p style="font-size: 12px; color: #ccc;">?</p>`;
+            }
+            resolve(); // Resolve anyway to not block the app
+        };
+    });
+};
+
+
+/**
+ * Preloads all essential UI images, all card images, and the specific loader images.
+ */
+async function preloadAllGameAssets() {
+    const loadingText = document.getElementById('loading-text');
+    const cardFront = document.querySelector('#main-loader .card-front');
+    const cardBack = document.querySelector('#main-loader .card-back');
+
+    // Define all image URLs
+    const imageUrls = [
+        // Loader-specific images
+        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png',
+        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png',
+        // Essential UI images
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png',
+        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
+    ];
+
+    // Add all cryptid card images
+    allCryptids.forEach(cryptid => {
+        if (cryptid.image) {
+            imageUrls.push(cryptid.image);
+        }
+    });
+
+    let loadedCount = 0;
+    const totalImages = imageUrls.length;
+    loadingText.innerText = `Loading 0/${totalImages} assets...`;
+
+    // Create a promise for each image
+    const promises = imageUrls.map(url => {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.src = url;
+            img.onload = img.onerror = () => {
+                loadedCount++;
+                loadingText.innerText = `Loading ${loadedCount}/${totalImages} assets...`;
+                resolve();
+            };
+        });
+    });
+
+    // Special handling for the two loader card faces
+    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png', cardFront));
+    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png', cardBack));
+
+    // Wait for all images to finish loading
+    await Promise.all(promises);
+}
+
 
 // --- UTILITY & SETUP FUNCTIONS ---
 function updateCoinDisplay() {
@@ -518,7 +617,7 @@ function updateGameUI() {
 
     const botInPlayContainer = document.getElementById('botInPlay');
     botInPlayContainer.innerHTML = '';
-    if (botCardInPlay) {
+    if (botInPlayContainer) {
         botInPlayContainer.appendChild(createCardElement(botCardInPlay, true, true));
     }
 }
@@ -672,8 +771,7 @@ async function confirmDeleteAccount() {
 }
 
 // --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
-    
+window.onload = function () {
     const preLoader = document.getElementById('pre-loader');
     const mainLoader = document.getElementById('main-loader');
     const cardFront = document.querySelector('#main-loader .card-front');
@@ -683,6 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     body.style.overflow = 'hidden';
 
+    // ** The image URLs have been corrected to use the 'photos' folder. **
     const imageUrl1 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png';
     const imageUrl2 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png';
 
@@ -729,4 +828,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }, 700); 
     }, { once: true });
-});
+};
