@@ -331,6 +331,14 @@ h1 {
 
 
 /* --- VIEW MANAGEMENT --- */
+#game-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex-grow: 1;
+    /* This ensures the container for all views fills the available space */
+}
+
 .view {
     width: 100%;
     display: none;
