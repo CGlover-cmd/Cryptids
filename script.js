@@ -51,7 +51,7 @@ let playerDeckIds = [];
 let cryptidCoins = 0;
 let packsOpened = 0;
 let gamesPlayed = 0;
-let assetsLoaded = false; // Flag to track if assets are loaded
+let assetsLoaded = false;
 
 const PACK_COST = 50;
 const WIN_REWARD = 10;
@@ -68,28 +68,24 @@ let messageTimeout, globalMessageTimeout;
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
 /**
- * [NEW] This function contains the logic for handling the user's authentication state.
- * It's called both by the auth listener and after the loading screen.
+ * Handles the user's authentication state, showing the correct view.
  * @param {firebase.User | null} user - The current user object from Firebase auth.
  */
 async function handleAuthState(user) {
-    if (!assetsLoaded) return; // Don't do anything until assets are loaded and the game is ready
+    if (!assetsLoaded) return; // Wait until assets are loaded and game is ready
 
     if (user) {
         currentUser = user;
         await loadUserData(user.uid);
-        // After loading user data, show the main game view.
-        showView(packView, 'nav-packs');
+        showView(packView, 'nav-packs'); // User is logged in, go to packs
     } else {
         currentUser = null;
-        // If no user, show the authentication screen.
-        showView(authView);
+        showView(authView); // User is not logged in, show login screen
     }
 }
 
-// Set up the authentication state listener to use our new handler function.
+// Set up the authentication state listener
 auth.onAuthStateChanged(handleAuthState);
-
 
 // Loads user data from Firestore
 async function loadUserData(userId) {
@@ -143,7 +139,6 @@ function signInWithGoogle() {
             if (!doc.exists) {
                 await createNewUserDocument(user.uid, user.email);
             }
-            // The onAuthStateChanged listener will handle the view change automatically
         }).catch((error) => {
             showMessage(error.message, 'error', true);
         });
@@ -153,93 +148,10 @@ function signInWithGoogle() {
 function logout() {
     auth.signOut().then(() => {
         showMessage('You have been logged out.', 'success', true);
-        // The onAuthStateChanged listener will handle the view change automatically
     }).catch((error) => {
         showMessage(error.message, 'error', true);
     });
 }
-
-// --- NEW ASSET & LOADING SCREEN LOGIC ---
-
-/**
- * Creates and loads an image, returning a promise.
- * @param {string} src - The source URL of the image.
- * @param {HTMLElement} container - The element to append the loaded image to.
- */
-const loadImage = (src, container) => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.src = src;
-        img.onload = () => {
-            if (container) {
-                container.innerHTML = '';
-                container.appendChild(img);
-            }
-            resolve();
-        };
-        img.onerror = () => {
-            console.error(`Failed to load image: ${src}`);
-            if (container) {
-                container.innerHTML = `<p style="font-size: 12px; color: #ccc;">?</p>`;
-            }
-            resolve(); // Resolve anyway to not block the app
-        };
-    });
-};
-
-
-/**
- * Preloads all essential UI images, all card images, and the specific loader images.
- */
-async function preloadAllGameAssets() {
-    const loadingText = document.getElementById('loading-text');
-    const cardFront = document.querySelector('#main-loader .card-front');
-    const cardBack = document.querySelector('#main-loader .card-back');
-
-    // Define all image URLs
-    const imageUrls = [
-        // Loader-specific images
-        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png',
-        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png',
-        // Essential UI images
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
-    ];
-
-    // Add all cryptid card images
-    allCryptids.forEach(cryptid => {
-        if (cryptid.image) {
-            imageUrls.push(cryptid.image);
-        }
-    });
-
-    let loadedCount = 0;
-    const totalImages = imageUrls.length;
-    loadingText.innerText = `Loading 0/${totalImages} assets...`;
-
-    // Create a promise for each image
-    const promises = imageUrls.map(url => {
-        return new Promise(resolve => {
-            const img = new Image();
-            img.src = url;
-            img.onload = img.onerror = () => {
-                loadedCount++;
-                loadingText.innerText = `Loading ${loadedCount}/${totalImages} assets...`;
-                resolve();
-            };
-        });
-    });
-
-    // Special handling for the two loader card faces
-    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png', cardBack));
-    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png', cardFront));
-
-    // Wait for all images to finish loading
-    await Promise.all(promises);
-}
-
 
 // --- UTILITY & SETUP FUNCTIONS ---
 function updateCoinDisplay() {
@@ -260,10 +172,10 @@ function updateDeckSizeDisplay() {
 
 function getRarity() {
     const roll = Math.random();
-    if (roll < 0.005) return "mythic";   // 0.5% chance
-    if (roll < 0.05) return "legendary"; // 4.5% chance
-    if (roll < 0.25) return "rare";     // 20% chance
-    return "common";                    // 75% chance
+    if (roll < 0.005) return "mythic";
+    if (roll < 0.05) return "legendary";
+    if (roll < 0.25) return "rare";
+    return "common";
 }
 
 function getRandomCryptid(desiredRarity) {
@@ -771,7 +683,7 @@ async function confirmDeleteAccount() {
 }
 
 // --- INITIALIZATION ---
-window.onload = function () {
+document.addEventListener('DOMContentLoaded', () => {
     const preLoader = document.getElementById('pre-loader');
     const mainLoader = document.getElementById('main-loader');
     const cardFront = document.querySelector('#main-loader .card-front');
@@ -781,7 +693,6 @@ window.onload = function () {
 
     body.style.overflow = 'hidden';
 
-    // ** The image URLs have been corrected to use the 'photos' folder. **
     const imageUrl1 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png';
     const imageUrl2 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png';
 
@@ -823,9 +734,9 @@ window.onload = function () {
             gameContent.style.display = 'block';
             body.style.overflow = 'auto'; 
             
-            // This is where we trigger the auth check after the game is visible
-            auth.onAuthStateChanged(auth.currentUser);
+            assetsLoaded = true;
+            handleAuthState(auth.currentUser);
 
         }, 700); 
     }, { once: true });
-};
+});
