@@ -69,31 +69,41 @@ let messageTimeout, globalMessageTimeout;
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
 // [REVISED] This is the main function that runs when the page loads.
-// It now handles the initial asset loading only once.
+// It now handles the initial asset loading and directs the user flow.
 auth.onAuthStateChanged(async (user) => {
+    const preLoader = document.getElementById('pre-loader');
+    const gameContent = document.getElementById('game-content');
+
+    // This block runs only once when the app first loads.
     if (isInitialLoad) {
         isInitialLoad = false;
-        // This is the first time the function is running on page load.
-        // The loading screen is already visible from window.onload.
-        // Now, we preload all game assets.
+        // The pre-loader is visible by default via CSS.
+        // We wait for all essential images to download.
         await preloadAllGameAssets();
+        
+        // Hide the pre-loader and show the main game container.
+        preLoader.style.display = 'none';
+        gameContent.style.display = 'block';
     }
 
+    // This block runs on initial load AND every time auth state changes.
     if (user) {
-        // This block runs on initial load (if logged in) OR after a successful login.
-        const loadingText = document.getElementById('loading-text');
-        loadingText.innerText = 'Loading your profile...';
-        showView(loadingView); // Ensure loading view is shown during data fetch
-        
+        // User is signed in, load their data and go to the main app view.
         currentUser = user;
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
-        // This block runs on initial load (if logged out) OR after a logout.
+        // User is signed out, show the title screen.
         currentUser = null;
-        showView(authView);
+        showView(homeView); // Show the title screen first
+
+        // Make the homeView clickable to proceed to the authentication screen.
+        homeView.addEventListener('click', () => {
+            showView(authView);
+        }, { once: true }); // Use 'once' so this only fires one time.
     }
 });
+
 
 // Loads user data from Firestore
 async function loadUserData(userId) {
@@ -341,7 +351,6 @@ function showMessage(message, type = "info", isGlobal = false) {
 // --- VIEW SWITCHING ---
 const homeView = document.getElementById('homeView');
 const authView = document.getElementById('authView');
-const loadingView = document.getElementById('loadingView');
 const packView = document.getElementById('packView');
 const collectionView = document.getElementById('collectionView');
 const deckBuilderView = document.getElementById('deckBuilderView');
@@ -353,7 +362,7 @@ function showView(viewElement, navBtnId) {
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     viewElement.classList.add('active');
 
-    if(viewElement === authView || viewElement === loadingView || viewElement === homeView){
+    if(viewElement === authView || viewElement === homeView){
         bottomNav.style.display = 'none';
     } else {
         bottomNav.style.display = 'flex';
@@ -749,10 +758,3 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
-
-// --- INITIALIZATION ---
-// [REVISED] This now just shows the initial loading screen.
-// The onAuthStateChanged listener will handle all subsequent logic.
-window.onload = function () {
-    showView(loadingView);
-};
