@@ -8,7 +8,9 @@
 </head>
 <body>
     <!-- Loading Screen -->
-    <div id="loading-screen"></div>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+    </div>
 
     <!-- Title Screen -->
     <div id="title-screen" style="display: none;">
@@ -39,6 +41,231 @@
         <button id="main-menu-button">Main Menu</button>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Get references to the various screens and buttons
+        const loadingScreen = document.getElementById('loading-screen');
+        const titleScreen = document.getElementById('title-screen');
+        const gameContainer = document.getElementById('game-container');
+        const winScreen = document.getElementById('win-screen');
+
+        const startButton = document.getElementById('start-button');
+        const accountPortalButton = document.getElementById('account-portal-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const mainMenuButton = document.getElementById('main-menu-button');
+
+        const gameBoard = document.getElementById('game-board');
+        const timerElement = document.getElementById('timer');
+        const matchesElement = document.getElementById('matches');
+        const winLossElement = document.getElementById('win-loss-ratio');
+        const winStatsElement = document.getElementById('win-stats');
+
+        // Array of card names (without file extension)
+        const cardNames = [
+            'almas', 'banshee', 'basilisk', 'bigfoot', 'brownie', 'bunyip', 'chupacabra',
+            'flatwoods', 'gnome', 'griffin', 'jersey_devil', 'kappa', 'kraken',
+            'lochness_monster', 'mokele-mbembe', 'moth_man', 'ropen', 'siren',
+            'skinwalker', 'snallygaster', 'thunderbird', 'wendigo', 'woodsdevil', 'yeti'
+        ];
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let timer;
+        let seconds = 0;
+        let lockBoard = false;
+        let wins = 0;
+        let losses = 0;
+
+        // --- Loading and Title Screen ---
+
+        // Simulate a loading process
+        setTimeout(() => {
+            // Hide loading screen and show title screen
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            if (titleScreen) titleScreen.style.display = 'flex'; // Use flex as it's a flex container
+        }, 3000); // Adjust time as needed
+
+        // --- Event Listeners ---
+
+        // Start button click
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                titleScreen.style.display = 'none';
+                gameContainer.style.display = 'flex'; // Use flex for the main game container
+                startGame();
+            });
+        }
+
+        // Account portal button click
+        if (accountPortalButton) {
+            accountPortalButton.addEventListener('click', () => {
+                // Redirect to the account portal page
+                window.location.href = 'account_portal.html';
+            });
+        }
+
+        // Play again button click
+        if (playAgainButton) {
+            playAgainButton.addEventListener('click', () => {
+                winScreen.style.display = 'none';
+                gameContainer.style.display = 'flex';
+                startGame();
+            });
+        }
+
+        // Main menu button click
+        if (mainMenuButton) {
+            mainMenuButton.addEventListener('click', () => {
+                winScreen.style.display = 'none';
+                titleScreen.style.display = 'flex';
+            });
+        }
+
+
+        // --- Game Logic ---
+
+        // Function to start the game
+        function startGame() {
+            resetGame();
+            const gameCards = selectRandomCards(cardNames, 10); // Select 10 pairs
+            const shuffledCards = shuffle(gameCards.concat(gameCards));
+            createGameBoard(shuffledCards);
+            startTimer();
+        }
+
+        // Function to create the game board
+        function createGameBoard(shuffledCards) {
+            gameBoard.innerHTML = ''; // Clear previous board
+            shuffledCards.forEach(name => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.name = name;
+
+                const cardFaceFront = document.createElement('div');
+                cardFaceFront.classList.add('card-face', 'card-front');
+                cardFaceFront.style.backgroundImage = `url('photos/${name}.png')`;
+
+                const cardFaceBack = document.createElement('div');
+                cardFaceBack.classList.add('card-face', 'card-back');
+
+                card.appendChild(cardFaceFront);
+                card.appendChild(cardFaceBack);
+
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
+            });
+        }
+
+        // Function to select random cards
+        function selectRandomCards(cardArray, numPairs) {
+            const shuffled = [...cardArray].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, numPairs);
+        }
+
+
+        // Function to shuffle cards
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Function to handle card flipping
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === flippedCards[0]) return;
+
+            this.classList.add('flipped');
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                checkForMatch();
+            }
+        }
+
+        // Function to check for a match
+        function checkForMatch() {
+            lockBoard = true;
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.name === card2.dataset.name;
+
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        // Function to disable matched cards
+        function disableCards() {
+            flippedCards[0].removeEventListener('click', flipCard);
+            flippedCards[1].removeEventListener('click', flipCard);
+            matchedPairs++;
+            matchesElement.textContent = `Matches: ${matchedPairs}`;
+            resetFlippedCards();
+            checkWinCondition();
+        }
+
+        // Function to unflip non-matching cards
+        function unflipCards() {
+            setTimeout(() => {
+                flippedCards[0].classList.remove('flipped');
+                flippedCards[1].classList.remove('flipped');
+                resetFlippedCards();
+            }, 1000);
+        }
+
+        // Function to reset the flipped cards array and unlock the board
+        function resetFlippedCards() {
+            flippedCards = [];
+            lockBoard = false;
+        }
+
+        // Function to check if the game is won
+        function checkWinCondition() {
+            // Assuming 10 pairs are needed to win
+            if (matchedPairs === 10) {
+                clearInterval(timer);
+                wins++;
+                updateWinLoss();
+                showWinScreen();
+            }
+        }
+
+        // Function to show the win screen
+        function showWinScreen() {
+            gameContainer.style.display = 'none';
+            winScreen.style.display = 'flex';
+            winStatsElement.textContent = `You found all matches in ${seconds} seconds!`;
+        }
+
+
+        // Function to start the timer
+        function startTimer() {
+            seconds = 0;
+            timerElement.textContent = 'Time: 0s';
+            timer = setInterval(() => {
+                seconds++;
+                timerElement.textContent = `Time: ${seconds}s`;
+            }, 1000);
+        }
+
+        // Function to update win/loss ratio
+        function updateWinLoss() {
+            // Note: a loss condition is not defined in this version.
+            // You might want to add a loss condition (e.g., time limit).
+            winLossElement.textContent = `Win/Loss: ${wins}/${losses}`;
+        }
+
+        // Function to reset the game state
+        function resetGame() {
+            clearInterval(timer);
+            seconds = 0;
+            matchedPairs = 0;
+            flippedCards = [];
+            lockBoard = false;
+            timerElement.textContent = 'Time: 0s';
+            matchesElement.textContent = 'Matches: 0';
+            gameBoard.innerHTML = '';
+        }
+    </script>
 </body>
 </html>
