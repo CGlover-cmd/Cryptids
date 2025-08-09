@@ -1,5 +1,4 @@
 // --- FIREBASE CONFIGURATION ---
-// This is the configuration object you provided.
 const firebaseConfig = {
     apiKey: "AIzaSyA7HORw-_RGWxhyo9eGD3fvGL4ub8WH1O0",
     authDomain: "cryptids-be430.firebaseapp.com",
@@ -52,7 +51,7 @@ let playerDeckIds = [];
 let cryptidCoins = 0;
 let packsOpened = 0;
 let gamesPlayed = 0;
-let isInitialLoad = true; // Flag to handle initial asset loading
+let assetsLoaded = false; // Flag to track if assets are loaded
 
 const PACK_COST = 50;
 const WIN_REWARD = 10;
@@ -68,28 +67,16 @@ let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
-// [REVISED] This is the main function that runs when the page loads.
-// It now handles the initial asset loading only once.
 auth.onAuthStateChanged(async (user) => {
-    if (isInitialLoad) {
-        isInitialLoad = false;
-        // This is the first time the function is running on page load.
-        // The loading screen is already visible from window.onload.
-        // Now, we preload all game assets.
-        await preloadAllGameAssets();
-    }
+    // This listener now only handles user state changes after the initial load is complete.
+    if (!assetsLoaded) return; // Don't do anything until assets are loaded
 
     if (user) {
-        // This block runs on initial load (if logged in) OR after a successful login.
-        const loadingText = document.getElementById('loading-text');
-        loadingText.innerText = 'Loading your profile...';
-        showView(loadingView); // Ensure loading view is shown during data fetch
-        
         currentUser = user;
         await loadUserData(user.uid);
+        // After loading user data, show the appropriate game view, not the loader.
         showView(packView, 'nav-packs');
     } else {
-        // This block runs on initial load (if logged out) OR after a logout.
         currentUser = null;
         showView(authView);
     }
@@ -112,9 +99,6 @@ async function loadUserData(userId) {
             updateDeckSizeDisplay();
             showSettings();
         } else {
-            console.log("No such document! This should be created on registration.");
-            // This case might happen if a user is authenticated but their data doc was deleted.
-            // We can create a new one to prevent errors.
             await createNewUserDocument(userId, auth.currentUser.email);
         }
     } catch (error) {
@@ -124,7 +108,6 @@ async function loadUserData(userId) {
 }
 
 // Creates a new user document in Firestore with default values
-// This will now primarily be called from the new register.js
 async function createNewUserDocument(userId, email) {
     const userRef = db.collection('users').doc(userId);
     const newUser = {
@@ -151,7 +134,7 @@ function signInWithGoogle() {
             if (!doc.exists) {
                 await createNewUserDocument(user.uid, user.email);
             }
-            showMessage('Signed in with Google!', 'success', true);
+            // The onAuthStateChanged listener will handle the view change
         }).catch((error) => {
             showMessage(error.message, 'error', true);
         });
@@ -161,29 +144,62 @@ function signInWithGoogle() {
 function logout() {
     auth.signOut().then(() => {
         showMessage('You have been logged out.', 'success', true);
+        // The onAuthStateChanged listener will handle the view change
     }).catch((error) => {
         showMessage(error.message, 'error', true);
     });
 }
 
-// --- ASSET PRELOADING ---
+// --- NEW ASSET & LOADING SCREEN LOGIC ---
+
 /**
- * [NEW] Preloads all essential UI images and all card images at the start of the application.
- * This ensures a smoother experience after the initial load.
+ * Creates and loads an image, returning a promise.
+ * @param {string} src - The source URL of the image.
+ * @param {HTMLElement} container - The element to append the loaded image to.
+ */
+const loadImage = (src, container) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            if (container) {
+                container.innerHTML = '';
+                container.appendChild(img);
+            }
+            resolve();
+        };
+        img.onerror = () => {
+            console.error(`Failed to load image: ${src}`);
+            if (container) {
+                container.innerHTML = `<p style="font-size: 12px; color: #ccc;">?</p>`;
+            }
+            resolve(); // Resolve anyway to not block the app
+        };
+    });
+};
+
+
+/**
+ * Preloads all essential UI images, all card images, and the specific loader images.
  */
 async function preloadAllGameAssets() {
     const loadingText = document.getElementById('loading-text');
-    loadingText.innerText = 'Loading game assets...';
+    const cardFront = document.querySelector('#main-loader .card-front');
+    const cardBack = document.querySelector('#main-loader .card-back');
 
-    // Start with essential UI images
+    // Define all image URLs
     const imageUrls = [
+        // Loader-specific images
+        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/back_of_card_loading_screen.png',
+        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/X_Bigfoot.png',
+        // Essential UI images
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
     ];
 
-    // Add all cryptid card images to the list for preloading
+    // Add all cryptid card images
     allCryptids.forEach(cryptid => {
         if (cryptid.image) {
             imageUrls.push(cryptid.image);
@@ -192,27 +208,27 @@ async function preloadAllGameAssets() {
 
     let loadedCount = 0;
     const totalImages = imageUrls.length;
-    
-    // Update loading text to show progress, which is more user-friendly
     loadingText.innerText = `Loading 0/${totalImages} assets...`;
 
-    return new Promise((resolve) => {
-        if (totalImages === 0) {
-            resolve();
-            return;
-        }
-        imageUrls.forEach(url => {
+    // Create a promise for each image
+    const promises = imageUrls.map(url => {
+        return new Promise(resolve => {
             const img = new Image();
             img.src = url;
             img.onload = img.onerror = () => {
                 loadedCount++;
                 loadingText.innerText = `Loading ${loadedCount}/${totalImages} assets...`;
-                if (loadedCount === totalImages) {
-                    resolve();
-                }
+                resolve();
             };
         });
     });
+
+    // Special handling for the two loader card faces
+    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/back_of_card_loading_screen.png', cardFront));
+    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/X_Bigfoot.png', cardBack));
+
+    // Wait for all images to finish loading
+    await Promise.all(promises);
 }
 
 
@@ -244,7 +260,6 @@ function getRarity() {
 function getRandomCryptid(desiredRarity) {
     const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
     if (availableCryptids.length === 0) {
-        // Fallback if a rarity has no cards (shouldn't happen with current setup)
         return allCryptids[Math.floor(Math.random() * allCryptids.length)];
     }
     return availableCryptids[Math.floor(Math.random() * availableCryptids.length)];
@@ -262,7 +277,6 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
     cardWrapper.className = `card-wrapper ${cryptid ? cryptid.rarity : ''}`;
     cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
 
-    // Add mythic animation if the card is mythic
     if (cryptid && cryptid.rarity === 'mythic') {
         cardWrapper.classList.add('mythic-animation');
     }
@@ -341,7 +355,6 @@ function showMessage(message, type = "info", isGlobal = false) {
 // --- VIEW SWITCHING ---
 const homeView = document.getElementById('homeView');
 const authView = document.getElementById('authView');
-const loadingView = document.getElementById('loadingView');
 const packView = document.getElementById('packView');
 const collectionView = document.getElementById('collectionView');
 const deckBuilderView = document.getElementById('deckBuilderView');
@@ -353,7 +366,7 @@ function showView(viewElement, navBtnId) {
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     viewElement.classList.add('active');
 
-    if(viewElement === authView || viewElement === loadingView || viewElement === homeView){
+    if(viewElement === authView){
         bottomNav.style.display = 'none';
     } else {
         bottomNav.style.display = 'flex';
@@ -446,7 +459,6 @@ function showCollection() {
     });
 
     rarityOrder.forEach(rarity => {
-        // Conditionally skip creating the mythic section if the card isn't owned
         if (rarity === 'mythic' && !collectedCardIds.has('snallygaster')) {
             return; 
         }
@@ -548,7 +560,7 @@ function startGame() {
     
     const botCardPool = gamesPlayed < 10 
         ? allCryptids.filter(c => c.rarity === 'common' || c.rarity === 'rare')
-        : allCryptids.filter(c => c.rarity !== 'mythic'); // Bot can't use mythic cards
+        : allCryptids.filter(c => c.rarity !== 'mythic');
 
     botDeck = [...botCardPool].map(c => ({...c}));
     shuffleArray(botDeck);
@@ -638,9 +650,8 @@ function playPlayerCard() {
 function performCombat() {
     let message = "";
     if (playerCardInPlay && botCardInPlay) {
-        // Mythic card special effect
         if (playerCardInPlay.rarity === 'mythic' && botCardInPlay.rarity !== 'mythic') {
-            botHP = 0; // Instantly defeat the bot
+            botHP = 0;
             message = `${playerCardInPlay.name}'s Apex Predator ability instantly defeats ${botCardInPlay.name}!`;
         } else {
             botHP -= playerCardInPlay.attack.damage;
@@ -751,8 +762,35 @@ async function confirmDeleteAccount() {
 }
 
 // --- INITIALIZATION ---
-// [REVISED] This now just shows the initial loading screen.
-// The onAuthStateChanged listener will handle all subsequent logic.
-window.onload = function () {
-    showView(loadingView);
+window.onload = async function () {
+    const preLoader = document.getElementById('pre-loader');
+    const mainLoader = document.getElementById('main-loader');
+    const gameContent = document.getElementById('game-content');
+    const body = document.body;
+
+    // 1. Preload all assets and update the pre-loader text
+    await preloadAllGameAssets();
+
+    // 2. Assets are loaded, transition from pre-loader to main loader
+    preLoader.style.opacity = '0';
+    setTimeout(() => {
+        preLoader.style.display = 'none';
+        mainLoader.style.display = 'flex';
+    }, 500); // Match this to the CSS transition duration
+
+    // 3. Set up the click event for the main loader to start the game
+    mainLoader.addEventListener('click', () => {
+        mainLoader.classList.add('hiding');
+
+        // After the zoom animation, hide the loader and show the game
+        setTimeout(() => {
+            mainLoader.style.display = 'none';
+            gameContent.style.display = 'block';
+            body.style.overflow = 'auto'; // Restore scrolling
+
+            // 4. Now that the game is visible, mark assets as loaded and check auth state
+            assetsLoaded = true;
+            auth.onAuthStateChanged(auth.currentUser); // Manually trigger listener
+        }, 700); // This MUST match the zoom-out animation duration
+    }, { once: true });
 };
