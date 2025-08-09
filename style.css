@@ -32,8 +32,8 @@ body {
     min-height: 100dvh;
     margin: 0;
     padding-bottom: 80px; /* Space for bottom nav bar */
+    overflow-x: hidden;
     box-sizing: border-box;
-    /* overflow is controlled by JS */
 }
 
 /* --- Background Image for Main Views --- */
@@ -331,14 +331,6 @@ h1 {
 
 
 /* --- VIEW MANAGEMENT --- */
-#game-content {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    flex-grow: 1;
-    /* This ensures the container for all views fills the available space */
-}
-
 .view {
     width: 100%;
     display: none;
@@ -354,7 +346,7 @@ h1 {
     display: flex;
 }
 
-#homeView, #authView {
+#homeView, #authView, #loadingView {
     justify-content: center; /* Center content vertically */
     padding-top: 0; /* No top padding needed */
 }
@@ -795,146 +787,24 @@ h1 {
     background-color: #f7f7f7;
 }
 
-/* --- NEW LOADING SCREEN STYLES --- */
-
-/* --- STAGE 1: THE PRE-LOADER --- */
-#pre-loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #222222; /* Dark Gray Background */
-    z-index: 2000;
-    display: flex;
-    flex-direction: column; /* Stack animation and text vertically */
-    justify-content: center;
-    align-items: center;
-    transition: opacity 0.5s ease;
+/* --- Loading View Styles --- */
+#loadingView {
+    font-size: 1.5rem;
+    text-align: center;
 }
-
-.bouncing-loader {
-    display: flex;
-    justify-content: center;
-}
-
-.bouncing-loader > div {
-    width: 16px;
-    height: 16px;
-    margin: 3px 6px;
+.loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid var(--pack-border);
     border-radius: 50%;
-    background-color: #fff;
-    opacity: 1;
-    animation: bouncing-loader 0.6s infinite alternate;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+    margin-bottom: 20px;
 }
-
-@keyframes bouncing-loader {
-    to {
-        opacity: 0.1;
-        transform: translateY(-16px);
-    }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
-
-.bouncing-loader > div:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.bouncing-loader > div:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-.loading-text {
-    color: white;
-    margin-top: 20px;
-    font-size: 1.2rem;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-}
-
-/* --- STAGE 2: THE MAIN LOADER --- */
-#main-loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #222222; /* Dark Gray Background */
-    z-index: 1999;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    perspective: 1000px;
-    opacity: 1;
-    cursor: pointer;
-}
-
-#main-loader p {
-    color: white;
-    margin-top: 25px;
-    font-size: 1.2rem;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-    transition: opacity 0.4s ease; /* Add transition for the text */
-}
-
-#main-loader .card {
-    width: 120px;
-    height: 168px;
-    position: relative;
-    transform-style: preserve-3d;
-    animation: classic-flip 2.5s infinite ease-in-out;
-}
-
-#main-loader .card-face {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 60px;
-    color: white;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
-    overflow: hidden;
-    background-color: #4527a0; /* Fallback color */
-}
-
-#main-loader .card-face img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-#main-loader .card-back {
-    transform: rotateY(180deg);
-}
-
-@keyframes classic-flip {
-    from { transform: rotateY(0deg); }
-    to { transform: rotateY(360deg); }
-}
-
-/* --- ZOOM-OUT ANIMATION --- */
-#main-loader.hiding .card {
-    /* Stop the flip and apply the zoom-out animation */
-    animation: zoom-out 0.7s ease-in forwards;
-}
-#main-loader.hiding p {
-    opacity: 0;
-}
-
-@keyframes zoom-out {
-    from {
-        transform: scale(1);
-        opacity: 1;
-    }
-    to {
-        transform: scale(15);
-        opacity: 0;
-    }
-}
-
 
 /* --- Settings View --- */
 .settings-container {
