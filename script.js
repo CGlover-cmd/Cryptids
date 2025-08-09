@@ -67,20 +67,29 @@ let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
-auth.onAuthStateChanged(async (user) => {
-    // This listener now only handles user state changes after the initial load is complete.
-    if (!assetsLoaded) return; // Don't do anything until assets are loaded
+/**
+ * [NEW] This function contains the logic for handling the user's authentication state.
+ * It's called both by the auth listener and after the loading screen.
+ * @param {firebase.User | null} user - The current user object from Firebase auth.
+ */
+async function handleAuthState(user) {
+    if (!assetsLoaded) return; // Don't do anything until assets are loaded and the game is ready
 
     if (user) {
         currentUser = user;
         await loadUserData(user.uid);
-        // After loading user data, show the appropriate game view, not the loader.
+        // After loading user data, show the main game view.
         showView(packView, 'nav-packs');
     } else {
         currentUser = null;
+        // If no user, show the authentication screen.
         showView(authView);
     }
-});
+}
+
+// Set up the authentication state listener to use our new handler function.
+auth.onAuthStateChanged(handleAuthState);
+
 
 // Loads user data from Firestore
 async function loadUserData(userId) {
@@ -134,7 +143,7 @@ function signInWithGoogle() {
             if (!doc.exists) {
                 await createNewUserDocument(user.uid, user.email);
             }
-            // The onAuthStateChanged listener will handle the view change
+            // The onAuthStateChanged listener will handle the view change automatically
         }).catch((error) => {
             showMessage(error.message, 'error', true);
         });
@@ -144,7 +153,7 @@ function signInWithGoogle() {
 function logout() {
     auth.signOut().then(() => {
         showMessage('You have been logged out.', 'success', true);
-        // The onAuthStateChanged listener will handle the view change
+        // The onAuthStateChanged listener will handle the view change automatically
     }).catch((error) => {
         showMessage(error.message, 'error', true);
     });
@@ -790,7 +799,8 @@ window.onload = async function () {
 
             // 4. Now that the game is visible, mark assets as loaded and check auth state
             assetsLoaded = true;
-            auth.onAuthStateChanged(auth.currentUser); // Manually trigger listener
+            // Correctly call our handler function with the current user state
+            handleAuthState(auth.currentUser);
         }, 700); // This MUST match the zoom-out animation duration
     }, { once: true });
 };
