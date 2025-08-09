@@ -65,6 +65,16 @@ let selectedPlayerCardData = null;
 let selectedPlayerCardElement = null;
 let messageTimeout, globalMessageTimeout;
 
+// --- DOM ELEMENT REFERENCES ---
+// Views
+const authView = document.getElementById('authView');
+const packView = document.getElementById('packView');
+const collectionView = document.getElementById('collectionView');
+const deckBuilderView = document.getElementById('deckBuilderView');
+const gameView = document.getElementById('gameView');
+const settingsView = document.getElementById('settingsView');
+const bottomNav = document.getElementById('bottom-nav');
+
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
 /**
@@ -72,7 +82,8 @@ let messageTimeout, globalMessageTimeout;
  * @param {firebase.User | null} user - The current user object from Firebase auth.
  */
 async function handleAuthState(user) {
-    if (!assetsLoaded) return; // Wait until assets are loaded and game is ready
+    // This function now only runs after the main loader is dismissed
+    if (!assetsLoaded) return; 
 
     if (user) {
         currentUser = user;
@@ -104,6 +115,7 @@ async function loadUserData(userId) {
             updateDeckSizeDisplay();
             showSettings();
         } else {
+            // If the user document doesn't exist, create it.
             await createNewUserDocument(userId, auth.currentUser.email);
         }
     } catch (error) {
@@ -121,11 +133,12 @@ async function createNewUserDocument(userId, email) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         collectedCardIds: [],
         playerDeckIds: [],
-        cryptidCoins: 200,
+        cryptidCoins: 200, // Starting coins
         packsOpened: 0,
         gamesPlayed: 0
     };
     await userRef.set(newUser);
+    // After creating, load the new data into the game state
     await loadUserData(userId);
 }
 
@@ -136,18 +149,60 @@ function signInWithGoogle() {
             const user = result.user;
             const userRef = db.collection('users').doc(user.uid);
             const doc = await userRef.get();
+            // If the user is new (no document in Firestore), create one.
             if (!doc.exists) {
                 await createNewUserDocument(user.uid, user.email);
             }
+            // handleAuthState will automatically be triggered and show the correct view
         }).catch((error) => {
             showMessage(error.message, 'error', true);
         });
 }
 
+// New function to handle email sign-in flow
+async function continueWithEmail() {
+    const emailInput = document.getElementById('email');
+    const email = emailInput.value.trim();
+    if (!email) {
+        showMessage("Please enter your email address.", "warning", true);
+        return;
+    }
+
+    try {
+        const signInMethods = await auth.fetchSignInMethodsForEmail(email);
+        
+        if (signInMethods.length === 0) {
+            // New user, redirect to registration page
+            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
+        } else {
+            // Existing user, prompt for password
+            const password = prompt(`Welcome back! Please enter the password for ${email}:`);
+            if (password) {
+                auth.signInWithEmailAndPassword(email, password)
+                    .catch(error => {
+                        showMessage(`Login failed: ${error.message}`, 'error', true);
+                    });
+                 // onAuthStateChanged will handle the rest
+            }
+        }
+    } catch (error) {
+        showMessage(`An error occurred: ${error.message}`, 'error', true);
+    }
+}
+
+
 // Logout the current user
 function logout() {
     auth.signOut().then(() => {
+        // Clear local state
+        currentUser = null;
+        collectedCardIds = new Set();
+        playerDeckIds = [];
+        cryptidCoins = 0;
+        packsOpened = 0;
+        gamesPlayed = 0;
         showMessage('You have been logged out.', 'success', true);
+        // handleAuthState will automatically show the authView
     }).catch((error) => {
         showMessage(error.message, 'error', true);
     });
@@ -181,6 +236,7 @@ function getRarity() {
 function getRandomCryptid(desiredRarity) {
     const availableCryptids = allCryptids.filter(c => c.rarity === desiredRarity);
     if (availableCryptids.length === 0) {
+        // Fallback if no cryptid of the desired rarity is found
         return allCryptids[Math.floor(Math.random() * allCryptids.length)];
     }
     return availableCryptids[Math.floor(Math.random() * availableCryptids.length)];
@@ -254,43 +310,36 @@ function showMessage(message, type = "info", isGlobal = false) {
 
     messageEl.innerText = message;
     const baseClass = isGlobal ? 'global-message' : 'game-message';
-    messageEl.className = `${baseClass} ${type}`;
+    messageEl.className = `${baseClass} ${type} show`;
+
+    const timeout = isGlobal ? globalMessageTimeout : messageTimeout;
+    clearTimeout(timeout);
+
+    const newTimeout = setTimeout(() => {
+        messageEl.classList.remove('show');
+    }, 3500);
 
     if (isGlobal) {
-        messageEl.classList.add('show');
-        clearTimeout(globalMessageTimeout);
-        globalMessageTimeout = setTimeout(() => {
-            messageEl.classList.remove('show');
-        }, 3500);
+        globalMessageTimeout = newTimeout;
     } else {
-        clearTimeout(messageTimeout);
-        if (type !== "game-end") { 
-            messageTimeout = setTimeout(() => {
-                messageEl.innerText = '';
-                messageEl.className = 'game-message';
-            }, 3000);
-        }
+        messageTimeout = newTimeout;
     }
 }
 
 // --- VIEW SWITCHING ---
-const homeView = document.getElementById('homeView');
-const authView = document.getElementById('authView');
-const packView = document.getElementById('packView');
-const collectionView = document.getElementById('collectionView');
-const deckBuilderView = document.getElementById('deckBuilderView');
-const gameView = document.getElementById('gameView');
-const settingsView = document.getElementById('settingsView');
-const bottomNav = document.getElementById('bottom-nav');
-
 function showView(viewElement, navBtnId) {
+    // Hide all views
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+    // Show the target view
     viewElement.classList.add('active');
 
+    // Handle bottom navigation bar visibility and active state
     if(viewElement === authView){
         bottomNav.style.display = 'none';
+        document.body.style.paddingBottom = '0';
     } else {
         bottomNav.style.display = 'flex';
+        document.body.style.paddingBottom = '80px'; // Restore padding for nav bar
     }
 
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -298,15 +347,18 @@ function showView(viewElement, navBtnId) {
         document.getElementById(navBtnId).classList.add('active');
     }
 
+    // Run view-specific logic
     if (viewElement === collectionView) showCollection();
     else if (viewElement === deckBuilderView) renderDeckBuilderCards();
     else if (viewElement === settingsView) showSettings();
     else if (viewElement === packView) updateCoinDisplay();
 }
 
+// Navigation functions
 function showPackView() { showView(packView, 'nav-packs'); }
 function showCollectionView() { showView(collectionView, 'nav-collection'); }
 function showDeckBuilderView() { showView(deckBuilderView, 'nav-deck'); }
+function showBattleView() { showView(gameView, 'nav-battle'); tryStartGame(); }
 function showSettingsView() { showView(settingsView, 'nav-settings'); }
 
 function showSettings() {
@@ -346,6 +398,7 @@ async function openPack() {
             packsOpened: newPacksOpened,
             collectedCardIds: updatedCollectedCardIds
         });
+        // Update local state after successful DB update
         cryptidCoins = newCoins;
         packsOpened = newPacksOpened;
         collectedCardIds = new Set(updatedCollectedCardIds);
@@ -356,12 +409,13 @@ async function openPack() {
         return;
     }
 
+    // Animate the cards appearing
     cardsInPack.forEach((cryptid, i) => {
         const cardWrapper = createCardElement(cryptid, true, false);
         container.appendChild(cardWrapper);
         setTimeout(() => {
             cardWrapper.classList.add("show");
-            setTimeout(() => cardWrapper.classList.add("flipped"), 500);
+            setTimeout(() => cardWrapper.querySelector('.card-inner').style.transform = 'rotateY(180deg)', 500);
         }, 200 * i);
     });
 }
@@ -373,6 +427,7 @@ function showCollection() {
     const rarityOrder = ["mythic", "legendary", "rare", "common"];
     const cryptidsByRarity = { mythic: [], legendary: [], rare: [], common: [] };
 
+    // Group all cryptids by their rarity
     allCryptids.forEach(c => {
         if (cryptidsByRarity[c.rarity]) {
             cryptidsByRarity[c.rarity].push(c);
@@ -380,23 +435,26 @@ function showCollection() {
     });
 
     rarityOrder.forEach(rarity => {
-        if (rarity === 'mythic' && !collectedCardIds.has('snallygaster')) {
-            return; 
-        }
-
         const cryptidsInThisRarity = cryptidsByRarity[rarity].sort((a, b) => a.name.localeCompare(b.name));
-        if (cryptidsInThisRarity.length > 0) {
+        
+        // Check if there are any collected cards of this rarity to decide if we show the header
+        const hasCollectedInRarity = cryptidsInThisRarity.some(c => collectedCardIds.has(c.id));
+
+        if (cryptidsInThisRarity.length > 0 && hasCollectedInRarity) {
             const rarityGroupDiv = document.createElement("div");
             rarityGroupDiv.className = `collection-rarity-group ${rarity}`;
             const heading = document.createElement("h2");
             heading.innerText = `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Cryptids`;
             rarityGroupDiv.appendChild(heading);
+
             const cardsGrid = document.createElement("div");
             cardsGrid.className = "cards-grid";
             cryptidsInThisRarity.forEach(cryptid => {
                 const isCollected = collectedCardIds.has(cryptid.id);
                 const cardWrapper = createCardElement(cryptid, isCollected, true);
-                cardWrapper.classList.add("show");
+                if (isCollected) {
+                    cardWrapper.classList.add("show");
+                }
                 cardsGrid.appendChild(cardWrapper);
             });
             rarityGroupDiv.appendChild(cardsGrid);
@@ -459,6 +517,7 @@ async function saveDeck() {
 function tryStartGame() {
     if (playerDeckIds.length !== MAX_DECK_SIZE) {
         showMessage("Please build and save a deck of " + MAX_DECK_SIZE + " cards first!", "error", true);
+        showDeckBuilderView(); // Redirect to deck builder if deck isn't ready
         return;
     }
     startGame();
@@ -517,7 +576,8 @@ function updateGameUI() {
     const botHandContainer = document.getElementById('botHand');
     botHandContainer.innerHTML = '';
     botHand.forEach(card => {
-        const cardEl = createCardElement(card, true, false);
+        // Bot's hand should show card backs
+        const cardEl = createCardElement(card, true, false); 
         botHandContainer.appendChild(cardEl);
     });
 
@@ -529,7 +589,8 @@ function updateGameUI() {
 
     const botInPlayContainer = document.getElementById('botInPlay');
     botInPlayContainer.innerHTML = '';
-    if (botInPlayContainer) {
+    if (botCardInPlay) {
+        // Show the bot's card face up when in play
         botInPlayContainer.appendChild(createCardElement(botCardInPlay, true, true));
     }
 }
@@ -561,11 +622,12 @@ function playPlayerCard() {
     }
     
     document.getElementById('playCardBtn').disabled = true;
-
-    performCombat();
-    updateGameUI();
     
-    setTimeout(() => endTurn(), 2500);
+    updateGameUI(); // Update UI to show cards in play
+    setTimeout(() => {
+        performCombat();
+        setTimeout(() => endTurn(), 2500);
+    }, 1000); // Delay combat for visual effect
 }
 
 function performCombat() {
@@ -577,13 +639,14 @@ function performCombat() {
         } else {
             botHP -= playerCardInPlay.attack.damage;
             playerHP -= botCardInPlay.attack.damage;
-            message = `${playerCardInPlay.name} uses ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage! ${botCardInPlay.name} uses ${botCardInPlay.attack.name} for ${botCardInPlay.attack.damage} damage!`;
+            message = `${playerCardInPlay.name} attacks for ${playerCardInPlay.attack.damage}! ${botCardInPlay.name} attacks for ${botCardInPlay.attack.damage}!`;
         }
     } else if (playerCardInPlay) {
         botHP -= playerCardInPlay.attack.damage;
-        message = `${playerCardInPlay.name} attacks the Bot directly with ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage!`;
+        message = `${playerCardInPlay.name} attacks the Bot directly for ${playerCardInPlay.attack.damage}!`;
     }
     showMessage(message, "info");
+    updateGameUI(); // Update HP values
 }
 
 function endTurn() {
@@ -603,27 +666,34 @@ function endTurn() {
     document.getElementById('playCardBtn').disabled = false;
 }
 
-async function checkGameEnd() {
+async function checkGameEnd(surrendered = false) {
     let gameIsOver = false;
     let finalMessage = "";
     let modalClass = "";
     let title = "Game Over!";
     let isVictory = false;
 
-    if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
+    if (surrendered) {
         gameIsOver = true;
-        const newGamesPlayed = gamesPlayed + 1;
-        let newCoinTotal = cryptidCoins;
-
+        finalMessage = "You surrendered the match.";
+        modalClass = "defeat";
+        title = "Defeat!";
+    } else if (playerHP <= 0 || botHP <= 0 || currentTurn >= MAX_TURNS) {
+        gameIsOver = true;
         if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
         else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
         else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
-        else if (currentTurn > MAX_TURNS) {
+        else if (currentTurn >= MAX_TURNS) {
             finalMessage = "Max turns reached. ";
             if (playerHP > botHP) { finalMessage += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
             else if (botHP > playerHP) { finalMessage += "Bot wins by HP advantage!"; modalClass = "defeat"; title = "Defeat!"; } 
             else { finalMessage += "It's a draw!"; modalClass = "draw"; }
         }
+    }
+
+    if (gameIsOver) {
+        const newGamesPlayed = gamesPlayed + 1;
+        let newCoinTotal = cryptidCoins;
 
         if(isVictory){
             newCoinTotal += WIN_REWARD;
@@ -654,10 +724,6 @@ function showGameEndModal(title, message, outcomeClass) {
     document.getElementById('modalTitle').innerText = title;
     document.getElementById('modalMessage').innerText = message;
     modal.querySelector('.modal-content').className = 'modal-content ' + outcomeClass;
-    
-    document.getElementById('modalPlayAgain').onclick = () => { modal.classList.remove('show'); startGame(); };
-    document.getElementById('modalMainMenu').onclick = () => { modal.classList.remove('show'); showPackView(); };
-
     modal.classList.add('show');
 }
 
@@ -674,6 +740,7 @@ async function confirmDeleteAccount() {
         await currentUser.delete();
         
         showMessage("Account deleted successfully.", "success", true);
+        // Auth state listener will handle the UI change
     } catch (error) {
         console.error("Error deleting account:", error);
         showMessage("Error deleting account. You may need to log out and log back in again before retrying.", "error", true);
@@ -684,6 +751,7 @@ async function confirmDeleteAccount() {
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
+    // --- ELEMENT SELECTORS ---
     const preLoader = document.getElementById('pre-loader');
     const mainLoader = document.getElementById('main-loader');
     const cardFront = document.querySelector('#main-loader .card-front');
@@ -691,10 +759,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const gameContent = document.getElementById('game-content');
     const body = document.body;
 
+    // --- INITIAL STATE ---
     body.style.overflow = 'hidden';
+    gameContent.style.display = 'none'; // Ensure content is hidden initially
 
-    const imageUrl1 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png';
-    const imageUrl2 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png';
+    // --- IMAGE PRELOADING ---
+    const imageUrl1 = 'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/bigfoot.png';
+    const imageUrl2 = 'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png';
 
     const loadImage = (src, container) => {
         return new Promise((resolve) => {
@@ -708,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
             img.onerror = (err) => {
                 console.error(`Failed to load image: ${src}`, err);
                 container.innerHTML = '<p style="font-size: 12px; color: #ccc;">Image not found</p>';
-                resolve(); 
+                resolve(); // Resolve anyway to not block the app
             };
         });
     };
@@ -726,6 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("A critical error occurred loading images:", error);
     });
 
+    // --- MAIN LOADER INTERACTION ---
     mainLoader.addEventListener('click', () => {
         mainLoader.classList.add('hiding');
 
@@ -735,8 +807,35 @@ document.addEventListener('DOMContentLoaded', () => {
             body.style.overflow = 'auto'; 
             
             assetsLoaded = true;
+            // Trigger the auth state check now that the game is ready to be shown
             handleAuthState(auth.currentUser);
 
         }, 700); 
     }, { once: true });
+
+    // --- ADD ALL EVENT LISTENERS ---
+    // Auth
+    document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
+    document.getElementById('continue-with-email').addEventListener('click', continueWithEmail);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    
+    // Navigation
+    document.getElementById('nav-packs').addEventListener('click', showPackView);
+    document.getElementById('nav-collection').addEventListener('click', showCollectionView);
+    document.getElementById('nav-deck').addEventListener('click', showDeckBuilderView);
+    document.getElementById('nav-battle').addEventListener('click', showBattleView);
+    document.getElementById('nav-settings').addEventListener('click', showSettingsView);
+
+    // Main Actions
+    document.getElementById('openPackBtn').addEventListener('click', openPack);
+    document.getElementById('saveDeckBtn').addEventListener('click', saveDeck);
+    document.getElementById('playCardBtn').addEventListener('click', playPlayerCard);
+    document.getElementById('surrenderBtn').addEventListener('click', () => checkGameEnd(true));
+
+    // Modals
+    document.getElementById('deleteAccountBtn').addEventListener('click', showDeleteModal);
+    document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDeleteAccount);
+    document.getElementById('cancelDeleteBtn').addEventListener('click', () => document.getElementById('deleteAccountModal').classList.remove('show'));
+    document.getElementById('modalPlayAgain').addEventListener('click', () => { document.getElementById('gameEndModal').classList.remove('show'); startGame(); });
+    document.getElementById('modalMainMenu').addEventListener('click', () => { document.getElementById('gameEndModal').classList.remove('show'); showPackView(); });
 });
