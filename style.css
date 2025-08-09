@@ -32,8 +32,8 @@ body {
     min-height: 100dvh;
     margin: 0;
     padding-bottom: 80px; /* Space for bottom nav bar */
-    overflow: hidden; /* Prevent scrollbars during animation */
     box-sizing: border-box;
+    /* overflow is controlled by JS */
 }
 
 /* --- Background Image for Main Views --- */
