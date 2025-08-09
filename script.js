@@ -159,38 +159,6 @@ function signInWithGoogle() {
         });
 }
 
-// New function to handle email sign-in flow
-async function continueWithEmail() {
-    const emailInput = document.getElementById('email');
-    const email = emailInput.value.trim();
-    if (!email) {
-        showMessage("Please enter your email address.", "warning", true);
-        return;
-    }
-
-    try {
-        const signInMethods = await auth.fetchSignInMethodsForEmail(email);
-        
-        if (signInMethods.length === 0) {
-            // New user, redirect to registration page
-            window.location.href = `register.html?email=${encodeURIComponent(email)}`;
-        } else {
-            // Existing user, prompt for password
-            const password = prompt(`Welcome back! Please enter the password for ${email}:`);
-            if (password) {
-                auth.signInWithEmailAndPassword(email, password)
-                    .catch(error => {
-                        showMessage(`Login failed: ${error.message}`, 'error', true);
-                    });
-                 // onAuthStateChanged will handle the rest
-            }
-        }
-    } catch (error) {
-        showMessage(`An error occurred: ${error.message}`, 'error', true);
-    }
-}
-
-
 // Logout the current user
 function logout() {
     auth.signOut().then(() => {
@@ -816,7 +784,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ADD ALL EVENT LISTENERS ---
     // Auth
     document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
-    document.getElementById('continue-with-email').addEventListener('click', continueWithEmail);
     document.getElementById('logoutBtn').addEventListener('click', logout);
     
     // Navigation
