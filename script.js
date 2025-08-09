@@ -198,9 +198,9 @@ async function preloadAllGameAssets() {
 
     // Define all image URLs
     const imageUrls = [
-        // Loader-specific images
-        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/back_of_card_loading_screen.png',
+        // Loader-specific images (swapped)
         'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/X_Bigfoot.png',
+        'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/back_of_card_loading_screen.png',
         // Essential UI images
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
@@ -232,9 +232,9 @@ async function preloadAllGameAssets() {
         });
     });
 
-    // Special handling for the two loader card faces
-    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/back_of_card_loading_screen.png', cardFront));
-    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/X_Bigfoot.png', cardBack));
+    // Special handling for the two loader card faces (swapped)
+    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/X_Bigfoot.png', cardFront));
+    promises.push(loadImage('https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/assets/back_of_card_loading_screen.png', cardBack));
 
     // Wait for all images to finish loading
     await Promise.all(promises);
