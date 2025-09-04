@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptids - Loading...</title>
+    <style>
+        /* General Body Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            background-color: #222222; /* Dark Gray Background */
+            overflow: hidden; /* Prevent scrollbars during animation */
+        }
+
+        /* --- STAGE 1: THE PRE-LOADER --- */
+        #pre-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #222222; /* Dark Gray Background */
+            z-index: 2000;
+            display: flex;
+            flex-direction: column; /* Stack animation and text vertically */
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        /* New CSS Bouncing Loader */
+        .bouncing-loader {
+            display: flex;
+            justify-content: center;
+        }
+
+        .bouncing-loader > div {
+            width: 16px;
+            height: 16px;
+            margin: 3px 6px;
+            border-radius: 50%;
+            background-color: #fff;
+            opacity: 1;
+            animation: bouncing-loader 0.6s infinite alternate;
+        }
+
+        @keyframes bouncing-loader {
+            to {
+                opacity: 0.1;
+                transform: translateY(-16px);
+            }
+        }
+
+        .bouncing-loader > div:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .bouncing-loader > div:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+
+        .loading-text {
+            color: white;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+
+        /* --- STAGE 2: THE MAIN LOADER --- */
+        #main-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #222222; /* Dark Gray Background */
+            z-index: 1999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        #main-loader p {
+            color: white;
+            margin-top: 25px;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            transition: opacity 0.4s ease; /* Add transition for the text */
+        }
+
+        .card {
+            width: 120px;
+            height: 168px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: classic-flip 2.5s infinite ease-in-out;
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            color: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            overflow: hidden;
+            background-color: #4527a0; /* Fallback color */
+        }
+
+        .card-face img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        @keyframes classic-flip {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        /* --- ZOOM-OUT ANIMATION --- */
+        #main-loader.hiding .card {
+            /* Stop the flip and apply the zoom-out animation */
+            animation: zoom-out 0.7s ease-in forwards;
+        }
+        #main-loader.hiding p {
+            opacity: 0;
+        }
+
+        @keyframes zoom-out {
+            from {
+                transform: scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: scale(15);
+                opacity: 0;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- STAGE 1: PRE-LOADER HTML -->
+    <div id="pre-loader">
+        <div class="bouncing-loader">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <p class="loading-text">Loading...</p>
+    </div>
+
+    <!-- STAGE 2: MAIN LOADER HTML -->
+    <div id="main-loader">
+        <div class="card">
+            <div class="card-face card-front">
+                <!-- The preloaded image will be inserted here -->
+            </div>
+            <div class="card-face card-back">
+                <!-- The preloaded Bigfoot image will be inserted here -->
+            </div>
+        </div>
+        <p>Tap to Continue</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const preLoader = document.getElementById('pre-loader');
+            const mainLoader = document.getElementById('main-loader');
+            const cardFront = document.querySelector('.card-front');
+            const cardBack = document.querySelector('.card-back');
+
+            // --- Image URLs ---
+            const imageUrl1 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/back_of_card_loading_screen.png';
+            const imageUrl2 = 'https://raw.githubusercontent.com/CGlover-cmd/Cryptids/main/photos/X_Bigfoot.png';
+
+            // Function to create and load an image, returns a promise
+            const loadImage = (src, container) => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.src = src;
+                    img.onload = () => {
+                        // Clear container in case there's fallback content
+                        container.innerHTML = ''; 
+                        container.appendChild(img);
+                        resolve();
+                    };
+                    img.onerror = (err) => {
+                        console.error(`Failed to load image: ${src}`);
+                        container.innerHTML = '<p style="font-size: 12px; color: #ccc;">Image not found</p>';
+                        resolve(); // Resolve to not block the app load
+                    };
+                });
+            };
+
+            // Use Promise.all to wait for both images to load
+            Promise.all([
+                loadImage(imageUrl1, cardFront),
+                loadImage(imageUrl2, cardBack)
+            ]).then(() => {
+                // Both images are loaded (or failed gracefully).
+                // Hide the pre-loader and show the main interactive loader.
+                preLoader.style.opacity = '0';
+                setTimeout(() => {
+                    preLoader.style.display = 'none';
+                    mainLoader.style.display = 'flex';
+                }, 500); // Wait for fade-out transition
+            }).catch(error => {
+                console.error("A critical error occurred loading images:", error);
+            });
+
+            // --- CLICK/TOUCH LOGIC ---
+            mainLoader.addEventListener('click', () => {
+                // Add the 'hiding' class to trigger the zoom animation
+                mainLoader.classList.add('hiding');
+
+                // After the animation finishes, redirect to the login page
+                setTimeout(() => {
+                    // Redirect to your main game page
+                    window.location.href = 'index.html';
+                }, 700); // This duration MUST match the animation duration in CSS
+            }, { once: true }); // { once: true } ensures the event fires only once
+        });
+    </script>
+
+</body>
+</html>
