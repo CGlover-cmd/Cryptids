@@ -5,38 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Cryptids</title>
 
-    <!-- Google Font for the Enter Game button -->
     <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
     
-    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-    <!-- Link to the external stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- STAGE 1: PRE-LOADER HTML -->
     <div id="pre-loader">
         <div class="bouncing-loader">
             <div></div>
             <div></div>
             <div></div>
         </div>
-        <p class="loading-text">Loading...</p>
+        <p id="loading-text" class="loading-text">Loading...</p>
     </div>
 
-    <!-- Main Game Content (Initially Hidden) -->
     <div id="game-content" style="display: none;">
-        <!-- Global Message Container -->
         <div id="globalMessage" class="global-message"></div>
 
-        <!-- Home screen view (will be activated by script.js after loading) -->
         <div id="homeView" class="view"></div>
 
-        <!-- Authentication view -->
         <div id="authView" class="view">
             <div class="auth-container">
                 <h1 id="auth-title">Sign In</h1>
@@ -49,7 +41,6 @@
             </div>
         </div>
 
-        <!-- Pack opening view -->
         <div id="packView" class="view">
             <div class="currency-display">Cryptid Coins: <span id="coinBalance">0</span></div>
             <h1 id="pack-opening-title">Cryptid Pack Opening</h1>
@@ -57,13 +48,11 @@
             <div class="cards-container" id="packCardContainer"></div>
         </div>
 
-        <!-- Card collection view -->
         <div id="collectionView" class="view">
             <h1>Your Cryptid Collection</h1>
             <div class="cards-container collection-view" id="collectionCardContainer"></div>
         </div>
 
-        <!-- Deck builder view -->
         <div id="deckBuilderView" class="view">
             <h1>Build Your Deck</h1>
             <div class="deck-builder-controls">
@@ -73,7 +62,6 @@
             <div class="cards-container deck-builder-view" id="deckBuilderCardsContainer"></div>
         </div>
 
-        <!-- Main game battle view -->
         <div id="gameView" class="view">
             <h1>Cryptid Battle</h1>
             <div class="game-info">
@@ -102,7 +90,6 @@
             <div class="game-message" id="gameMessage"></div>
         </div>
 
-        <!-- Settings view -->
         <div id="settingsView" class="view">
             <div class="settings-container">
                 <h2>Settings</h2>
@@ -114,7 +101,6 @@
             </div>
         </div>
 
-        <!-- Game end modal -->
         <div id="gameEndModal" class="modal">
             <div class="modal-content">
                 <h2 id="modalTitle"></h2>
@@ -126,7 +112,6 @@
             </div>
         </div>
 
-        <!-- Delete account confirmation modal -->
         <div id="deleteAccountModal" class="modal">
             <div class="modal-content">
                 <h2>Delete Account</h2>
@@ -138,7 +123,6 @@
             </div>
         </div>
 
-        <!-- Bottom navigation bar -->
         <nav id="bottom-nav">
             <button id="nav-packs" class="nav-btn" onclick="showPackView()">
                 <svg viewBox="0 0 24 24"><path d="M21.4,6.6l-8.8-5.1C12.2,1.3,11.8,1.3,11.4,1.5L2.6,6.6C2.2,6.8,2,7.2,2,7.6v9.6c0,0.4,0.2,0.8,0.6,1l8.8,5.1c0.2,0.1,0.4,0.2,0.6,0.2s0.4-0.1,0.6-0.2l8.8-5.1c0.4-0.2,0.6-0.6,0.6-1V7.6C22,7.2,21.8,6.8,21.4,6.6z M12,3.1l7.1,4.1l-7.1,4.1L4.9,7.2L12,3.1z M4,16.5V8.8l7.4,4.3v7.7L4,16.5z M13.4,20.8v-7.7l7.4-4.3v7.7L13.4,20.8z"></path></svg>
@@ -163,7 +147,6 @@
         </nav>
     </div>
 
-    <!-- Link to the single, consolidated JavaScript file -->
     <script src="script.js"></script>
 </body>
 </html>
