@@ -51,22 +51,18 @@ let playerDeckIds = [];
 let cryptidCoins = 0;
 let packsOpened = 0;
 let gamesPlayed = 0;
-let isInitialLoad = true; 
+let isInitialLoad = true;
 
 const PACK_COST = 50;
-const WIN_REWARD = 25;
+const WIN_REWARD = 10;
 const MAX_DECK_SIZE = 10;
-const MAX_BENCH_SIZE = 4;
-const STARTING_HAND_SIZE = 5;
+const MAX_TURNS = 20;
 
-// New Game State Variables
-let gameState = {
-    player: { deck: [], hand: [], bench: [], active: null, discard: [] },
-    bot: { deck: [], hand: [], bench: [], active: null, discard: [] },
-    isPlayerTurn: true,
-    turn: 1,
-    gamePhase: 'setup' // 'setup', 'playing', 'ended'
-};
+// Game State Variables
+let playerHP, botHP, currentTurn, playerCardInPlay, botCardInPlay;
+let playerDeck, botDeck, playerHand, botHand;
+let selectedPlayerCardData = null;
+let selectedPlayerCardElement = null;
 let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
@@ -75,26 +71,36 @@ auth.onAuthStateChanged(async (user) => {
     const preLoader = document.getElementById('pre-loader');
     const gameContent = document.getElementById('game-content');
 
+    // This block runs only once when the app first loads and auth state is checked.
     if (isInitialLoad) {
         isInitialLoad = false;
+        
+        // Preload all assets and show progress on the pre-loader
         await preloadAllGameAssets();
+
+        // Hide the pre-loader with a fade-out effect
+        preLoader.style.opacity = '0';
+        
+        // Wait for the fade-out transition to complete
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+        
         preLoader.style.display = 'none';
-        gameContent.style.display = 'flex';
+        gameContent.style.display = 'flex'; 
     }
 
+    // This part runs on initial load (after preloading) AND every time auth state changes later.
     if (user) {
         currentUser = user;
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
         currentUser = null;
-        showView(homeView);
-        homeView.addEventListener('click', () => {
-            showView(authView);
-        }, { once: true });
+        showView(authView); // Go directly to sign-in screen
     }
 });
 
+
+// Loads user data from Firestore
 async function loadUserData(userId) {
     const userRef = db.collection('users').doc(userId);
     try {
@@ -111,6 +117,7 @@ async function loadUserData(userId) {
             updateDeckSizeDisplay();
             showSettings();
         } else {
+            console.log("No such document! This should be created on registration.");
             await createNewUserDocument(userId, auth.currentUser.email);
         }
     } catch (error) {
@@ -119,6 +126,7 @@ async function loadUserData(userId) {
     }
 }
 
+// Creates a new user document in Firestore with default values
 async function createNewUserDocument(userId, email) {
     const userRef = db.collection('users').doc(userId);
     const newUser = {
@@ -135,6 +143,7 @@ async function createNewUserDocument(userId, email) {
     await loadUserData(userId);
 }
 
+// Sign in with Google
 function signInWithGoogle() {
     auth.signInWithPopup(googleProvider)
         .then(async (result) => {
@@ -150,6 +159,7 @@ function signInWithGoogle() {
         });
 }
 
+// Logout the current user
 function logout() {
     auth.signOut().then(() => {
         showMessage('You have been logged out.', 'success', true);
@@ -166,16 +176,17 @@ async function preloadAllGameAssets() {
     const imageUrls = [
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
         'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
     ];
 
     allCryptids.forEach(cryptid => {
-        if (cryptid.image) imageUrls.push(cryptid.image);
+        if (cryptid.image) {
+            imageUrls.push(cryptid.image);
+        }
     });
 
     let loadedCount = 0;
     const totalImages = imageUrls.length;
+    
     loadingText.innerText = `Loading 0/${totalImages} assets...`;
 
     return new Promise((resolve) => {
@@ -189,16 +200,20 @@ async function preloadAllGameAssets() {
             img.onload = img.onerror = () => {
                 loadedCount++;
                 loadingText.innerText = `Loading ${loadedCount}/${totalImages} assets...`;
-                if (loadedCount === totalImages) resolve();
+                if (loadedCount === totalImages) {
+                    resolve();
+                }
             };
         });
     });
 }
 
-
 // --- UTILITY & SETUP FUNCTIONS ---
 function updateCoinDisplay() {
-    document.getElementById('coinBalance').innerText = cryptidCoins;
+    const coinBalanceEl = document.getElementById('coinBalance');
+    if(coinBalanceEl) {
+        coinBalanceEl.innerText = cryptidCoins;
+    }
 }
 
 function updateDeckSizeDisplay() {
@@ -233,11 +248,14 @@ function shuffleArray(array) {
     }
 }
 
-// MODIFIED: createCardElement to show currentHP if available
 function createCardElement(cryptid, isCollected = true, showFrontImmediately = false) {
     const cardWrapper = document.createElement("div");
     cardWrapper.className = `card-wrapper ${cryptid ? cryptid.rarity : ''}`;
     cardWrapper.dataset.cryptidId = cryptid ? cryptid.id : 'uncollected';
+
+    if (cryptid && cryptid.rarity === 'mythic') {
+        cardWrapper.classList.add('mythic-animation');
+    }
 
     const cardInner = document.createElement("div");
     cardInner.className = `card-inner`;
@@ -253,11 +271,9 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
         const cardContent = document.createElement("div");
         cardContent.className = 'card-content';
 
-        // Show current HP if in a game, otherwise base HP
-        const hpToShow = cryptid.currentHP !== undefined ? `${cryptid.currentHP}/${cryptid.hp}` : cryptid.hp;
         const hpDisplay = document.createElement('div');
         hpDisplay.className = 'stat-display hp-display';
-        hpDisplay.innerHTML = `<svg viewBox="0 0 24 24" fill="#f56565"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>${hpToShow}</span>`;
+        hpDisplay.innerHTML = `<svg viewBox="0 0 24 24" fill="#f56565"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg><span>${cryptid.hp}</span>`;
         cardContent.appendChild(hpDisplay);
 
         const attackDisplay = document.createElement('div');
@@ -285,7 +301,6 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
     cardWrapper.appendChild(cardInner);
     return cardWrapper;
 }
-
 
 // --- MESSAGE DISPLAY ---
 function showMessage(message, type = "info", isGlobal = false) {
@@ -365,6 +380,7 @@ async function openPack() {
 
     const newCoins = cryptidCoins - PACK_COST;
     const newPacksOpened = packsOpened + 1;
+
     const container = document.getElementById("packCardContainer");
     container.innerHTML = ""; 
     
@@ -419,7 +435,9 @@ function showCollection() {
     });
 
     rarityOrder.forEach(rarity => {
-        if (rarity === 'mythic' && !collectedCardIds.has('snallygaster')) return;
+        if (rarity === 'mythic' && !collectedCardIds.has('snallygaster')) {
+            return; 
+        }
 
         const cryptidsInThisRarity = cryptidsByRarity[rarity].sort((a, b) => a.name.localeCompare(b.name));
         if (cryptidsInThisRarity.length > 0) {
@@ -492,7 +510,7 @@ async function saveDeck() {
     }
 }
 
-// --- ******** NEW GAME LOGIC ******** ---
+// --- GAME LOGIC ---
 function tryStartGame() {
     if (playerDeckIds.length !== MAX_DECK_SIZE) {
         showMessage("Please build and save a deck of " + MAX_DECK_SIZE + " cards first!", "error", true);
@@ -503,267 +521,173 @@ function tryStartGame() {
 
 function startGame() {
     showView(gameView, 'nav-battle');
-    
-    // Reset game state
-    gameState.player = { deck: [], hand: [], bench: [], active: null, discard: [] };
-    gameState.bot = { deck: [], hand: [], bench: [], active: null, discard: [] };
-    gameState.isPlayerTurn = true;
-    gameState.turn = 1;
-    
-    // Setup player's deck
-    gameState.player.deck = playerDeckIds.map(id => ({...allCryptids.find(c => c.id === id), currentHP: allCryptids.find(c => c.id === id).hp, uniqueId: crypto.randomUUID()}));
-    shuffleArray(gameState.player.deck);
+    showMessage("Game Started! Select a card to play.", "info");
 
-    // Setup bot's deck
+    playerHP = 100;
+    botHP = 100;
+    currentTurn = 1;
+    playerCardInPlay = null;
+    botCardInPlay = null;
+    selectedPlayerCardData = null;
+    selectedPlayerCardElement = null;
+
+    playerDeck = playerDeckIds.map(id => ({...allCryptids.find(c => c.id === id)}));
+    shuffleArray(playerDeck);
+    
     const botCardPool = gamesPlayed < 10 
         ? allCryptids.filter(c => c.rarity === 'common' || c.rarity === 'rare')
         : allCryptids.filter(c => c.rarity !== 'mythic');
-    let botFullDeck = [...botCardPool].map(c => ({...c, currentHP: c.hp, uniqueId: crypto.randomUUID()}));
-    shuffleArray(botFullDeck);
-    gameState.bot.deck = botFullDeck.slice(0, MAX_DECK_SIZE);
 
-    // Draw starting hands
-    for(let i = 0; i < STARTING_HAND_SIZE; i++) {
-        drawCard('player');
-        drawCard('bot');
+    botDeck = [...botCardPool].map(c => ({...c}));
+    shuffleArray(botDeck);
+    botDeck = botDeck.slice(0, MAX_DECK_SIZE);
+
+    playerHand = [];
+    botHand = [];
+    for (let i = 0; i < 3; i++) {
+        if (playerDeck.length > 0) playerHand.push(playerDeck.shift());
+        if (botDeck.length > 0) botHand.push(botDeck.shift());
     }
-
-    // Initial setup phase
-    gameState.gamePhase = 'setup';
-    showMessage("Game Started! Place a Cryptid in your active spot.", "info");
-    
-    // Bot places its first card
-    botSetup();
 
     updateGameUI();
+    document.getElementById('playCardBtn').disabled = false;
 }
-
-function drawCard(player) {
-    if (gameState[player].deck.length > 0) {
-        gameState[player].hand.push(gameState[player].deck.shift());
-    } else {
-        // Handle deck out condition later
-    }
-}
-
-function botSetup() {
-    if (gameState.bot.hand.length > 0) {
-        // Simple AI: play the first card to active
-        gameState.bot.active = gameState.bot.hand.shift();
-        // Place a few more on the bench
-        let benchSpots = MAX_BENCH_SIZE;
-        while(benchSpots > 0 && gameState.bot.hand.length > 0) {
-            gameState.bot.bench.push(gameState.bot.hand.shift());
-            benchSpots--;
-        }
-    }
-}
-
 
 function updateGameUI() {
-    // Render Player's side
-    renderZone('playerHand', gameState.player.hand);
-    renderZone('playerBench', gameState.player.bench);
-    renderZone('playerActive', gameState.player.active ? [gameState.player.active] : []);
-    renderZone('playerDiscard', gameState.player.discard.length > 0 ? [gameState.player.discard[gameState.player.discard.length - 1]] : []);
-    document.getElementById('playerDeckCount').innerText = gameState.player.deck.length;
+    document.getElementById('playerHP').innerText = playerHP;
+    document.getElementById('botHP').innerText = botHP;
+    document.getElementById('turnCounter').innerText = `${currentTurn} / ${MAX_TURNS}`;
 
-    // Render Bot's side
-    renderZone('botHand', gameState.bot.hand, true); // true to render face down
-    renderZone('botBench', gameState.bot.bench);
-    renderZone('botActive', gameState.bot.active ? [gameState.bot.active] : []);
-    renderZone('botDiscard', gameState.bot.discard.length > 0 ? [gameState.bot.discard[gameState.bot.discard.length - 1]] : []);
-    document.getElementById('botDeckCount').innerText = gameState.bot.deck.length;
-
-    // Update buttons
-    const attackBtn = document.getElementById('attackBtn');
-    const endTurnBtn = document.getElementById('endTurnBtn');
-
-    if (gameState.gamePhase === 'playing' && gameState.isPlayerTurn) {
-        attackBtn.disabled = !gameState.player.active || !gameState.bot.active;
-        endTurnBtn.disabled = false;
-    } else {
-        attackBtn.disabled = true;
-        endTurnBtn.disabled = true;
-    }
-}
-
-function renderZone(zoneId, cards, faceDown = false) {
-    const zoneEl = document.getElementById(zoneId);
-    zoneEl.innerHTML = '';
-    
-    const cardArray = Array.isArray(cards) ? cards : [cards];
-
-    cardArray.forEach(card => {
-        if (!card) return;
-        const cardEl = createCardElement(card, true, !faceDown);
-        
-        // Add click handlers for player's cards
-        if (zoneId.startsWith('player')) {
-            if (zoneId === 'playerHand') {
-                cardEl.onclick = () => playFromHand(card.uniqueId);
-            } else if (zoneId === 'playerBench') {
-                cardEl.onclick = () => promoteFromBench(card.uniqueId);
-            }
+    const playerHandContainer = document.getElementById('playerHand');
+    playerHandContainer.innerHTML = '';
+    playerHand.forEach(card => {
+        const cardEl = createCardElement(card, true, true);
+        cardEl.onclick = () => selectPlayerCard(card, cardEl);
+        if(selectedPlayerCardData && selectedPlayerCardData.id === card.id) {
+            cardEl.classList.add('selected');
         }
-
-        zoneEl.appendChild(cardEl);
+        playerHandContainer.appendChild(cardEl);
     });
+
+    const botHandContainer = document.getElementById('botHand');
+    botHandContainer.innerHTML = '';
+    botHand.forEach(card => {
+        const cardEl = createCardElement(card, true, false);
+        botHandContainer.appendChild(cardEl);
+    });
+
+    const playerInPlayContainer = document.getElementById('playerInPlay');
+    playerInPlayContainer.innerHTML = '';
+    if (playerCardInPlay) {
+        playerInPlayContainer.appendChild(createCardElement(playerCardInPlay, true, true));
+    }
+
+    const botInPlayContainer = document.getElementById('botInPlay');
+    botInPlayContainer.innerHTML = '';
+    if (botCardInPlay) {
+        botInPlayContainer.appendChild(createCardElement(botCardInPlay, true, true));
+    }
 }
 
-function playFromHand(uniqueId) {
-    const cardIndex = gameState.player.hand.findIndex(c => c.uniqueId === uniqueId);
-    if (cardIndex === -1) return;
-    
-    const card = gameState.player.hand[cardIndex];
+function selectPlayerCard(cardData, cardElement) {
+    if (selectedPlayerCardElement) {
+        selectedPlayerCardElement.classList.remove('selected');
+    }
+    selectedPlayerCardData = cardData;
+    selectedPlayerCardElement = cardElement;
+    selectedPlayerCardElement.classList.add('selected');
+}
 
-    if (!gameState.player.active) {
-        gameState.player.active = card;
-        gameState.player.hand.splice(cardIndex, 1);
-        showMessage(`${card.name} is now your active Cryptid!`, 'info');
-        if(gameState.gamePhase === 'setup') {
-            gameState.gamePhase = 'playing';
-            showMessage("Your turn to attack!", "info");
-        }
-    } else if (gameState.player.bench.length < MAX_BENCH_SIZE) {
-        gameState.player.bench.push(card);
-        gameState.player.hand.splice(cardIndex, 1);
+function playPlayerCard() {
+    if (!selectedPlayerCardData) {
+        showMessage("Please select a card from your hand to play!", "warning");
+        return;
+    }
+
+    playerCardInPlay = selectedPlayerCardData;
+    playerHand = playerHand.filter(card => card.id !== selectedPlayerCardData.id);
+    selectedPlayerCardData = null;
+    selectedPlayerCardElement = null;
+
+    if (botHand.length > 0) {
+        botCardInPlay = botHand.shift();
     } else {
-        showMessage("Your bench is full!", 'warning');
-    }
-    updateGameUI();
-}
-
-function promoteFromBench(uniqueId) {
-    if (!gameState.isPlayerTurn || gameState.gamePhase !== 'playing') return;
-    if (gameState.player.active) {
-        showMessage("You already have an active Cryptid.", "warning");
-        return;
-    }
-
-    const cardIndex = gameState.player.bench.findIndex(c => c.uniqueId === uniqueId);
-    if (cardIndex > -1) {
-        const card = gameState.player.bench[cardIndex];
-        gameState.player.active = card;
-        gameState.player.bench.splice(cardIndex, 1);
-        showMessage(`${card.name} is now your active Cryptid!`, 'info');
-        updateGameUI();
-    }
-}
-
-
-function attack() {
-    if (!gameState.isPlayerTurn || gameState.gamePhase !== 'playing' || !gameState.player.active || !gameState.bot.active) {
-        return;
-    }
-
-    const attacker = gameState.player.active;
-    const defender = gameState.bot.active;
-    const damage = attacker.attack.damage;
-
-    defender.currentHP -= damage;
-    showMessage(`${attacker.name} attacks ${defender.name} for ${damage} damage!`, 'info');
-
-    if (defender.currentHP <= 0) {
-        showMessage(`${defender.name} was defeated!`, 'success');
-        gameState.bot.discard.push(defender);
-        gameState.bot.active = null;
-
-        if (checkGameEnd()) return;
-
-        // Bot needs to promote a new active card
-        if(gameState.bot.bench.length > 0) {
-            gameState.bot.active = gameState.bot.bench.shift();
-            showMessage(`Bot promotes ${gameState.bot.active.name}.`, 'info');
-        } else {
-             if (checkGameEnd()) return;
-        }
+        botCardInPlay = null;
     }
     
+    document.getElementById('playCardBtn').disabled = true;
+
+    performCombat();
     updateGameUI();
-    endTurn();
+    
+    setTimeout(() => endTurn(), 2500);
 }
 
+function performCombat() {
+    let message = "";
+    if (playerCardInPlay && botCardInPlay) {
+        if (playerCardInPlay.rarity === 'mythic' && botCardInPlay.rarity !== 'mythic') {
+            botHP = 0;
+            message = `${playerCardInPlay.name}'s Apex Predator ability instantly defeats ${botCardInPlay.name}!`;
+        } else {
+            botHP -= playerCardInPlay.attack.damage;
+            playerHP -= botCardInPlay.attack.damage;
+            message = `${playerCardInPlay.name} uses ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage! ${botCardInPlay.name} uses ${botCardInPlay.attack.name} for ${botCardInPlay.attack.damage} damage!`;
+        }
+    } else if (playerCardInPlay) {
+        botHP -= playerCardInPlay.attack.damage;
+        message = `${playerCardInPlay.name} attacks the Bot directly with ${playerCardInPlay.attack.name} for ${playerCardInPlay.attack.damage} damage!`;
+    }
+    showMessage(message, "info");
+}
 
 function endTurn() {
-    if (!gameState.isPlayerTurn || gameState.gamePhase !== 'playing') return;
+    if (checkGameEnd()) return;
+
+    currentTurn++;
+    playerCardInPlay = null;
+    botCardInPlay = null;
+
+    if (playerDeck.length > 0 && playerHand.length < 5) playerHand.push(playerDeck.shift());
+    if (botDeck.length > 0 && botHand.length < 5) botHand.push(botDeck.shift());
     
-    gameState.isPlayerTurn = false;
-    showMessage("Ending your turn...", 'info');
-    updateGameUI(); // Disable buttons
-
-    setTimeout(runBotTurn, 2000);
-}
-
-function runBotTurn() {
     if(checkGameEnd()) return;
-
-    // 1. Draw a card
-    drawCard('bot');
-    showMessage("Bot draws a card.", 'info');
-
-    // 2. Simple AI: Attack if possible
-    if(gameState.bot.active && gameState.player.active) {
-        const attacker = gameState.bot.active;
-        const defender = gameState.player.active;
-        const damage = attacker.attack.damage;
-
-        defender.currentHP -= damage;
-        showMessage(`Bot's ${attacker.name} attacks your ${defender.name} for ${damage} damage!`, 'error');
-
-        if (defender.currentHP <= 0) {
-            showMessage(`Your ${defender.name} was defeated!`, 'error');
-            gameState.player.discard.push(defender);
-            gameState.player.active = null;
-            if (checkGameEnd()) return;
-            showMessage("Promote a Cryptid from your bench.", "warning");
-        }
-    }
-    
-    // 3. End bot turn
-    gameState.isPlayerTurn = true;
-    gameState.turn++;
-    showMessage("Your turn!", "info");
-    drawCard('player');
 
     updateGameUI();
-    if(checkGameEnd()) return;
+    showMessage(`Turn ${currentTurn} begins!`, "info");
+    document.getElementById('playCardBtn').disabled = false;
 }
 
-
 async function checkGameEnd() {
-    let winner = null;
+    let gameIsOver = false;
+    let finalMessage = "";
+    let modalClass = "";
+    let title = "Game Over!";
+    let isVictory = false;
 
-    const playerHasCryptids = gameState.player.active || gameState.player.bench.length > 0;
-    const botHasCryptids = gameState.bot.active || gameState.bot.bench.length > 0;
+    if (playerHP <= 0 || botHP <= 0 || currentTurn > MAX_TURNS) {
+        gameIsOver = true;
+        const newGamesPlayed = gamesPlayed + 1;
+        let newCoinTotal = cryptidCoins;
 
-    if (!playerHasCryptids) winner = 'bot';
-    if (!botHasCryptids) winner = 'player';
-    
-    // Check for deck out
-    if(gameState.isPlayerTurn && gameState.player.deck.length === 0 && gameState.player.hand.length === 0 && !playerHasCryptids) winner = 'bot';
-    if(!gameState.isPlayerTurn && gameState.bot.deck.length === 0 && gameState.bot.hand.length === 0 && !botHasCryptids) winner = 'player';
+        if (playerHP <= 0 && botHP <= 0) { finalMessage = "It's a draw!"; modalClass = "draw"; } 
+        else if (playerHP <= 0) { finalMessage = "You were defeated!"; modalClass = "defeat"; title = "Defeat!"; } 
+        else if (botHP <= 0) { finalMessage = "You are victorious!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
+        else if (currentTurn > MAX_TURNS) {
+            finalMessage = "Max turns reached. ";
+            if (playerHP > botHP) { finalMessage += "You win by HP advantage!"; modalClass = "victory"; title = "Victory!"; isVictory = true; } 
+            else if (botHP > playerHP) { finalMessage += "Bot wins by HP advantage!"; modalClass = "defeat"; title = "Defeat!"; } 
+            else { finalMessage += "It's a draw!"; modalClass = "draw"; }
+        }
 
-    if (winner) {
-        gameState.gamePhase = 'ended';
-        let title, message, outcomeClass, isVictory = false;
-        
-        if(winner === 'player') {
-            title = "Victory!";
-            message = `You defeated the bot! You earned ${WIN_REWARD} Cryptid Coins.`;
-            outcomeClass = 'victory';
-            isVictory = true;
-        } else {
-            title = "Defeat!";
-            message = "The bot defeated all your Cryptids!";
-            outcomeClass = 'defeat';
+        if(isVictory){
+            newCoinTotal += WIN_REWARD;
+            finalMessage += ` You earned ${WIN_REWARD} Cryptid Coins!`;
         }
         
-        const newGamesPlayed = gamesPlayed + 1;
-        let newCoinTotal = isVictory ? cryptidCoins + WIN_REWARD : cryptidCoins;
-
+        const userRef = db.collection('users').doc(currentUser.uid);
         try {
-            await db.collection('users').doc(currentUser.uid).update({
+            await userRef.update({
                 gamesPlayed: newGamesPlayed,
                 cryptidCoins: newCoinTotal
             });
@@ -773,8 +697,8 @@ async function checkGameEnd() {
         } catch (error) {
             console.error("Error saving game results:", error);
         }
-        
-        showGameEndModal(title, message, outcomeClass);
+
+        showGameEndModal(title, finalMessage, modalClass);
         return true;
     }
     return false;
@@ -812,3 +736,4 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
+
