@@ -75,14 +75,9 @@ auth.onAuthStateChanged(async (user) => {
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
-        // User is signed out, show the title screen.
+        // User is signed out, go directly to the authentication screen.
         currentUser = null;
-        showView(homeView); // Show the title screen first
-
-        // Make the homeView clickable to proceed to the authentication screen.
-        homeView.addEventListener('click', () => {
-            showView(authView);
-        }, { once: true }); // Use 'once' so this only fires one time.
+        showView(authView);
     }
 });
 
@@ -690,3 +685,4 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
+
