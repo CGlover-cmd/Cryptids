@@ -1,2 +1,2 @@
 # Cryptids
-https://cglover-cmd.github.io/Cryptids/index.html
+https://Cryptids-The-Game.io/Cryptids/index.html
