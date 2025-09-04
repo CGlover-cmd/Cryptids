@@ -18,6 +18,7 @@ const db = firebase.firestore();
 // --- DOM ELEMENTS ---
 const managementSection = document.getElementById('management-section');
 const accountEmailSpan = document.getElementById('account-email');
+const accountPhoneSpan = document.getElementById('account-phone');
 const accountUserIdSpan = document.getElementById('account-userid');
 
 // --- MESSAGE DISPLAY ---
@@ -45,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) {
             // User is signed in.
-            accountEmailSpan.innerText = user.email || 'N/A';
+            accountEmailSpan.innerText = user.email || 'Not provided';
+            accountPhoneSpan.innerText = user.phoneNumber || 'Not provided';
             accountUserIdSpan.innerText = user.uid || 'N/A';
         } else {
             // No user is signed in.
