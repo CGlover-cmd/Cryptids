@@ -52,7 +52,6 @@ let playerDeckIds = [];
 let cryptidCoins = 0;
 let packsOpened = 0;
 let gamesPlayed = 0;
-let isInitialLoad = true; // Flag to handle initial asset loading
 
 const PACK_COST = 50;
 const WIN_REWARD = 10;
@@ -68,25 +67,8 @@ let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
 
-// [REVISED] This is the main function that runs when the page loads.
-// It now handles the initial asset loading and directs the user flow.
+// This is the main function that runs when the page loads.
 auth.onAuthStateChanged(async (user) => {
-    const preLoader = document.getElementById('pre-loader');
-    const gameContent = document.getElementById('game-content');
-
-    // This block runs only once when the app first loads.
-    if (isInitialLoad) {
-        isInitialLoad = false;
-        // The pre-loader is visible by default via CSS.
-        // We wait for all essential images to download.
-        await preloadAllGameAssets();
-        
-        // Hide the pre-loader and show the main game container.
-        preLoader.style.display = 'none';
-        gameContent.style.display = 'flex'; // MODIFIED: Changed from 'block' to 'flex'
-    }
-
-    // This block runs on initial load AND every time auth state changes.
     if (user) {
         // User is signed in, load their data and go to the main app view.
         currentUser = user;
@@ -175,56 +157,6 @@ function logout() {
         showMessage(error.message, 'error', true);
     });
 }
-
-// --- ASSET PRELOADING ---
-/**
- * [NEW] Preloads all essential UI images and all card images at the start of the application.
- * This ensures a smoother experience after the initial load.
- */
-async function preloadAllGameAssets() {
-    const loadingText = document.getElementById('loading-text');
-    loadingText.innerText = 'Loading game assets...';
-
-    // Start with essential UI images
-    const imageUrls = [
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png',
-        'https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png'
-    ];
-
-    // Add all cryptid card images to the list for preloading
-    allCryptids.forEach(cryptid => {
-        if (cryptid.image) {
-            imageUrls.push(cryptid.image);
-        }
-    });
-
-    let loadedCount = 0;
-    const totalImages = imageUrls.length;
-    
-    // Update loading text to show progress, which is more user-friendly
-    loadingText.innerText = `Loading 0/${totalImages} assets...`;
-
-    return new Promise((resolve) => {
-        if (totalImages === 0) {
-            resolve();
-            return;
-        }
-        imageUrls.forEach(url => {
-            const img = new Image();
-            img.src = url;
-            img.onload = img.onerror = () => {
-                loadedCount++;
-                loadingText.innerText = `Loading ${loadedCount}/${totalImages} assets...`;
-                if (loadedCount === totalImages) {
-                    resolve();
-                }
-            };
-        });
-    });
-}
-
 
 // --- UTILITY & SETUP FUNCTIONS ---
 function updateCoinDisplay() {
