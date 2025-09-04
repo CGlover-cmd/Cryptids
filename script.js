@@ -1,6 +1,5 @@
-// --- FIREBASE CONFIGURATION ---
-
-// Initialize Firebase services
+// --- FIREBASE INITIALIZATION ---
+// This ensures Firebase is ready before any other script logic runs.
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
