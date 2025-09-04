@@ -476,139 +476,156 @@ h1 {
     opacity: 0.5;
 }
 
-/* --- Game View Styles --- */
+/* --- NEW Game View Styles --- */
 #gameView {
-    padding-top: 15px;
-    justify-content: space-between; /* Push elements to top/bottom */
-    flex-grow: 1; /* Allow game view to take available space */
-}
-
-.game-info {
-    display: flex;
-    justify-content: space-between;
-    width: 90%;
-    max-width: 800px;
-    margin-bottom: 10px; /* Reduced margin */
-    font-size: 1.2rem;
-    font-weight: bold;
-    background-color: var(--game-ui-bg);
-    padding: 8px 12px; /* Reduced padding */
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    flex-shrink: 0; /* Prevent shrinking */
-}
-
-.game-info .player-hp, .game-info .bot-hp {
-    color: #e74c3c; /* Red HP */
-}
-
-.game-info .turn-counter {
-    color: #f1c40f; /* Yellow turn counter */
-}
-
-.game-field {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px; /* Reduced gap */
-    width: 100%;
-    max-width: 800px;
-    flex-grow: 1; /* Allow field to take available space */
     justify-content: center;
+    align-items: center;
+    padding: 5px; /* Minimal padding for the view itself */
+    overflow: hidden; /* Prevent scrolling of the whole view */
 }
 
-.bot-area, .player-area {
+.game-board {
     display: flex;
     flex-direction: column;
-    align-items: center;
     width: 100%;
-    background-color: rgba(0,0,0,0.3);
+    height: 100%;
+    max-width: 1200px; /* Max width for large screens */
+    gap: 10px;
+}
+
+.player-side {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Each side takes up equal space */
+    gap: 5px;
+}
+
+.bot-side {
+    /* Flips the visual order for the bot */
+    flex-direction: column-reverse;
+}
+
+.field-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Zones for Hand, Bench, Active */
+.hand-zone, .bench-zone, .active-zone {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    min-height: 130px; /* Standard height for rows */
+    width: 100%;
     border-radius: 10px;
-    padding: 8px; /* Reduced padding */
+    background: rgba(0, 0, 0, 0.2);
+    padding: 5px;
     box-sizing: border-box;
-    flex-shrink: 0; /* Prevent shrinking */
 }
 
-.bot-area h3, .player-area h3 {
-    margin-top: 0;
-    margin-bottom: 8px; /* Reduced margin */
-    font-size: 1.2rem; /* Reduced font size */
-    color: #bbb;
+.bench-zone {
+    min-height: 110px; /* Slightly smaller for bench */
+    flex-wrap: wrap; /* Allow bench cards to wrap */
+}
+.active-zone {
+    min-height: 160px; /* Larger for active card */
 }
 
-.in-play-card-container {
-    min-height: 180px; /* Adjusted min-height for played card area */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px; /* Reduced gap */
-    width: 100%;
-    flex-grow: 1; /* Allow in-play area to grow */
-}
-
-.in-play-card-container .card-wrapper {
-    width: 45%; /* Make cards in play take 45% of container width */
-    height: auto; /* Auto height to maintain aspect ratio */
-    max-width: 140px; /* Max size for larger screens */
-    max-height: 200px; /* Max height for larger screens */
-    opacity: 1; /* Always visible when in play */
-    transform: none;
-    transition: none; /* No entry animation for in-play */
-    flex-shrink: 1; /* Allow shrinking if needed */
-}
-
-.player-hand, .bot-hand {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px; /* Reduced gap */
-    min-height: 130px; /* Adjusted min-height for hand to accommodate 2 rows of cards */
-    padding: 8px 0; /* Reduced padding */
-    flex-shrink: 0; /* Prevent shrinking */
-}
-
-.player-hand .card-wrapper,
-.bot-hand .card-wrapper {
-    width: 80px; /* Fixed width for cards in hand */
-    height: 120px; /* Fixed height for cards in hand */
+/* Card sizing within zones */
+.hand-zone .card-wrapper {
+    width: 80px;
+    height: 120px;
     cursor: pointer;
-    transition: transform 0.1s ease;
+}
+.hand-zone .card-wrapper:hover {
+    transform: translateY(-10px) scale(1.05);
+    z-index: 100;
 }
 
-.player-hand .card-wrapper:hover {
-    transform: translateY(-5px);
+.bench-zone .card-wrapper {
+    width: 70px;
+    height: 105px;
 }
 
-.bot-hand .card-wrapper .card-front {
-    transform: rotateY(0deg); /* Bot cards remain face down */
+.active-zone .card-wrapper {
+    width: 100px;
+    height: 150px;
 }
 
-.bot-hand .card-wrapper .card-back {
-    transform: rotateY(0deg); /* Ensure bot card backs are visible */
-}
-
-.bot-hand .card-wrapper.flipped .card-inner {
-    transform: rotateY(0deg); /* Prevent bot cards from flipping */
-}
-
-.game-controls {
-    margin-top: 10px; /* Reduced margin */
-    margin-bottom: 10px; /* Reduced margin */
+/* Zones for Deck & Discard */
+.field-zone {
     display: flex;
-    gap: 10px; /* Reduced gap */
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    width: 100%;
-    flex-shrink: 0; /* Prevent shrinking */
+    gap: 5px;
+    color: #aaa;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.deck-pile, .discard-pile {
+    width: 70px;
+    height: 105px;
+    border: 2px dashed #555;
+    border-radius: 8px;
+    background-color: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.deck-pile {
+    background-image: url("https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png");
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    border: 2px solid #888;
+}
+.card-count {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border: 1px solid #888;
 }
 
+/* Center Info & Controls */
+.game-center-info {
+    text-align: center;
+    padding: 5px 0;
+}
+.game-center-info h1 {
+    font-size: 1.5rem;
+    margin: 0 0 5px 0;
+}
+.game-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
 .game-message {
-    margin-top: 8px; /* Reduced margin */
-    font-size: 1rem; /* Reduced font size */
+    font-size: 1rem;
     font-weight: bold;
     color: #f1c40f;
-    text-align: center;
-    min-height: 1.2em; /* Reserve space to prevent layout shift */
-    flex-shrink: 0; /* Prevent shrinking */
+    min-height: 1.2em; /* Reserve space */
+    margin-bottom: 5px;
+}
+
+/* Make bot's hand cards face down */
+#botHand .card-wrapper .card-inner {
+    transform: none !important; /* Keep bot cards face down */
 }
 
 /* Modal Styles */
@@ -956,14 +973,6 @@ h1 {
     .cards-grid {
         gap: 20px;
         padding: 15px 0;
-    }
-    .game-info {
-        font-size: 1.5rem;
-        padding: 15px 25px;
-    }
-    .in-play-card-container .card-wrapper {
-        width: 180px; /* Larger for desktop in-play */
-        height: 260px;
     }
     .modal-buttons {
         flex-direction: row; /* Buttons side-by-side on desktop */
