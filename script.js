@@ -1,13 +1,4 @@
 // --- FIREBASE CONFIGURATION ---
-const firebaseConfig = {
-    apiKey: "AIzaSyA7HORw-_RGWxhyo9eGD3fvGL4ub8WH1O0",
-    authDomain: "cryptids-be430.firebaseapp.com",
-    projectId: "cryptids-be430",
-    storageBucket: "cryptids-be430.firebasestorage.app",
-    messagingSenderId: "197995808355",
-    appId: "1:197995808355:web:5a2534f516a9efe2d15a56",
-    measurementId: "G-FTBG99PW84"
-};
 
 // Initialize Firebase services
 firebase.initializeApp(firebaseConfig);
@@ -70,17 +61,6 @@ let selectedPlayerCardElement = null;
 let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
-document.addEventListener('DOMContentLoaded', () => {
-    const phoneInput = document.getElementById('phoneNumberInput');
-    if(phoneInput) {
-        phoneInput.addEventListener('input', (e) => {
-            if (!e.target.value.startsWith('+1')) {
-                e.target.value = '+1';
-            }
-        });
-    }
-});
-
 
 auth.onAuthStateChanged(async (user) => {
     const preLoader = document.getElementById('pre-loader');
@@ -188,8 +168,8 @@ function signInWithPhone() {
     const appVerifier = window.recaptchaVerifier;
     const phoneNumber = phoneNumberInput.value;
 
-    if (!phoneNumber || !/^\+[1-9]\d{1,14}$/.test(phoneNumber) || phoneNumber.length < 12) {
-        showMessage("Please enter a valid US phone number (e.g., +15551234567).", "error", true);
+    if (!phoneNumber || !/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
+        showMessage("Please enter a valid phone number in E.164 format (e.g., +15551234567).", "error", true);
         return;
     }
 
@@ -675,7 +655,7 @@ function updateGameUI() {
     const botInPlayContainer = document.getElementById('botInPlay');
     botInPlayContainer.innerHTML = '';
     if (botCardInPlay) {
-        botInPlayContainer.appendChild(createCardElement(botCardInPlay, true, true));
+        botInPlayContainer.appendChild(createCardElement(botInPlay, true, true));
     }
 }
 
@@ -826,4 +806,3 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
-
