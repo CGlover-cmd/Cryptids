@@ -1,2 +1,3 @@
 # Cryptids
-https://Cryptids-The-Game.io/Cryptids
+
+https://cryptids-the-game.github.io/Cryptids
