@@ -162,14 +162,11 @@
     </style>
 </head>
 <body>
-    <!-- Global Message Container -->
     <div id="globalMessage" class="global-message"></div>
 
-    <!-- Main container for the account portal -->
     <div id="accountView" class="view active">
         <div class="account-container">
             
-            <!-- This section is shown once the user is confirmed to be logged in -->
             <div id="management-section">
                 <h1>Account Management</h1>
                 
@@ -187,12 +184,11 @@
         </div>
     </div>
 
-    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
-    <!-- Link to the new JavaScript file for this page -->
+    <script src="firebase-config.js"></script>
     <script src="account_portal.js"></script>
 </body>
 </html>
