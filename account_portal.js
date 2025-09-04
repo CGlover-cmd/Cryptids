@@ -4,7 +4,7 @@
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const googleProvider = new firebase.auth.GoogleAuthProvider();
+
 
 // --- DOM ELEMENTS ---
 const managementSection = document.getElementById('management-section');
