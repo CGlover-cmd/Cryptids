@@ -63,9 +63,23 @@ let messageTimeout, globalMessageTimeout;
 document.addEventListener('DOMContentLoaded', () => {
     const phoneInput = document.getElementById('phoneNumberInput');
     if(phoneInput) {
-        phoneInput.addEventListener('input', (e) => {
-            if (!e.target.value.startsWith('+1')) {
-                e.target.value = '+1';
+        phoneInput.addEventListener('focus', function() {
+            // When the user clicks into the input, if it's empty, pre-fill '+1 '
+            if (this.value === '') {
+                this.value = '+1 ';
+            }
+        });
+        phoneInput.addEventListener('blur', function() {
+            // If the user clicks out and the input is just '+1 ', clear it to show the placeholder again
+            if (this.value.trim() === '+1') {
+                this.value = '';
+            }
+        });
+        phoneInput.addEventListener('input', function() {
+            // This prevents the user from deleting the '+1 ' prefix
+            if (!this.value.startsWith('+1 ')) {
+                // If they manage to delete it, put it right back.
+                this.value = '+1 ';
             }
         });
     }
@@ -176,7 +190,7 @@ function signInWithPhone() {
     const phoneNumberInput = document.getElementById('phoneNumberInput');
     const sendCodeBtn = document.getElementById('sendCodeBtn');
     const appVerifier = window.recaptchaVerifier;
-    const phoneNumber = phoneNumberInput.value;
+    const phoneNumber = phoneNumberInput.value.replace(/\s/g, ''); // Remove spaces for validation
 
     if (!phoneNumber || !/^\+[1-9]\d{1,14}$/.test(phoneNumber) || phoneNumber.length < 12) {
         showMessage("Please enter a valid US phone number (e.g., +15551234567).", "error", true);
@@ -357,7 +371,7 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
 
         const attackDisplay = document.createElement('div');
         attackDisplay.className = 'stat-display attack-display';
-        attackDisplay.innerHTML = `<svg viewBox="0 0 24 24" fill="#63b3ed"><path d="M20.7,5.3l-2-2c-0.4-0.4-1-0.4-1.4,0L12,8.6L6.7,3.3c-0.4-0.4-1-0.4-1.4,0l-2,2c-0.4,0.4-0.4,1,0,1.4L8.6,12l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4l2,2c0.4,0.4,1,0.4,1.4,0L12,15.4l5.3,5.3c0.4,0.4,1,0.4,1.4,0l2-2c0.4-0.4,0.4-1,0-1.4L15.4,12l5.3-5.3C21.1,6.3,21.1,5.7,20.7,5.3z"/></svg><span>${cryptid.attack.damage}</span>`;
+        attackDisplay.innerHTML = `<svg viewBox="0 0 24 24" fill="#63b3ed"><path d="M20.7,5.3l-2-2c-0.4-0.4-1-0.4-1.4,0L12,8.6L6.7,3.3c-0.4-0.4-1-0.4-1.4,0l-2,2c-0.4,0.4-0.4,1,0,1.4L8.6,12l-5.3,5.3c-0.4,0.4-0.4,1,0,1.4l2,2c0.4,0.4,1,0.4,1.4,0L12,15.4l5.3,5.3c0.4,0.4,1,0.4,1.4,0l2-2c0.4-0.4-0.4,1,0-1.4L15.4,12l5.3-5.3C21.1,6.3,21.1,5.7,20.7,5.3z"/></svg><span>${cryptid.attack.damage}</span>`;
         cardContent.appendChild(attackDisplay);
 
         const namePlate = document.createElement('div');
@@ -816,4 +830,3 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
-
