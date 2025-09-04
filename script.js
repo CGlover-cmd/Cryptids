@@ -83,7 +83,7 @@ auth.onAuthStateChanged(async (user) => {
         
         // Hide the pre-loader and show the main game container.
         preLoader.style.display = 'none';
-        gameContent.style.display = 'block';
+        gameContent.style.display = 'flex'; // MODIFIED: Changed from 'block' to 'flex'
     }
 
     // This block runs on initial load AND every time auth state changes.
