@@ -1,0 +1,67 @@
+# Name of the GitHub Actions workflow
+name: Sync File Changes to Google Docs
+
+# This workflow runs on every push to the 'main' or 'master' branch
+on:
+  push:
+    branches:
+      - main
+      - master
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This job is named "sync"
+  sync:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # We need to fetch the history to be able to compare the last two commits
+          fetch-depth: 2
+
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Step 3: Install the required Python libraries
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-api-python-client google-auth-httplib2 google-oauth2-client
+
+      # Step 4: Identify changed files
+      # This step compares the latest commit with the one before it, 
+      # finds the changed/added files, and stores them in an output variable.
+      - name: Get changed files
+        id: changed-files
+        run: |
+          # The `|| exit 0` ensures the script doesn't fail if there are no changed files
+          # This handles the very first commit in a repository
+          FILES=$(git diff --name-only HEAD~1 HEAD || exit 0)
+          echo "files_changed=$FILES" >> $GITHUB_OUTPUT
+
+      # Step 5: Run the Python script to sync the changed files
+      # It will only run if the 'changed-files' step found files.
+      - name: Sync changed files to Google Docs
+        if: steps.changed-files.outputs.files_changed != ''
+        env:
+          # These secrets are securely passed to the Python script
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          DOCS_MAPPING: ${{ secrets.DOCS_MAPPING }}
+        run: |
+          echo "Files changed in this commit:"
+          echo "${{ steps.changed-files.outputs.files_changed }}"
+          # The list of changed files is passed as command-line arguments to the script
+          python sync_to_docs.py ${{ steps.changed-files.outputs.files_changed }}
+      
+      # Step 6: A message for when no mapped files were changed
+      - name: No relevant files changed
+        if: steps.changed-files.outputs.files_changed == ''
+        run: echo "No files were changed in this commit."
