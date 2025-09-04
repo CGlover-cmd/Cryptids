@@ -14,9 +14,10 @@
 
     /* Rarity Colors */
     --common-color: #a0aec0; /* Gray */
-    --rare-color: #3b82f6;   /* Blue */
+    --rare-color: #3b82f6; /* Blue */
     --legendary-color: #eab308; /* Yellow/Gold */
     --mythic-color: #dc3545; /* Red for the new Mythic rarity */
+
     --victory-color: #28a745; /* Green for victory */
     --defeat-color: #dc3545; /* Red for defeat */
 }
@@ -48,7 +49,7 @@ body {
 #homeView {
     /* Default to landscape image */
     background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
-    background-size: contain;
+    background-size: cover; /* This was changed from 'contain' to 'cover' */
     background-position: center;
     background-repeat: no-repeat;
     justify-content: flex-end; /* Push content to the bottom */
@@ -69,7 +70,6 @@ body {
     background-position: center;
     background-attachment: fixed; /* This line fixes the issue */
 }
-
 
 /* --- Mobile-First Base Styles (Default for small screens) --- */
 h1 {
@@ -265,18 +265,18 @@ h1 {
 }
 
 @keyframes color-glow-border {
-    0%   { box-shadow: 0 0 12px 2px #ff0000; }
-    16%  { box-shadow: 0 0 12px 2px #ff7f00; }
-    33%  { box-shadow: 0 0 12px 2px #ffff00; }
-    50%  { box-shadow: 0 0 12px 2px #00ff00; }
-    66%  { box-shadow: 0 0 12px 2px #0000ff; }
-    83%  { box-shadow: 0 0 12px 2px #4b0082; }
+    0% { box-shadow: 0 0 12px 2px #ff0000; }
+    16% { box-shadow: 0 0 12px 2px #ff7f00; }
+    33% { box-shadow: 0 0 12px 2px #ffff00; }
+    50% { box-shadow: 0 0 12px 2px #00ff00; }
+    66% { box-shadow: 0 0 12px 2px #0000ff; }
+    83% { box-shadow: 0 0 12px 2px #4b0082; }
     100% { box-shadow: 0 0 12px 2px #ff0000; }
 }
 
 @keyframes red-glow-pulsing {
-    0%   { box-shadow: 0 0 12px var(--mythic-color); }
-    50%  { box-shadow: 0 0 25px var(--mythic-color); }
+    0% { box-shadow: 0 0 12px var(--mythic-color); }
+    50% { box-shadow: 0 0 25px var(--mythic-color); }
     100% { box-shadow: 0 0 12px var(--mythic-color); }
 }
 
@@ -298,11 +298,13 @@ h1 {
     padding: 3px 6px;
     text-shadow: 0 0 5px black, 0 0 3px black;
 }
+
 .stat-display svg {
     width: 18px;
     height: 18px;
     filter: drop-shadow(0 0 2px black);
 }
+
 .hp-display { left: 5px; }
 .attack-display { right: 5px; }
 
@@ -330,10 +332,10 @@ h1 {
     box-shadow: none;
     transform: none !important;
 }
+
 .uncollected-card .card-inner::after {
     content: '?';
 }
-
 
 /* --- VIEW MANAGEMENT --- */
 .view {
@@ -357,12 +359,12 @@ h1 {
 }
 
 #packView {
-    padding-top: 15px; 
+    padding-top: 15px;
 }
 
 #collectionView {
     padding-top: 15px;
-    align-items: center; 
+    align-items: center;
 }
 
 #collectionView .cards-container {
@@ -378,15 +380,15 @@ h1 {
 .collection-rarity-group {
     width: 100%;
     margin-bottom: 20px;
-    text-align: center; 
+    text-align: center;
 }
 
 .collection-rarity-group h2 {
     font-size: 1.5rem;
     margin-bottom: 10px;
     text-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
-    text-align: center; 
-    padding-left: 0; 
+    text-align: center;
+    padding-left: 0;
 }
 
 /* Rarity heading colors */
@@ -407,11 +409,11 @@ h1 {
     flex-shrink: 0;
 }
 
-
 /* --- Deck Builder View Styles --- */
 #deckBuilderView {
     padding-top: 15px;
 }
+
 #deckBuilderView .cards-container {
     margin-top: 20px;
     padding: 0;
@@ -420,6 +422,7 @@ h1 {
     width: 100%;
     justify-content: center;
 }
+
 .deck-builder-controls {
     margin-top: 20px;
     margin-bottom: 20px;
@@ -428,26 +431,30 @@ h1 {
     justify-content: center;
     gap: 10px;
 }
+
 .deck-builder-controls span {
     font-size: 1.1rem;
     font-weight: bold;
     align-self: center;
 }
+
 .deck-builder-card.selected .card-inner {
     border: 3px solid var(--selected-card-border);
     box-shadow: 0 0 15px var(--selected-card-border);
 }
+
 .deck-builder-card .card-front img {
     filter: brightness(0.8); /* Dim unselected cards */
 }
+
 .deck-builder-card.selected .card-front img {
     filter: brightness(1); /* Full brightness for selected */
 }
+
 .deck-builder-card.uncollected-card {
     pointer-events: none; /* Cannot select uncollected cards */
     opacity: 0.5;
 }
-
 
 /* --- Game View Styles --- */
 #gameView {
@@ -455,6 +462,7 @@ h1 {
     justify-content: space-between; /* Push elements to top/bottom */
     flex-grow: 1; /* Allow game view to take available space */
 }
+
 .game-info {
     display: flex;
     justify-content: space-between;
@@ -469,9 +477,11 @@ h1 {
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
     flex-shrink: 0; /* Prevent shrinking */
 }
+
 .game-info .player-hp, .game-info .bot-hp {
     color: #e74c3c; /* Red HP */
 }
+
 .game-info .turn-counter {
     color: #f1c40f; /* Yellow turn counter */
 }
@@ -498,6 +508,7 @@ h1 {
     box-sizing: border-box;
     flex-shrink: 0; /* Prevent shrinking */
 }
+
 .bot-area h3, .player-area h3 {
     margin-top: 0;
     margin-bottom: 8px; /* Reduced margin */
@@ -514,6 +525,7 @@ h1 {
     width: 100%;
     flex-grow: 1; /* Allow in-play area to grow */
 }
+
 .in-play-card-container .card-wrapper {
     width: 45%; /* Make cards in play take 45% of container width */
     height: auto; /* Auto height to maintain aspect ratio */
@@ -534,6 +546,7 @@ h1 {
     padding: 8px 0; /* Reduced padding */
     flex-shrink: 0; /* Prevent shrinking */
 }
+
 .player-hand .card-wrapper,
 .bot-hand .card-wrapper {
     width: 80px; /* Fixed width for cards in hand */
@@ -541,15 +554,19 @@ h1 {
     cursor: pointer;
     transition: transform 0.1s ease;
 }
+
 .player-hand .card-wrapper:hover {
     transform: translateY(-5px);
 }
+
 .bot-hand .card-wrapper .card-front {
     transform: rotateY(0deg); /* Bot cards remain face down */
 }
+
 .bot-hand .card-wrapper .card-back {
     transform: rotateY(0deg); /* Ensure bot card backs are visible */
 }
+
 .bot-hand .card-wrapper.flipped .card-inner {
     transform: rotateY(0deg); /* Prevent bot cards from flipping */
 }
@@ -563,6 +580,7 @@ h1 {
     width: 100%;
     flex-shrink: 0; /* Prevent shrinking */
 }
+
 .game-message {
     margin-top: 8px; /* Reduced margin */
     font-size: 1rem; /* Reduced font size */
@@ -621,10 +639,10 @@ h1 {
     margin-bottom: 12px; /* Reduced margin */
     font-size: 1.6rem; /* Reduced font size */
 }
+
 .modal-content.victory h2 { color: var(--victory-color); }
 .modal-content.defeat h2 { color: var(--defeat-color); }
 .modal-content.draw h2 { color: #f1c40f; } /* Yellow for draw */
-
 
 .modal-content p {
     font-size: 1rem; /* Reduced font size */
@@ -649,6 +667,7 @@ h1 {
     justify-content: center;
     gap: 10px; /* Reduced gap */
 }
+
 .modal-buttons .btn {
     width: 100%; /* Full width buttons */
 }
@@ -671,11 +690,13 @@ h1 {
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease, top 0.3s ease;
 }
+
 .global-message.show {
     opacity: 1;
     visibility: visible;
     top: 30px;
 }
+
 .global-message.error { background-color: rgba(220, 53, 69, 0.95); color: white; }
 .global-message.success { background-color: rgba(40, 167, 69, 0.95); color: white; }
 .global-message.warning { background-color: rgba(241, 196, 15, 0.95); color: #121212; }
@@ -710,14 +731,17 @@ h1 {
     padding: 5px;
     transition: color 0.2s ease;
 }
+
 .nav-btn svg {
     width: 28px;
     height: 28px;
     fill: currentColor;
 }
+
 .nav-btn:hover {
     color: var(--text-light);
 }
+
 .nav-btn.active {
     color: var(--nav-icon-active-color);
 }
@@ -764,6 +788,7 @@ h1 {
     display: flex;
     gap: 10px;
 }
+
 .auth-buttons .btn {
     flex-grow: 1;
 }
@@ -797,6 +822,7 @@ h1 {
     font-size: 1.5rem;
     text-align: center;
 }
+
 .loader {
     border: 8px solid #f3f3f3;
     border-top: 8px solid var(--pack-border);
@@ -806,6 +832,7 @@ h1 {
     animation: spin 2s linear infinite;
     margin-bottom: 20px;
 }
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -823,18 +850,20 @@ h1 {
     border-radius: 10px;
     text-align: left;
 }
+
 .settings-container h2 {
     text-align: center;
     margin-top: 0;
 }
+
 .info-row {
     font-size: 1.1rem;
 }
+
 .info-row span {
     font-weight: bold;
     color: var(--pack-border);
 }
-
 
 /* --- Desktop/Tablet Overrides (min-width for larger screens) --- */
 @media (min-width: 769px) {
@@ -843,7 +872,6 @@ h1 {
         font-size: 2.5rem;
         text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
     }
-
     .btn {
         padding: 12px 25px;
         font-size: 1.2rem;
@@ -882,7 +910,6 @@ h1 {
     .name-plate {
         font-size: 1.2rem;
     }
-    
     .uncollected-card .card-inner {
         font-size: 3em;
     }
