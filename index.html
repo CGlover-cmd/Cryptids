@@ -15,7 +15,16 @@
 </head>
 <body>
 
-    <div id="game-content">
+    <div id="pre-loader">
+        <div class="bouncing-loader">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <p id="loading-text" class="loading-text">Loading...</p>
+    </div>
+
+    <div id="game-content" style="display: none;">
         <div id="globalMessage" class="global-message"></div>
 
         <div id="homeView" class="view"></div>
@@ -53,33 +62,78 @@
             <div class="cards-container deck-builder-view" id="deckBuilderCardsContainer"></div>
         </div>
 
+        <!-- ******** NEW GAME VIEW STRUCTURE ******** -->
         <div id="gameView" class="view">
-            <h1>Cryptid Battle</h1>
-            <div class="game-info">
-                <span class="player-hp">Player HP: <span id="playerHP">100</span></span>
-                <span class="turn-counter">Turn: <span id="turnCounter">1</span> / 20</span>
-                <span class="bot-hp">Bot HP: <span id="botHP">100</span></span>
-            </div>
-
-            <div class="game-field">
-                <div class="bot-area">
-                    <h3>Bot's Field</h3>
-                    <div class="in-play-card-container" id="botInPlay"></div>
-                    <div class="bot-hand" id="botHand"></div>
+            <div class="game-board">
+                <!-- BOT'S SIDE -->
+                <div class="player-side bot-side">
+                    <div class="field-row">
+                        <div class="field-zone deck-zone">
+                            <span>DECK</span>
+                            <div id="botDeck" class="deck-pile"></div>
+                            <div class="card-count" id="botDeckCount">10</div>
+                        </div>
+                        <div id="botHand" class="hand-zone">
+                            <!-- Bot's hand cards will be added here by JS -->
+                        </div>
+                        <div class="field-zone discard-zone">
+                            <span>DISCARD</span>
+                            <div id="botDiscard" class="discard-pile"></div>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div id="botBench" class="bench-zone">
+                             <!-- Bench cards added by JS -->
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div id="botActive" class="active-zone">
+                            <!-- Active card added by JS -->
+                        </div>
+                    </div>
                 </div>
 
-                <div class="player-area">
-                    <h3>Your Field</h3>
-                    <div class="in-play-card-container" id="playerInPlay"></div>
-                    <h3>Your Hand</h3>
-                    <div class="player-hand" id="playerHand"></div>
-                    <div class="game-controls">
-                        <button class="btn" id="playCardBtn" onclick="playPlayerCard()">Play Card</button>
+                <!-- GAME INFO & CONTROLS in the MIDDLE -->
+                <div class="game-center-info">
+                    <h1 id="game-title">Cryptid Battle</h1>
+                    <div id="gameMessage" class="game-message"></div>
+                    <div id="gameControls" class="game-controls">
+                        <button class="btn" id="attackBtn" onclick="attack()">Attack</button>
+                        <button class="btn" id="endTurnBtn" onclick="endTurn()">End Turn</button>
+                    </div>
+                </div>
+
+                <!-- PLAYER'S SIDE -->
+                <div class="player-side">
+                    <div class="field-row">
+                        <div id="playerActive" class="active-zone">
+                            <!-- Active card added by JS -->
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div id="playerBench" class="bench-zone">
+                            <!-- Bench cards added by JS -->
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field-zone deck-zone">
+                            <span>DECK</span>
+                            <div id="playerDeck" class="deck-pile"></div>
+                             <div class="card-count" id="playerDeckCount">10</div>
+                        </div>
+                        <div id="playerHand" class="hand-zone">
+                           <!-- Player's hand cards will be added here by JS -->
+                        </div>
+                        <div class="field-zone discard-zone">
+                            <span>DISCARD</span>
+                            <div id="playerDiscard" class="discard-pile"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="game-message" id="gameMessage"></div>
         </div>
+        <!-- ******** END OF NEW GAME VIEW STRUCTURE ******** -->
+
 
         <div id="settingsView" class="view">
             <div class="settings-container">
@@ -142,6 +196,3 @@
 </body>
 </html>
 
-<!--
-Hello Gemini, It's nice to be working with you ;)
--->
