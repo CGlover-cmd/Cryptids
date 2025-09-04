@@ -22,6 +22,14 @@
     --defeat-color: #dc3545; /* Red for defeat */
 }
 
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scrollbars on the body */
+}
+
 body {
     background: var(--bg-dark);
     color: var(--text-light);
@@ -30,11 +38,17 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    min-height: 100dvh;
-    margin: 0;
-    padding-bottom: 80px; /* Space for bottom nav bar */
-    overflow-x: hidden;
     box-sizing: border-box;
+}
+
+/* NEW: Make the main game container fill the screen */
+#game-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Ensure it takes up available space */
+    overflow: hidden; /* Prevent internal scrolling issues */
 }
 
 /* --- Background Image for Main Views --- */
@@ -44,16 +58,22 @@ body {
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+    padding-bottom: 80px; /* Add padding for nav bar only to these views */
+    overflow-y: auto; /* Allow scrolling on these views if content overflows */
 }
 
+/* MODIFIED: This is the fix for the full-screen home view */
 #homeView {
+    width: 100%;
+    height: 100%;
     /* Default to landscape image */
     background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
-    background-size: cover; /* This was changed from 'contain' to 'cover' */
+    background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    justify-content: flex-end; /* Push content to the bottom */
-    padding-bottom: 10vh; /* Add some space from the bottom edge */
+    justify-content: flex-end;
+    padding-bottom: 10vh; /* Restore padding for content alignment */
+    cursor: pointer; /* Indicate it's clickable */
 }
 
 @media (orientation: portrait) {
