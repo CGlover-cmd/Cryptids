@@ -7,6 +7,10 @@ on:
     branches:
       - main # Or whatever your default branch is
 
+# Add this permissions block
+permissions:
+  contents: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
