@@ -347,7 +347,7 @@ h1 {
 #gameView {
     justify-content: center;
     align-items: center;
-    padding: 5px;
+    padding: 1vw;
     overflow: hidden;
 }
 
@@ -355,16 +355,22 @@ h1 {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 100%;
-    max-width: 1200px;
-    gap: 10px;
+    height: auto;
+    max-width: 1400px;
+    aspect-ratio: 16 / 9;
+    gap: 1%; /* Use percentage for gap */
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 1%; /* Use percentage for padding */
+    box-sizing: border-box;
 }
 
 .player-side {
     display: flex;
     flex-direction: column;
     flex: 1;
-    gap: 5px;
+    gap: 2%; /* Use percentage for gap */
+    min-height: 0;
 }
 
 .bot-side {
@@ -375,29 +381,40 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 1%; /* Use percentage for gap */
     width: 100%;
+    flex: 1; /* Make rows share space */
 }
 
 .hand-zone, .bench-zone, .active-zone {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    min-height: 130px;
+    gap: 1%; /* Use percentage for gap */
     width: 100%;
+    height: 100%;
     border-radius: 10px;
     background: rgba(0, 0, 0, 0.2);
-    padding: 5px;
+    padding: 1%;
     box-sizing: border-box;
     transition: background-color 0.3s ease;
 }
 
-.bench-zone { min-height: 110px; }
-.active-zone { min-height: 160px; }
-.hand-zone .card-wrapper { width: 80px; height: 120px; cursor: pointer; }
-.bench-zone .card-wrapper { width: 70px; height: 105px; }
-.active-zone .card-wrapper { width: 100px; height: 150px; }
+/* Let the zones define the card sizes */
+.hand-zone { flex: 0 0 35%; align-items: flex-end;} /* Fixed height for hand */
+.bench-zone { flex: 1; }
+.active-zone { flex: 1.5; }
+
+.hand-zone .card-wrapper,
+.bench-zone .card-wrapper,
+.active-zone .card-wrapper {
+    height: 95%; /* Relative to parent zone height */
+    width: auto;  /* Auto width to maintain aspect ratio */
+    max-width: 100%;
+}
+.hand-zone .card-wrapper {
+    cursor: pointer;
+}
 
 .hand-zone .card-wrapper:hover {
     transform: translateY(-10px) scale(1.05);
@@ -408,11 +425,12 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 5px;
     color: #aaa;
     font-weight: bold;
     font-size: 0.9rem;
+    flex: 0 0 120px; /* Give deck/discard a fixed width */
 }
 
 .deck-pile, .discard-pile {
@@ -455,6 +473,7 @@ h1 {
 .game-center-info {
     text-align: center;
     padding: 5px 0;
+    flex: 0 0 auto; /* Don't grow or shrink */
 }
 .game-center-info h1 {
     font-size: 1.5rem;
@@ -634,5 +653,46 @@ h1 {
 
 @media (min-width: 769px) {
     .modal-buttons { flex-direction: row; }
+    
+    .player-side {
+        flex-direction: row;
+    }
+    .bot-side {
+        flex-direction: row-reverse;
+    }
+    .field-row {
+        flex-direction: column;
+        flex: 1;
+    }
+    .hand-zone {
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+    }
+    .bench-zone {
+      flex: 1.5;
+    }
+    .active-zone {
+      flex: 2;
+    }
+    .field-zone {
+        justify-content: center;
+        flex: 0 0 100px;
+    }
+    .game-board {
+        flex-direction: row;
+        aspect-ratio: auto;
+        height: 100%;
+    }
+    .game-center-info {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .game-center-info h1 {
+        margin: 0;
+    }
 }
 
