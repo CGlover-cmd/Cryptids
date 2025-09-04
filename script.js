@@ -70,6 +70,17 @@ let selectedPlayerCardElement = null;
 let messageTimeout, globalMessageTimeout;
 
 // --- FIREBASE AUTHENTICATION & DATA HANDLING ---
+document.addEventListener('DOMContentLoaded', () => {
+    const phoneInput = document.getElementById('phoneNumberInput');
+    if(phoneInput) {
+        phoneInput.addEventListener('input', (e) => {
+            if (!e.target.value.startsWith('+1')) {
+                e.target.value = '+1';
+            }
+        });
+    }
+});
+
 
 auth.onAuthStateChanged(async (user) => {
     const preLoader = document.getElementById('pre-loader');
@@ -177,8 +188,8 @@ function signInWithPhone() {
     const appVerifier = window.recaptchaVerifier;
     const phoneNumber = phoneNumberInput.value;
 
-    if (!phoneNumber || !/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
-        showMessage("Please enter a valid phone number in E.164 format (e.g., +15551234567).", "error", true);
+    if (!phoneNumber || !/^\+[1-9]\d{1,14}$/.test(phoneNumber) || phoneNumber.length < 12) {
+        showMessage("Please enter a valid US phone number (e.g., +15551234567).", "error", true);
         return;
     }
 
@@ -815,3 +826,4 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
+
