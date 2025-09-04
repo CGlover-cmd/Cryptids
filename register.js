@@ -1,6 +1,4 @@
-// --- FIREBASE CONFIGURATION ---
-
-// Initialize Firebase services
+// --- FIREBASE INITIALIZATION ---
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
