@@ -15,6 +15,10 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+// Globals for phone auth
+window.recaptchaVerifier = null;
+window.confirmationResult = null;
+
 
 // --- DATA ---
 const allCryptids = [
@@ -71,31 +75,37 @@ auth.onAuthStateChanged(async (user) => {
     const preLoader = document.getElementById('pre-loader');
     const gameContent = document.getElementById('game-content');
 
-    // This block runs only once when the app first loads and auth state is checked.
     if (isInitialLoad) {
         isInitialLoad = false;
         
-        // Preload all assets and show progress on the pre-loader
         await preloadAllGameAssets();
 
-        // Hide the pre-loader with a fade-out effect
+        try {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response) => {
+                    // reCAPTCHA solved.
+                }
+            });
+            window.recaptchaVerifier.render(); // Render the invisible reCAPTCHA
+        } catch (error) {
+            console.error("Error setting up reCAPTCHA", error);
+            showMessage("Could not set up phone sign-in. Please refresh.", "error", true);
+        }
+
         preLoader.style.opacity = '0';
-        
-        // Wait for the fade-out transition to complete
         await new Promise(resolve => setTimeout(resolve, 500)); 
-        
         preLoader.style.display = 'none';
         gameContent.style.display = 'flex'; 
     }
 
-    // This part runs on initial load (after preloading) AND every time auth state changes later.
     if (user) {
         currentUser = user;
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
         currentUser = null;
-        showView(authView); // Go directly to sign-in screen
+        showView(authView); 
     }
 });
 
@@ -117,8 +127,8 @@ async function loadUserData(userId) {
             updateDeckSizeDisplay();
             showSettings();
         } else {
-            console.log("No such document! This should be created on registration.");
-            await createNewUserDocument(userId, auth.currentUser.email);
+            console.log("No such document! Creating one for new user.");
+            await createNewUserDocument(auth.currentUser);
         }
     } catch (error) {
         console.error("Error loading user data:", error);
@@ -127,11 +137,12 @@ async function loadUserData(userId) {
 }
 
 // Creates a new user document in Firestore with default values
-async function createNewUserDocument(userId, email) {
-    const userRef = db.collection('users').doc(userId);
+async function createNewUserDocument(user) {
+    const userRef = db.collection('users').doc(user.uid);
     const newUser = {
-        uid: userId,
-        email: email,
+        uid: user.uid,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         collectedCardIds: [],
         playerDeckIds: [],
@@ -140,7 +151,7 @@ async function createNewUserDocument(userId, email) {
         gamesPlayed: 0
     };
     await userRef.set(newUser);
-    await loadUserData(userId);
+    await loadUserData(user.uid);
 }
 
 // Sign in with Google
@@ -151,13 +162,80 @@ function signInWithGoogle() {
             const userRef = db.collection('users').doc(user.uid);
             const doc = await userRef.get();
             if (!doc.exists) {
-                await createNewUserDocument(user.uid, user.email);
+                await createNewUserDocument(user);
             }
             showMessage('Signed in with Google!', 'success', true);
         }).catch((error) => {
             showMessage(error.message, 'error', true);
         });
 }
+
+// --- PHONE AUTHENTICATION ---
+function signInWithPhone() {
+    const phoneNumberInput = document.getElementById('phoneNumberInput');
+    const sendCodeBtn = document.getElementById('sendCodeBtn');
+    const appVerifier = window.recaptchaVerifier;
+    const phoneNumber = phoneNumberInput.value;
+
+    if (!phoneNumber || !/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
+        showMessage("Please enter a valid phone number in E.164 format (e.g., +15551234567).", "error", true);
+        return;
+    }
+
+    sendCodeBtn.disabled = true;
+    sendCodeBtn.innerText = "Sending...";
+
+    auth.signInWithPhoneNumber(phoneNumber, appVerifier)
+        .then((confirmationResult) => {
+            window.confirmationResult = confirmationResult;
+            showMessage("Verification code sent!", "success", true);
+            document.getElementById('verificationContainer').style.display = 'flex';
+            phoneNumberInput.disabled = true;
+            sendCodeBtn.style.display = 'none';
+        }).catch((error) => {
+            console.error('Error during signInWithPhoneNumber', error);
+            showMessage(error.message, 'error', true);
+            // Reset reCAPTCHA to allow retries
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.render().then(function(widgetId) {
+                    grecaptcha.reset(widgetId);
+                });
+            }
+            sendCodeBtn.disabled = false;
+            sendCodeBtn.innerText = "Send Code";
+        });
+}
+
+function verifyCode() {
+    const code = document.getElementById('verificationCodeInput').value;
+    const verifyBtn = document.getElementById('verifyCodeBtn');
+
+    if (!code || code.length !== 6) {
+        showMessage("Please enter the 6-digit verification code.", "warning", true);
+        return;
+    }
+
+    verifyBtn.disabled = true;
+    verifyBtn.innerText = "Verifying...";
+
+    window.confirmationResult.confirm(code).then(async (result) => {
+        const user = result.user;
+        showMessage(`Welcome! Signed in successfully.`, 'success', true);
+        
+        const userRef = db.collection('users').doc(user.uid);
+        const doc = await userRef.get();
+        if (!doc.exists) {
+            await createNewUserDocument(user);
+        }
+        // onAuthStateChanged handles UI switch
+    }).catch((error) => {
+        console.error('Error verifying code', error);
+        showMessage("Invalid code. Please try again.", "error", true);
+        verifyBtn.disabled = false;
+        verifyBtn.innerText = "Verify & Sign In";
+    });
+}
+
 
 // Logout the current user
 function logout() {
@@ -366,7 +444,8 @@ function showSettingsView() { showView(settingsView, 'nav-settings'); }
 
 function showSettings() {
     if (!currentUser) return;
-    document.getElementById('settings-email').innerText = currentUser.email || 'N/A';
+    const contactInfo = currentUser.email || currentUser.phoneNumber || 'N/A';
+    document.getElementById('settings-email').innerText = contactInfo;
     document.getElementById('settings-userid').innerText = currentUser.uid || 'N/A';
 }
 
@@ -736,4 +815,3 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
-
