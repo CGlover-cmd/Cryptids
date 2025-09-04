@@ -1,14 +1,4 @@
 // --- FIREBASE CONFIGURATION ---
-// This configuration must match the one in your main script.js file.
-const firebaseConfig = {
-    apiKey: "AIzaSyA7HORw-_RGWxhyo9eGD3fvGL4ub8WH1O0",
-    authDomain: "cryptids-be430.firebaseapp.com",
-    projectId: "cryptids-be430",
-    storageBucket: "cryptids-be430.firebasestorage.app",
-    messagingSenderId: "197995808355",
-    appId: "1:197995808355:web:5a2534f516a9efe2d15a56",
-    measurementId: "G-FTBG99PW84"
-};
 
 // Initialize Firebase services
 firebase.initializeApp(firebaseConfig);
