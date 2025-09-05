@@ -11,7 +11,13 @@ const managementSection = document.getElementById('management-section');
 const accountEmailSpan = document.getElementById('account-email');
 const accountPhoneSpan = document.getElementById('account-phone');
 const accountUserIdSpan = document.getElementById('account-userid');
-const linkGoogleBtn = document.getElementById('linkGoogleBtn');
+
+// Modal Elements
+const manageLoginBtn = document.getElementById('manageLoginBtn');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const loginOptionsModal = document.getElementById('loginOptionsModal');
+const loginOptionsBody = document.getElementById('loginOptionsBody');
+
 
 // --- MESSAGE DISPLAY ---
 let globalMessageTimeout;
@@ -28,23 +34,77 @@ function showMessage(message, type = "info") {
     }, 4000);
 }
 
-// --- ACCOUNT LINKING ---
+// --- MODAL & LOGIN OPTIONS LOGIC ---
+
+/**
+ * Populates the login options table based on the user's linked providers.
+ */
+function populateLoginOptions() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    loginOptionsBody.innerHTML = ''; // Clear previous options
+
+    const linkedProviders = user.providerData.map(p => p.providerId);
+    
+    // --- Google Option ---
+    const googleRow = document.createElement('tr');
+    const googleProviderInfo = user.providerData.find(p => p.providerId === 'google.com');
+    let googleStatusHTML = '';
+    
+    if (googleProviderInfo) {
+        googleStatusHTML = `<span class="status-linked">Linked</span>`;
+    } else {
+        googleStatusHTML = `<button class="btn btn-small" id="addGoogleBtn">Add</button>`;
+    }
+    
+    googleRow.innerHTML = `
+        <td>Google</td>
+        <td>${googleProviderInfo ? googleProviderInfo.email : 'Not Linked'}</td>
+        <td>${googleStatusHTML}</td>
+    `;
+    loginOptionsBody.appendChild(googleRow);
+
+    // Add event listener if the "Add" button exists
+    if (!googleProviderInfo) {
+        document.getElementById('addGoogleBtn').addEventListener('click', linkGoogleAccount);
+    }
+}
+
+/**
+ * Handles the process of linking a Google account.
+ */
 async function linkGoogleAccount() {
     const googleProvider = new firebase.auth.GoogleAuthProvider();
     try {
         await auth.currentUser.linkWithPopup(googleProvider);
         showMessage("Successfully linked your Google account!", "success");
-        // Refresh account info to show the newly linked email if it wasn't there before
+        populateLoginOptions(); // Refresh the modal content
+        // Also refresh the main page display
         accountEmailSpan.innerText = auth.currentUser.email || 'Not provided';
     } catch (error) {
         console.error("Error linking Google account:", error);
-        // Handle specific errors, like if the account is already in use
         if (error.code === 'auth/credential-already-in-use') {
             showMessage("This Google account is already linked to another user.", "error");
         } else {
             showMessage("Failed to link Google account. Please try again.", "error");
         }
     }
+}
+
+/**
+ * Shows the login options modal.
+ */
+function openLoginOptionsModal() {
+    populateLoginOptions();
+    loginOptionsModal.classList.add('show');
+}
+
+/**
+ * Hides the login options modal.
+ */
+function closeLoginOptionsModal() {
+    loginOptionsModal.classList.remove('show');
 }
 
 
@@ -61,9 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
             accountEmailSpan.innerText = user.email || 'Not provided';
             accountPhoneSpan.innerText = user.phoneNumber || 'Not provided';
             accountUserIdSpan.innerText = user.uid || 'N/A';
-
-            // Add event listener for the link button
-            linkGoogleBtn.addEventListener('click', linkGoogleAccount);
+            
+            // --- Event Listeners for Modal ---
+            manageLoginBtn.addEventListener('click', openLoginOptionsModal);
+            closeModalBtn.addEventListener('click', closeLoginOptionsModal);
+            // Close modal if user clicks outside the content area
+            loginOptionsModal.addEventListener('click', (event) => {
+                if (event.target === loginOptionsModal) {
+                    closeLoginOptionsModal();
+                }
+            });
 
         } else {
             // No user is signed in.
