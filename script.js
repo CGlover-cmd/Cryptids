@@ -100,37 +100,11 @@ auth.onAuthStateChanged(async (user) => {
     };
 
     if (isInitialLoad) {
-        isInitialLoad = false;
-        
+        isInitialLoad = false; // Set flag immediately
         const loadingText = document.getElementById('loading-text');
-        const preloaderCard = document.querySelector('#pre-loader .card');
-        let assetsAreLoaded = false;
 
-        // This listener will fire every time a spin cycle finishes
-        const animationListener = () => {
-            if (assetsAreLoaded) {
-                // If assets are loaded, we stop the infinite spin and trigger the final zoom
-                preloaderCard.style.animation = 'none'; // Stop the current animation
-                preLoader.classList.add('zooming');
-                
-                // Clean up the listener
-                preloaderCard.removeEventListener('animationiteration', animationListener);
-                
-                // Proceed to the game after the zoom animation finishes
-                setTimeout(proceedToGame, 700); // Must match zoom animation duration
-            }
-        };
-        preloaderCard.addEventListener('animationiteration', animationListener);
+        await preloadAllGameAssets();
 
-        // Start loading all game assets
-        preloadAllGameAssets().then(() => {
-            // Once loading is done, set the flag and fade out the loading text
-            assetsAreLoaded = true;
-            loadingText.style.transition = 'opacity 0.5s ease';
-            loadingText.style.opacity = '0';
-        });
-
-        // Setup reCAPTCHA in the background while the animation is running
         try {
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                 'size': 'invisible',
@@ -141,9 +115,31 @@ auth.onAuthStateChanged(async (user) => {
             console.error("Error setting up reCAPTCHA", error);
             showMessage("Could not set up phone sign-in. Please refresh.", "error", true);
         }
+        
+        // --- Transition Logic ---
+        // 1. Fade out "Loading..." text
+        loadingText.style.transition = 'opacity 0.5s ease';
+        loadingText.style.opacity = '0';
+
+        // 2. After fade out, show "Tap to Continue"
+        setTimeout(() => {
+            loadingText.innerText = 'Tap to Continue';
+            loadingText.style.opacity = '1';
+            preLoader.style.cursor = 'pointer';
+            
+            // 3. Add click listener to start the final animation
+            preLoader.addEventListener('click', () => {
+                preLoader.classList.add('zooming');
+                
+                // 4. After animation, proceed to the game
+                setTimeout(proceedToGame, 700); // Match CSS animation time
+
+            }, { once: true });
+        }, 500); // Corresponds to the fade-out duration
 
     } else {
-        // If it's not the initial load (e.g., user logs out and in again), skip animations
+        // If it's not the initial load (e.g., user logs in/out later),
+        // just update the view without the pre-loader animation.
         proceedToGame();
     }
 });
