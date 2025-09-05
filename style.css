@@ -52,7 +52,7 @@ body {
 
 /* --- Background Image for Main Views --- */
 #packView, #collectionView, #deckBuilderView, #gameView, #settingsView {
-    background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/background.png');
+    background-image: linear-gradient(rgba(18, 18, 18, 0.8), rgba(18, 18, 18, 0.8)), url('photos/background.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -64,7 +64,7 @@ body {
 #homeView {
     width: 100%;
     height: 100%;
-    background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
+    background-image: url('photos/title_screen_169.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -75,12 +75,12 @@ body {
 
 @media (orientation: portrait) {
     #homeView {
-        background-image: url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_mobile.png');
+        background-image: url('photos/title_screen_mobile.png');
     }
 }
 
 #authView {
-    background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/title_screen_169.png');
+    background-image: linear-gradient(rgba(18, 18, 18, 0.7), rgba(18, 18, 18, 0.7)), url('photos/title_screen_169.png');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -225,7 +225,7 @@ h1 {
 }
 
 .card-back {
-    background-image: url("https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png");
+    background-image: url("photos/back_of_card.png");
     background-size: cover;
     background-position: center;
 }
@@ -443,7 +443,7 @@ h1 {
 }
 
 .deck-pile {
-    background-image: url("https://cdn.jsdelivr.net/gh/cglover-cmd/cryptids@main/photos/back_of_card.png");
+    background-image: url("photos/back_of_card.png");
     background-size: cover;
     background-position: center;
     border: 2px solid #888;
@@ -695,4 +695,3 @@ h1 {
         margin: 0;
     }
 }
-
