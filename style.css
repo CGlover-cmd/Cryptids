@@ -358,10 +358,10 @@ h1 {
     height: auto;
     max-width: 1400px;
     aspect-ratio: 16 / 9;
-    gap: 1%; /* Use percentage for gap */
+    gap: 1%;
     background: rgba(0,0,0,0.2);
     border-radius: 10px;
-    padding: 1%; /* Use percentage for padding */
+    padding: 1%;
     box-sizing: border-box;
 }
 
@@ -369,7 +369,7 @@ h1 {
     display: flex;
     flex-direction: column;
     flex: 1;
-    gap: 2%; /* Use percentage for gap */
+    gap: 2%;
     min-height: 0;
 }
 
@@ -381,16 +381,16 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1%; /* Use percentage for gap */
+    gap: 1%;
     width: 100%;
-    flex: 1; /* Make rows share space */
+    flex: 1;
 }
 
 .hand-zone, .bench-zone, .active-zone {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1%; /* Use percentage for gap */
+    gap: 1%;
     width: 100%;
     height: 100%;
     border-radius: 10px;
@@ -400,16 +400,15 @@ h1 {
     transition: background-color 0.3s ease;
 }
 
-/* Let the zones define the card sizes */
-.hand-zone { flex: 0 0 35%; align-items: flex-end;} /* Fixed height for hand */
+.hand-zone { flex: 0 0 35%; align-items: flex-end;}
 .bench-zone { flex: 1; }
 .active-zone { flex: 1.5; }
 
 .hand-zone .card-wrapper,
 .bench-zone .card-wrapper,
 .active-zone .card-wrapper {
-    height: 95%; /* Relative to parent zone height */
-    width: auto;  /* Auto width to maintain aspect ratio */
+    height: 95%;
+    width: auto;
     max-width: 100%;
 }
 .hand-zone .card-wrapper {
@@ -430,7 +429,7 @@ h1 {
     color: #aaa;
     font-weight: bold;
     font-size: 0.9rem;
-    flex: 0 0 120px; /* Give deck/discard a fixed width */
+    flex: 0 0 120px;
 }
 
 .deck-pile, .discard-pile {
@@ -473,7 +472,7 @@ h1 {
 .game-center-info {
     text-align: center;
     padding: 5px 0;
-    flex: 0 0 auto; /* Don't grow or shrink */
+    flex: 0 0 auto;
 }
 .game-center-info h1 {
     font-size: 1.5rem;
@@ -492,7 +491,6 @@ h1 {
     margin-bottom: 5px;
 }
 
-/* --- NEW: CARD ANIMATIONS & CONCEALED STATE --- */
 @keyframes card-play-animation {
     from {
         transform: scale(0.5) translateY(100%);
@@ -508,7 +506,6 @@ h1 {
     animation: card-play-animation 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-/* This class forces a card to be face-down */
 .card-wrapper.concealed .card-inner {
     transform: rotateY(0deg) !important;
 }
@@ -659,7 +656,7 @@ h1 {
     height: 168px;
     position: relative;
     transform-style: preserve-3d;
-    animation: classic-flip 2.5s infinite ease-in-out;
+    animation: classic-flip 2.5s infinite linear; /* Changed to linear for consistent speed */
 }
 
 #pre-loader .card-face {
@@ -681,41 +678,37 @@ h1 {
     object-fit: cover;
 }
 
-/* THIS IS THE FIX: Override general rules for the pre-loader card */
 #pre-loader .card-front {
-    transform: rotateY(0deg); /* Resets the card-front to its default state */
+    transform: rotateY(0deg);
 }
 
 #pre-loader .card-back {
-    transform: rotateY(180deg); /* Flips the card-back so it's hidden initially */
+    transform: rotateY(180deg);
 }
-
 
 @keyframes classic-flip {
     from { transform: rotateY(0deg); }
     to { transform: rotateY(360deg); }
 }
 
-/* Animation for when loading is finished */
-#pre-loader.finished .card {
+/* This class is added after landing to trigger the zoom */
+#pre-loader.zooming .card {
     animation: zoom-in 0.7s ease-in forwards;
 }
-
-#pre-loader.finished .loading-text {
+#pre-loader.zooming .loading-text {
     opacity: 0;
 }
 
 @keyframes zoom-in {
     from {
-        transform: scale(1);
+        transform: scale(1) rotateY(360deg); /* Start from the landed position */
         opacity: 1;
     }
     to {
-        transform: scale(15);
+        transform: scale(15) rotateY(360deg);
         opacity: 0;
     }
 }
-
 
 @media (min-width: 769px) {
     .modal-buttons { flex-direction: row; }
