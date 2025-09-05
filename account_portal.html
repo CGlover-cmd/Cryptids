@@ -204,6 +204,24 @@
             transform: scale(1);
             opacity: 1;
         }
+        .modal-content input {
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: var(--text-light);
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+        .modal-buttons {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
 
         /* --- Login Options Table --- */
         .login-options-table {
@@ -269,6 +287,29 @@
                     </tbody>
             </table>
             <button id="closeModalBtn" class="btn" style="margin-top: 20px;">Close</button>
+        </div>
+    </div>
+
+    <div id="phoneLinkModal" class="modal">
+        <div class="modal-content">
+            <h2>Link Phone Number</h2>
+            <div id="phone-linking-step1">
+                <p>Enter your phone number to receive a verification code.</p>
+                <input type="tel" id="phoneNumberInput" placeholder="+1 (555) 555-5555">
+                <div id="link-recaptcha-container" style="margin: 15px auto;"></div>
+                <div class="modal-buttons">
+                    <button id="cancelPhoneLinkBtn" class="btn">Cancel</button>
+                    <button id="sendCodeBtn" class="btn">Send Code</button>
+                </div>
+            </div>
+            <div id="phone-linking-step2" style="display: none;">
+                <p>Enter the 6-digit code sent to your phone.</p>
+                <input type="text" id="verificationCodeInput" placeholder="123456" maxlength="6">
+                 <div class="modal-buttons">
+                    <button id="cancelCodeEntryBtn" class="btn">Cancel</button>
+                    <button id="verifyCodeBtn" class="btn">Verify & Link</button>
+                </div>
+            </div>
         </div>
     </div>
 
