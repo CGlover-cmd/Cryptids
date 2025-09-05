@@ -64,21 +64,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const phoneInput = document.getElementById('phoneNumberInput');
     if(phoneInput) {
         phoneInput.addEventListener('focus', function() {
-            // When the user clicks into the input, if it's empty, pre-fill '+1 '
             if (this.value === '') {
                 this.value = '+1 ';
             }
         });
         phoneInput.addEventListener('blur', function() {
-            // If the user clicks out and the input is just '+1 ', clear it to show the placeholder again
             if (this.value.trim() === '+1') {
                 this.value = '';
             }
         });
         phoneInput.addEventListener('input', function() {
-            // This prevents the user from deleting the '+1 ' prefix
             if (!this.value.startsWith('+1 ')) {
-                // If they manage to delete it, put it right back.
                 this.value = '+1 ';
             }
         });
@@ -89,8 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 auth.onAuthStateChanged(async (user) => {
     const preLoader = document.getElementById('pre-loader');
     const gameContent = document.getElementById('game-content');
-    const card = preLoader.querySelector('.card');
-
+    
     if (isInitialLoad) {
         isInitialLoad = false;
         
@@ -101,30 +96,38 @@ auth.onAuthStateChanged(async (user) => {
             loadingText.innerText = 'Assets Loaded';
         }
 
-        // --- ANIMATION SEQUENCE ---
-        card.style.animation = 'none';
-        card.style.transition = 'transform 0.4s ease-out';
-        card.style.transform = 'rotateY(0deg)';
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Start the transition
-        preLoader.classList.add('finished'); // This starts the card zoom-and-fade animation
+        // --- NEW, SMOOTHER ANIMATION SEQUENCE ---
         
-        // Prepare game-content for fade-in
-        gameContent.style.opacity = '0';
-        gameContent.style.transition = 'opacity 0.7s ease-in';
-        gameContent.style.display = 'flex';
+        // This function will handle the final transition steps
+        const triggerFinalTransition = async () => {
+            // 1. Add 'zooming' class to trigger the zoom/fade animation.
+            preLoader.classList.add('zooming');
+            
+            // 2. Simultaneously, start fading in the main game content.
+            gameContent.style.opacity = '0';
+            gameContent.style.transition = 'opacity 0.7s ease-in';
+            gameContent.style.display = 'flex';
+            setTimeout(() => { gameContent.style.opacity = '1'; }, 50);
 
-        // Use a tiny timeout to ensure the browser registers the initial opacity before fading in
-        setTimeout(() => {
-            gameContent.style.opacity = '1';
-        }, 50);
+            // 3. Wait for the zoom animation to complete (700ms in CSS).
+            await new Promise(resolve => setTimeout(resolve, 700));
+            
+            // 4. Hide the pre-loader entirely.
+            preLoader.style.display = 'none';
+        };
 
-        // Wait for animations to complete before hiding the pre-loader for good
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        preLoader.style.display = 'none';
+        // We listen for the animation to complete one full spin.
+        const card = preLoader.querySelector('.card');
+        card.addEventListener('animationiteration', () => {
+            // This event fires at the end of each 2.5s cycle.
+            // We only want to act on the *first* time this happens after loading is done.
+            // 'landing' class acts as a flag to prevent this from firing multiple times.
+            if (!preLoader.classList.contains('landing')) {
+                preLoader.classList.add('landing'); // Mark that we're starting the landing sequence
+                card.style.animationPlayState = 'paused'; // Stop the animation cleanly at its end-point
+                triggerFinalTransition();
+            }
+        }, { once: false }); // 'once: false' is default, but explicit for clarity.
 
         try {
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
@@ -143,8 +146,6 @@ auth.onAuthStateChanged(async (user) => {
         await loadUserData(user.uid);
         showView(packView, 'nav-packs');
     } else {
-        currentUser = null;
-        // The game-content is already displayed from the initial load, so we just need to ensure the correct view is active.
         showView(authView); 
     }
 });
@@ -235,7 +236,6 @@ function signInWithPhone() {
         }).catch((error) => {
             console.error('Error during signInWithPhoneNumber', error);
             showMessage(error.message, 'error', true);
-            // Reset reCAPTCHA to allow retries
             if (window.recaptchaVerifier) {
                 window.recaptchaVerifier.render().then(function(widgetId) {
                     grecaptcha.reset(widgetId);
@@ -267,7 +267,6 @@ function verifyCode() {
         if (!doc.exists) {
             await createNewUserDocument(user);
         }
-        // onAuthStateChanged handles UI switch
     }).catch((error) => {
         console.error('Error verifying code', error);
         showMessage("Invalid code. Please try again.", "error", true);
@@ -414,7 +413,6 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
 
     } else {
         cardWrapper.classList.add("uncollected-card");
-        // FIX: Add a card back to uncollected cards
         const cardBack = document.createElement("div");
         cardBack.className = `card-face card-back`;
         cardInner.appendChild(cardBack);
