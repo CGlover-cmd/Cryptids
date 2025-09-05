@@ -89,12 +89,34 @@ document.addEventListener('DOMContentLoaded', () => {
 auth.onAuthStateChanged(async (user) => {
     const preLoader = document.getElementById('pre-loader');
     const gameContent = document.getElementById('game-content');
+    const card = preLoader.querySelector('.card');
 
     if (isInitialLoad) {
         isInitialLoad = false;
         
+        // Assets load while the spinner animation runs via CSS.
         await preloadAllGameAssets();
+        
+        // Loading is finished. Update text and stop the spinning animation.
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) {
+            loadingText.innerText = 'Assets Loaded';
+        }
+        if (card) {
+            card.style.animation = 'none'; // Stop the infinite spinning
+        }
 
+        // Add 'finished' class to trigger the zoom-in animation.
+        preLoader.classList.add('finished');
+
+        // Wait for the zoom animation (700ms) to complete before hiding the loader.
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        // Hide the pre-loader and display the main game content.
+        preLoader.style.display = 'none';
+        gameContent.style.display = 'flex'; 
+
+        // Now that the view is ready, set up invisible reCAPTCHA for phone auth.
         try {
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                 'size': 'invisible',
@@ -102,16 +124,11 @@ auth.onAuthStateChanged(async (user) => {
                     // reCAPTCHA solved.
                 }
             });
-            window.recaptchaVerifier.render(); // Render the invisible reCAPTCHA
+            window.recaptchaVerifier.render();
         } catch (error) {
             console.error("Error setting up reCAPTCHA", error);
             showMessage("Could not set up phone sign-in. Please refresh.", "error", true);
         }
-
-        preLoader.style.opacity = '0';
-        await new Promise(resolve => setTimeout(resolve, 500)); 
-        preLoader.style.display = 'none';
-        gameContent.style.display = 'flex'; 
     }
 
     if (user) {
