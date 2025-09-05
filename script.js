@@ -85,38 +85,62 @@ auth.onAuthStateChanged(async (user) => {
     const preLoader = document.getElementById('pre-loader');
     const gameContent = document.getElementById('game-content');
 
-    if (isInitialLoad) {
-        isInitialLoad = false;
+    const proceedToGame = async () => {
+        preLoader.style.display = 'none';
+        gameContent.style.display = 'flex';
         
+        if (user) {
+            currentUser = user;
+            await loadUserData(user.uid);
+            showView(packView, 'nav-packs');
+        } else {
+            currentUser = null;
+            showView(authView); 
+        }
+    };
+
+    if (isInitialLoad) {
+        isInitialLoad = false; // Set flag immediately
+        const loadingText = document.getElementById('loading-text');
+
         await preloadAllGameAssets();
 
         try {
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                 'size': 'invisible',
-                'callback': (response) => {
-                    // reCAPTCHA solved.
-                }
+                'callback': (response) => { /* reCAPTCHA solved. */ }
             });
-            window.recaptchaVerifier.render(); // Render the invisible reCAPTCHA
+            window.recaptchaVerifier.render();
         } catch (error) {
             console.error("Error setting up reCAPTCHA", error);
             showMessage("Could not set up phone sign-in. Please refresh.", "error", true);
         }
+        
+        // --- Transition Logic ---
+        // 1. Fade out "Loading..." text
+        loadingText.style.transition = 'opacity 0.5s ease';
+        loadingText.style.opacity = '0';
 
-        // Simple fade out transition
-        preLoader.style.opacity = '0';
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait for fade out to complete
-        preLoader.style.display = 'none';
-        gameContent.style.display = 'flex'; 
-    }
+        // 2. After fade out, show "Tap to Continue"
+        setTimeout(() => {
+            loadingText.innerText = 'Tap to Continue';
+            loadingText.style.opacity = '1';
+            preLoader.style.cursor = 'pointer';
+            
+            // 3. Add click listener to start the final animation
+            preLoader.addEventListener('click', () => {
+                preLoader.classList.add('zooming');
+                
+                // 4. After animation, proceed to the game
+                setTimeout(proceedToGame, 700); // Match CSS animation time
 
-    if (user) {
-        currentUser = user;
-        await loadUserData(user.uid);
-        showView(packView, 'nav-packs');
+            }, { once: true });
+        }, 500); // Corresponds to the fade-out duration
+
     } else {
-        currentUser = null;
-        showView(authView); 
+        // If it's not the initial load (e.g., user logs in/out later),
+        // just update the view without the pre-loader animation.
+        proceedToGame();
     }
 });
 
@@ -827,4 +851,3 @@ async function confirmDeleteAccount() {
         document.getElementById('deleteAccountModal').classList.remove('show');
     }
 }
-
