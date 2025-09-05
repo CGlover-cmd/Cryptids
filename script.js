@@ -12,30 +12,30 @@ window.confirmationResult = null;
 
 // --- DATA ---
 const allCryptids = [
-    { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: { name: "Sonic Screech", damage: 10 }, effect: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/moth_man.png" },
-    { id: 'chupacabra', name: "Chupacabra", rarity: "rare", hp: 40, attack: { name: "Vampiric Bite", damage: 20 }, effect: "Blood Drain: Heals self for 10 HP after attacking.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/chupacabra.png" },
-    { id: 'bigfoot', name: "Bigfoot", rarity: "common", hp: 50, attack: { name: "Forest Stomp", damage: 15 }, effect: "Stomp: Deals 5 splash damage to all enemy cards.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/bigfoot.png" },
-    { id: 'jerseydevil', name: "Jersey Devil", rarity: "rare", hp: 35, attack: { name: "Hellish Dive", damage: 25 }, effect: "Flight: Dodges first attack each turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/jersey_devil.png" },
-    { id: 'wendigo', name: "Wendigo", rarity: "legendary", hp: 60, attack: { name: "Glacial Claw", damage: 30 }, effect: "Insatiable Hunger: Gains +5 Attack for each enemy card defeated.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/wendigo.png" },
-    { id: 'skinwalker', name: "Skinwalker", rarity: "legendary", hp: 55, attack: { name: "Mimic Strike", damage: 28 }, effect: "Mimicry: Copies the ability of the last enemy card played.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/skinwalker.png" },
-    { id: 'flatwoodsmonster', name: "Flatwoods Monster", rarity: "common", hp: 30, attack: { name: "Alien Ray", damage: 12 }, effect: "Gaseous Form: Cannot be targeted by abilities for one turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/flatwoods.png" },
-    { id: 'kraken', name: "Kraken", rarity: "rare", hp: 70, attack: { name: "Crushing Tentacle", damage: 18 }, effect: "Crushing Grip: Stuns enemy card for one turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/kraken.png" },
-    { id: 'lochnessmonster', name: "Loch Ness Monster", rarity: "rare", hp: 65, attack: { name: "Deep Surge", damage: 15 }, effect: "Deep Dive: Becomes immune to damage for one turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/lochness_monster.png" },
-    { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: { name: "Death Wail", damage: 18 }, effect: "Wail: Deals 5 damage to enemy player directly.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/banshee.png" },
-    { id: 'gnome', name: "Gnome", rarity: "common", hp: 30, attack: { name: "Rock Throw", damage: 10 }, effect: "Burrow: Hides underground, cannot be attacked for one turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/gnome.png" },
-    { id: 'brownie', name: "Brownie", rarity: "common", hp: 20, attack: { name: "Helpful Hand", damage: 8 }, effect: "Helpful Spirit: Heals player for 10 HP.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/brownie.png" },
-    { id: 'bunyip', name: "Bunyip", rarity: "common", hp: 45, attack: { name: "Swamp Snap", damage: 13 }, effect: "Swamp Ambush: Next attack deals double damage if played from hand.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/bunyip.png" },
-    { id: 'kappa', name: "Kappa", rarity: "rare", hp: 38, attack: { name: "Water Jet", damage: 22 }, effect: "Cucumber Feast: Gains +5 HP and +5 Attack for one turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/kappa.png" },
-    { id: 'siren', name: "Siren", rarity: "rare", hp: 32, attack: { name: "Luring Melody", damage: 28 }, effect: "Enchanting Song: Prevents enemy card from attacking next turn.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/siren.png" },
-    { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: { name: "Petrifying Strike", damage: 23 }, effect: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/basilisk.png" },
-    { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: { name: "Sky Assault", damage: 20 }, effect: "Sky Guardian: All friendly cards gain +5 HP.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/griffin.png" },
-    { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: { name: "Frost Punch", damage: 10 }, effect: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/yeti.png" },
-    { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: { name: "Terrifying Charge", damage: 35 }, effect: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/woodsdevil.png" },
-    { id: 'thunderbird', name: "Thunderbird", rarity: "legendary", hp: 65, attack: { name: "Lightning Strike", damage: 32 }, effect: "Chain Lightning: Deals 10 damage to two other random enemy cards.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/thunderbird.png" },
-    { id: 'ropen', name: "Ropen", rarity: "rare", hp: 35, attack: { name: "Diving Strike", damage: 26 }, effect: "Bioluminescence: The next card the opponent plays has its attack reduced by half.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/ropen.png" },
-    { id: 'almas', name: "Almas", rarity: "common", hp: 48, attack: { name: "Feral Swipe", damage: 14 }, effect: "Hardy: If this card survives combat, it gains +5 HP.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/almas.png" },
-    { id: 'mokele-mbembe', name: "Mokele-mbembe", rarity: "rare", hp: 75, attack: { name: "River Charge", damage: 16 }, effect: "Amphibious Hide: Reduces incoming damage from 'common' cards by 5.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/mokele-mbembe.png" },
-    { id: 'snallygaster', name: "Snallygaster", rarity: "mythic", hp: 90, attack: { name: "Apocalypse", damage: 50 }, effect: "Apex Predator: Instantly defeats any non-mythic card it battles. Pierces all defenses.", image: "https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/snallygaster.png" }
+    { id: 'mothman', name: "Mothman", rarity: "common", hp: 30, attack: { name: "Sonic Screech", damage: 10 }, effect: "Frightening Presence: Reduces enemy attack by 5 for one turn.", image: "photos/moth_man.png" },
+    { id: 'chupacabra', name: "Chupacabra", rarity: "rare", hp: 40, attack: { name: "Vampiric Bite", damage: 20 }, effect: "Blood Drain: Heals self for 10 HP after attacking.", image: "photos/chupacabra.png" },
+    { id: 'bigfoot', name: "Bigfoot", rarity: "common", hp: 50, attack: { name: "Forest Stomp", damage: 15 }, effect: "Stomp: Deals 5 splash damage to all enemy cards.", image: "photos/bigfoot.png" },
+    { id: 'jerseydevil', name: "Jersey Devil", rarity: "rare", hp: 35, attack: { name: "Hellish Dive", damage: 25 }, effect: "Flight: Dodges first attack each turn.", image: "photos/jersey_devil.png" },
+    { id: 'wendigo', name: "Wendigo", rarity: "legendary", hp: 60, attack: { name: "Glacial Claw", damage: 30 }, effect: "Insatiable Hunger: Gains +5 Attack for each enemy card defeated.", image: "photos/wendigo.png" },
+    { id: 'skinwalker', name: "Skinwalker", rarity: "legendary", hp: 55, attack: { name: "Mimic Strike", damage: 28 }, effect: "Mimicry: Copies the ability of the last enemy card played.", image: "photos/skinwalker.png" },
+    { id: 'flatwoodsmonster', name: "Flatwoods Monster", rarity: "common", hp: 30, attack: { name: "Alien Ray", damage: 12 }, effect: "Gaseous Form: Cannot be targeted by abilities for one turn.", image: "photos/flatwoods.png" },
+    { id: 'kraken', name: "Kraken", rarity: "rare", hp: 70, attack: { name: "Crushing Tentacle", damage: 18 }, effect: "Crushing Grip: Stuns enemy card for one turn.", image: "photos/kraken.png" },
+    { id: 'lochnessmonster', name: "Loch Ness Monster", rarity: "rare", hp: 65, attack: { name: "Deep Surge", damage: 15 }, effect: "Deep Dive: Becomes immune to damage for one turn.", image: "photos/lochness_monster.png" },
+    { id: 'banshee', name: "Banshee", rarity: "common", hp: 25, attack: { name: "Death Wail", damage: 18 }, effect: "Wail: Deals 5 damage to enemy player directly.", image: "photos/banshee.png" },
+    { id: 'gnome', name: "Gnome", rarity: "common", hp: 30, attack: { name: "Rock Throw", damage: 10 }, effect: "Burrow: Hides underground, cannot be attacked for one turn.", image: "photos/gnome.png" },
+    { id: 'brownie', name: "Brownie", rarity: "common", hp: 20, attack: { name: "Helpful Hand", damage: 8 }, effect: "Helpful Spirit: Heals player for 10 HP.", image: "photos/brownie.png" },
+    { id: 'bunyip', name: "Bunyip", rarity: "common", hp: 45, attack: { name: "Swamp Snap", damage: 13 }, effect: "Swamp Ambush: Next attack deals double damage if played from hand.", image: "photos/bunyip.png" },
+    { id: 'kappa', name: "Kappa", rarity: "rare", hp: 38, attack: { name: "Water Jet", damage: 22 }, effect: "Cucumber Feast: Gains +5 HP and +5 Attack for one turn.", image: "photos/kappa.png" },
+    { id: 'siren', name: "Siren", rarity: "rare", hp: 32, attack: { name: "Luring Melody", damage: 28 }, effect: "Enchanting Song: Prevents enemy card from attacking next turn.", image: "photos/siren.png" },
+    { id: 'basilisk', name: "Basilisk", rarity: "rare", hp: 42, attack: { name: "Petrifying Strike", damage: 23 }, effect: "Petrifying Gaze: Deals 15 damage and reduces enemy attack by 10.", image: "photos/basilisk.png" },
+    { id: 'griffin', name: "Griffin", rarity: "rare", hp: 48, attack: { name: "Sky Assault", damage: 20 }, effect: "Sky Guardian: All friendly cards gain +5 HP.", image: "photos/griffin.png" },
+    { id: 'yeti', name: "Yeti", rarity: "common", hp: 55, attack: { name: "Frost Punch", damage: 10 }, effect: "Blizzard Breath: Deals 10 damage to all enemy cards.", image: "photos/yeti.png" },
+    { id: 'woodsdevil', name: "Woods Devil", rarity: "legendary", hp: 70, attack: { name: "Terrifying Charge", damage: 35 }, effect: "Terrifying Howl: Deals 20 damage to enemy player and 10 to all enemy cards.", image:"photos/woodsdevil.png" },
+    { id: 'thunderbird', name: "Thunderbird", rarity: "legendary", hp: 65, attack: { name: "Lightning Strike", damage: 32 }, effect: "Chain Lightning: Deals 10 damage to two other random enemy cards.", image: "photos/thunderbird.png" },
+    { id: 'ropen', name: "Ropen", rarity: "rare", hp: 35, attack: { name: "Diving Strike", damage: 26 }, effect: "Bioluminescence: The next card the opponent plays has its attack reduced by half.", image: "photos/ropen.png" },
+    { id: 'almas', name: "Almas", rarity: "common", hp: 48, attack: { name: "Feral Swipe", damage: 14 }, effect: "Hardy: If this card survives combat, it gains +5 HP.", image: "photos/almas.png" },
+    { id: 'mokele-mbembe', name: "Mokele-mbembe", rarity: "rare", hp: 75, attack: { name: "River Charge", damage: 16 }, effect: "Amphibious Hide: Reduces incoming damage from 'common' cards by 5.", image: "photos/mokele-mbembe.png" },
+    { id: 'snallygaster', name: "Snallygaster", rarity: "mythic", hp: 90, attack: { name: "Apocalypse", damage: 50 }, effect: "Apex Predator: Instantly defeats any non-mythic card it battles. Pierces all defenses.", image: "photos/snallygaster.png" }
 ];
 
 // --- STATE MANAGEMENT ---
@@ -267,8 +267,8 @@ async function preloadAllGameAssets() {
     loadingText.innerText = 'Loading game assets...';
 
     const imageUrls = [
-        'https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/background.png',
-        'https://cdn.jsdelivr.net/gh/CryptidsTheGame/Cryptids@main/photos/back_of_card.png',
+        'photos/background.png',
+        'photos/back_of_card.png',
     ];
 
     allCryptids.forEach(cryptid => {
