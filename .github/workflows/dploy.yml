@@ -1,0 +1,63 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  # Runs on pushes targeting the default branch (usually 'main' or 'master')
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Replace Firebase config placeholders
+        run: |
+          # The files to search for and replace the placeholders in
+          FILES_TO_REPLACE="index.html register.html account_portal.html"
+          
+          echo "Replacing tokens in: $FILES_TO_REPLACE"
+
+          for file in $FILES_TO_REPLACE; do
+            if [ -f "$file" ]; then
+              sed -i 's|FIREBASE_API_KEY|${{ secrets.FIREBASE_API_KEY }}|g' "$file"
+              sed -i 's|FIREBASE_AUTH_DOMAIN|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g' "$file"
+              sed -i 's|FIREBASE_PROJECT_ID|${{ secrets.FIREBASE_PROJECT_ID }}|g' "$file"
+              sed -i 's|FIREBASE_STORAGE_BUCKET|${{ secrets.FIREBASE_STORAGE_BUCKET }}|g' "$file"
+              sed -i 's|FIREBASE_MESSAGING_SENDER_ID|${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}|g' "$file"
+              sed -i 's|FIREBASE_APP_ID|${{ secrets.FIREBASE_APP_ID }}|g' "$file"
+              sed -i 's|FIREBASE_MEASUREMENT_ID|${{ secrets.FIREBASE_MEASUREMENT_ID }}|g' "$file"
+              echo "Tokens replaced in $file"
+            else
+              echo "Warning: $file not found."
+            fi
+          done
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload the entire repository
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
