@@ -389,6 +389,10 @@ function createCardElement(cryptid, isCollected = true, showFrontImmediately = f
 
     } else {
         cardWrapper.classList.add("uncollected-card");
+        // FIX: Add a card back to uncollected cards
+        const cardBack = document.createElement("div");
+        cardBack.className = `card-face card-back`;
+        cardInner.appendChild(cardBack);
     }
 
     cardWrapper.appendChild(cardInner);
