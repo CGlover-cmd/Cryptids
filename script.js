@@ -64,17 +64,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const phoneInput = document.getElementById('phoneNumberInput');
     if(phoneInput) {
         phoneInput.addEventListener('focus', function() {
+            // When the user clicks into the input, if it's empty, pre-fill '+1 '
             if (this.value === '') {
                 this.value = '+1 ';
             }
         });
         phoneInput.addEventListener('blur', function() {
+            // If the user clicks out and the input is just '+1 ', clear it to show the placeholder again
             if (this.value.trim() === '+1') {
                 this.value = '';
             }
         });
         phoneInput.addEventListener('input', function() {
+            // This prevents the user from deleting the '+1 ' prefix
             if (!this.value.startsWith('+1 ')) {
+                // If they manage to delete it, put it right back.
                 this.value = '+1 ';
             }
         });
@@ -98,36 +102,34 @@ auth.onAuthStateChanged(async (user) => {
         }
 
         // --- ANIMATION SEQUENCE ---
-        // 1. Stop the infinite spinning animation.
         card.style.animation = 'none';
-
-        // 2. Add a CSS transition to make the "landing" smooth.
         card.style.transition = 'transform 0.4s ease-out';
-        
-        // 3. Force the card to its front-facing position (showing the card back image).
-        // This will animate smoothly over 0.4s due to the transition property.
         card.style.transform = 'rotateY(0deg)';
 
-        // 4. Wait for the landing animation to finish.
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms > 400ms transition
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-        // 5. Trigger the final zoom-in animation by adding the 'finished' class.
-        preLoader.classList.add('finished');
-
-        // 6. Wait for the zoom animation (700ms in CSS) to complete before hiding the loader.
-        await new Promise(resolve => setTimeout(resolve, 800)); // 800ms > 700ms animation
+        // Start the transition
+        preLoader.classList.add('finished'); // This starts the card zoom-and-fade animation
         
-        // --- END ANIMATION SEQUENCE ---
+        // Prepare game-content for fade-in
+        gameContent.style.opacity = '0';
+        gameContent.style.transition = 'opacity 0.7s ease-in';
+        gameContent.style.display = 'flex';
 
+        // Use a tiny timeout to ensure the browser registers the initial opacity before fading in
+        setTimeout(() => {
+            gameContent.style.opacity = '1';
+        }, 50);
+
+        // Wait for animations to complete before hiding the pre-loader for good
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
         preLoader.style.display = 'none';
-        gameContent.style.display = 'flex'; 
 
         try {
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                 'size': 'invisible',
-                'callback': (response) => {
-                    // reCAPTCHA solved.
-                }
+                'callback': (response) => { /* reCAPTCHA solved */ }
             });
             window.recaptchaVerifier.render();
         } catch (error) {
@@ -142,6 +144,7 @@ auth.onAuthStateChanged(async (user) => {
         showView(packView, 'nav-packs');
     } else {
         currentUser = null;
+        // The game-content is already displayed from the initial load, so we just need to ensure the correct view is active.
         showView(authView); 
     }
 });
